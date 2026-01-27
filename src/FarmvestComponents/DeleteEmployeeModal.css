@@ -1,0 +1,147 @@
+.delete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.delete-modal-content {
+    background: white;
+    width: 440px;
+    max-width: 90vw;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.delete-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.warning-icon-bg {
+    width: 56px;
+    height: 56px;
+    background: #fef2f2;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-x-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.close-x-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.delete-modal-body h3 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.delete-modal-body p {
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 0 16px 0;
+}
+
+.role-tag-display {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.role-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.role-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.warning-note {
+    font-size: 0.85rem !important;
+    color: #ef4444 !important;
+    font-weight: 500;
+}
+
+.delete-modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.cancel-btn,
+.confirm-delete-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+}
+
+.cancel-btn:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.confirm-delete-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.confirm-delete-btn:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.confirm-delete-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}

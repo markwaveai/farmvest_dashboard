@@ -1,0 +1,158 @@
+.rejection-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.rejection-modal-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.rejection-modal-card {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.2s ease-in-out;
+}
+
+.rejection-modal-overlay.open .rejection-modal-card {
+    transform: scale(1);
+}
+
+.rejection-modal-header {
+    padding: 24px 24px 0;
+}
+
+.rejection-modal-header h3 {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.rejection-modal-header p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.rejection-modal-body {
+    padding: 24px;
+    color: #4b5563;
+}
+
+/* New Profile Card Styles */
+.admin-profile-card {
+    margin-bottom: 20px;
+}
+
+.rejected-by-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.admin-info-simple {
+    margin-bottom: 16px;
+}
+
+.admin-name-large {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+.admin-mobile-simple {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.admin-role-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #4b5563;
+    text-transform: capitalize;
+}
+
+/* End Profile Card Styles */
+
+.rejection-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: #1f2937;
+    transition: border-color 0.2s;
+}
+
+.rejection-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    ring: 2px solid #93c5fd;
+}
+
+.rejection-modal-footer {
+    padding: 16px 24px;
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.rejection-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rejection-btn-cancel {
+    background-color: white;
+    border: 1px solid #d1d5db;
+    color: #374151;
+}
+
+.rejection-btn-cancel:hover:not(:disabled) {
+    background-color: #f3f4f6;
+}
+
+.rejection-btn-submit {
+    background-color: #ef4444;
+    border: 1px solid transparent;
+    color: white;
+}
+
+.rejection-btn-submit:hover:not(:disabled) {
+    background-color: #dc2626;
+}
+
+.rejection-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

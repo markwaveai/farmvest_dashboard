@@ -1,0 +1,132 @@
+.admin-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1999;
+    background: transparent;
+}
+
+.admin-modal-container {
+    position: absolute;
+    top: 75px;
+    right: 25px;
+    left: auto;
+    width: 320px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e5e7eb;
+    z-index: 2000;
+    padding: 1.25rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.admin-modal-close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+.admin-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #4f46e5;
+    font-size: 1.25rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.admin-info {
+    overflow: hidden;
+}
+
+.admin-name {
+    margin: 0;
+    font-size: 1rem;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-mobile {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.admin-details-card {
+    display: grid;
+    gap: 0.75rem;
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+.admin-detail-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.admin-detail-value {
+    font-weight: 600;
+    color: #374151;
+}
+
+@media (max-width: 768px) {
+    .admin-modal-container {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        right: auto;
+        width: 90%;
+        max-width: 340px;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -60%);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
+    }
+}

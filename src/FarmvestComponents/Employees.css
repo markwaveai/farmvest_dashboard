@@ -1,0 +1,20 @@
+.employees-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #f9fafb;
+}
+
+.employees-header {
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.employees-table th,
+.employees-table td {
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.employees-table tr:hover {
+    background-color: #f8f9fa;
+}

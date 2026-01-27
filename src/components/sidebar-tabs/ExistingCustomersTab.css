@@ -1,0 +1,113 @@
+.existing-customers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.existing-customers-header {
+    margin-bottom: 24px;
+}
+
+.investor-sub-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    background: #f1f5f9;
+    padding: 2px;
+    border-radius: 10px;
+    width: 100%;
+    gap: 0;
+}
+
+.sub-tab-btn {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 1px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 9.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+@media (min-width: 360px) {
+    .sub-tab-btn {
+        font-size: 10.5px;
+        padding: 8px 3px;
+    }
+}
+
+@media (min-width: 400px) {
+    .sub-tab-btn {
+        font-size: 11.5px;
+        padding: 8px 6px;
+    }
+}
+
+@media (min-width: 640px) {
+    .investor-sub-tabs {
+        width: auto;
+        gap: 8px;
+        padding: 6px;
+    }
+
+    .sub-tab-btn {
+        flex: none;
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+}
+
+.sub-tab-btn:hover {
+    color: #1e293b;
+}
+
+.sub-tab-btn.active {
+    background: white;
+    color: #2563eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-pill-verified {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-pill-non-verified {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.existing-customers-th {
+    white-space: nowrap;
+    text-align: center;
+    padding: 12px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.existing-customers-th-sortable {
+    cursor: pointer;
+}
+
+.existing-customers-no-data {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+}
+
+.existing-customers-td {
+    text-align: center;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}

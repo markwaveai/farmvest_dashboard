@@ -1,0 +1,24 @@
+.farms-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #f9fafb;
+}
+
+.farms-header {
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.farms-table th,
+.farms-table td {
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.farms-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.farms-table td {
+    vertical-align: middle;
+}

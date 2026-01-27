@@ -1,0 +1,48 @@
+/* Health Status Styles */
+.health-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.health-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.health-status-dot.online {
+    background-color: #16a34a;
+}
+
+.health-status-dot.offline {
+    background-color: #dc2626;
+}
+
+.health-status-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.health-status-text.health-online {
+    color: #16a34a;
+}
+
+.health-status-text.health-offline {
+    color: #dc2626;
+}
+
+.spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
