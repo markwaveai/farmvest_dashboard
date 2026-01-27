@@ -22,7 +22,7 @@ const DEFAULT_CONTENT = `
         <li><strong>Account Management:</strong> To verify your identity via OTP and manage your profile.</li>
         <li><strong>Transaction Processing:</strong> To verify manual payments for buffalo units and provide invoices for "Paid" orders.</li>
         <li><strong>Investment Projections:</strong> To display personalized income projections And Asset Market Value </li>
-        <li><strong>Rewards Program:</strong>To calculate and credit the applicable referral reward as coins to your AnimalKart account.</li>
+        <li><strong>Rewards Program:</strong>To calculate and credit the applicable referral reward as coins to your account.</li>
         <li><strong>Communication:</strong> To notify you regarding payment verification outcomes and order status updates.</li>
     </ul>
 
@@ -49,13 +49,13 @@ const DEFAULT_CONTENT = `
     </ul>
 
     <h2>6. Updates to This Policy</h2>
-    <p>As the Animal Cart application evolves—potentially adding features like milk sales management or veterinary services—this policy may be updated.</p>
+    <p>As the application evolves—potentially adding features like milk sales management or veterinary services—this policy may be updated.</p>
 
     <h2>7. KYC & Government Identification Data</h2>
     <p>We may collect government-issued identification documents such as Aadhaar Card and PAN Card solely for identity verification (KYC), regulatory compliance, and fraud prevention. Such data is securely stored in encrypted form and accessed only by authorized personnel. We do not collect or store Aadhaar biometric information.</p>
 
     <h2>8. User Consent</h2>
-    <p>By installing, registering, and using the AnimalKart application, users explicitly consent to the collection, storage, processing, and usage of their personal information as described in this Privacy Policy.</p>
+    <p>By installing, registering, and using the application, users explicitly consent to the collection, storage, processing, and usage of their personal information as described in this Privacy Policy.</p>
 
     <h2>9. Third-Party Data Sharing</h2>
     <p>We do not sell, rent, or trade user personal data. Information is shared strictly on a need-to-know basis with service partners such as insurance providers and internal verification teams for operational purposes only.</p>

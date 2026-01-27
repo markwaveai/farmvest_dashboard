@@ -26,6 +26,7 @@ const Employees: React.FC = () => {
 
     const {
         employees,
+        totalCount,
         loading: employeesLoading,
         error,
         successMessage,
@@ -60,14 +61,10 @@ const Employees: React.FC = () => {
     // URL Search Params for Pagination
     const [searchParams, setSearchParams] = useSearchParams();
     const currentPage = parseInt(searchParams.get('page') || '1', 10);
-    const itemsPerPage = 15;
+    const itemsPerPage = 20;
 
     // Search State
     const [searchTerm, setSearchTerm] = React.useState('');
-
-    useEffect(() => {
-        dispatch(fetchEmployees(selectedRole));
-    }, [dispatch, selectedRole]);
 
     const setCurrentPage = useCallback((page: number) => {
         setSearchParams(prev => {
@@ -115,10 +112,20 @@ const Employees: React.FC = () => {
         };
     }, [searchTerm, activeSearchQuery, setSearchQuery, currentPage, setCurrentPage]);
 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+    useEffect(() => {
+        dispatch(fetchEmployees({
+            role: selectedRole || undefined,
+            page: currentPage,
+            size: itemsPerPage,
+            sort_by: 1
+        }));
+    }, [dispatch, selectedRole, currentPage]);
+
+    // Client-side pagination adjustment:
+    // If set to server-side, utilize filteredData directly if API returns paginated result
+    const currentItems = filteredEmployees;
+    // Use totalCount from API if available, otherwise assume 1 if no data
+    const totalPages = Math.ceil((totalCount || filteredEmployees.length) / itemsPerPage) || 1;
 
     const getSortIcon = (key: string) => {
         if (sortConfig.key !== key) return '';
@@ -130,8 +137,8 @@ const Employees: React.FC = () => {
             <div className="employees-header p-4 border-b border-gray-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center justify-between w-full md:w-auto gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold">FarmVest Investors</h2>
-                        <p className="text-sm text-gray-500 mt-1">Manage all investors ({employees.length} total)</p>
+                        <h2 className="text-2xl font-bold">FarmVest Employees</h2>
+                        <p className="text-sm text-gray-500 mt-1">Manage all employees ({employees.length} visible)</p>
                     </div>
                 </div>
 
@@ -155,7 +162,7 @@ const Employees: React.FC = () => {
                         <option value="SUPERVISOR">Supervisor</option>
                         <option value="DOCTOR">Doctor</option>
                         <option value="ASSISTANT_DOCTOR">Assistant Doctor</option>
-                        <option value="ADMIN">Admin</option>
+                        <option value="admin">Admin</option>
                     </select>
 
                     {/* Search Input */}
@@ -200,7 +207,8 @@ const Employees: React.FC = () => {
                                 <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('first_name')}>Name {getSortIcon('first_name')}</th>
                                 <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('email')}>Email {getSortIcon('email')}</th>
                                 <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('phone_number')}>Phone {getSortIcon('phone_number')}</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('total_investment')}>Investment {getSortIcon('total_investment')}</th>
+                                <th className="px-4 py-3 cursor-pointer">Role</th>
+                                <th className="px-4 py-3 cursor-pointer">Shed</th>
                                 <th className="px-4 py-3 text-center cursor-pointer" onClick={() => requestSort('active_status')}>Status {getSortIcon('active_status')}</th>
                                 <th className="px-4 py-3 text-center">Actions</th>
                             </tr>
@@ -208,10 +216,10 @@ const Employees: React.FC = () => {
 
                         <tbody>
                             {employeesLoading ? (
-                                <TableSkeleton cols={6} rows={10} />
+                                <TableSkeleton cols={7} rows={10} />
                             ) : currentItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No investors found</td>
+                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No employees found</td>
                                 </tr>
                             ) : (
                                 currentItems.map((employee: any, index: number) => (
@@ -229,9 +237,17 @@ const Employees: React.FC = () => {
                                         <td className="px-4 py-3">
                                             {employee.phone_number || '-'}
                                         </td>
-                                        <td className="px-4 py-3 font-medium text-green-600">
-                                            {/* Format as currency if needed, assuming simple number for now or INR */}
-                                            {employee.total_investment ? `₹${employee.total_investment.toLocaleString()}` : '₹0'}
+                                        <td className="px-4 py-3">
+                                            {employee.roles && employee.roles.length > 0 ? (
+                                                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                                                    {employee.roles[0].replace(/_/g, ' ')}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${employee.active_status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -246,7 +262,7 @@ const Employees: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleDeleteClick(employee);
                                                 }}
-                                                title="Delete Investor"
+                                                title="Delete Employee"
                                             >
                                                 <Trash2 size={18} />
                                             </button>

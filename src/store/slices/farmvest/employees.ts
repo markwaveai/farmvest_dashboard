@@ -4,9 +4,9 @@ import { FarmvestEmployee } from '../../../types/farmvest';
 
 export const fetchEmployees = createAsyncThunk(
     'farmvestEmployees/fetchEmployees',
-    async (role: string | undefined, { rejectWithValue }) => {
+    async (params: { role?: string; sort_by?: number; page?: number; size?: number } | undefined, { rejectWithValue }) => {
         try {
-            const response = await farmvestService.getEmployees(role);
+            const response = await farmvestService.getEmployees(params);
             console.log('fetchEmployees thunk response:', response);
 
             let rawData: any[] = [];
@@ -33,12 +33,25 @@ export const fetchEmployees = createAsyncThunk(
                     last_name: item.last_name || '',
                     email: item.email || '',
                     mobile: item.mobile || item.phone_number || '', // Map phone_number to mobile
+                    phone_number: item.mobile || item.phone_number || '', // Ensure phone_number is also available for component
                     roles: item.roles || ['Investor'], // Default role
                     is_active: item.is_active !== undefined ? item.is_active : (item.active_status ? 1 : 0), // Map boolean active_status to number
                     // Preserve other fields just in case
                     ...item
                 }));
-                return mappedData;
+
+                // Extract total count if available
+                const totalCount =
+                    response.pagination?.total_items ||
+                    response.pagination?.total_count ||
+                    response.data?.pagination?.total_items ||
+                    response.total_users ||
+                    response.total ||
+                    response.count ||
+                    response.total_count ||
+                    rawData.length;
+
+                return { employees: mappedData, totalCount };
             }
 
             return rejectWithValue(response.message || 'Failed to fetch employees');
@@ -82,6 +95,7 @@ export const deleteEmployee = createAsyncThunk(
 
 interface EmployeesState {
     employees: FarmvestEmployee[];
+    totalCount: number;
     loading: boolean;
     createLoading: boolean;
     deleteLoading: boolean;
@@ -93,6 +107,7 @@ interface EmployeesState {
 
 const initialState: EmployeesState = {
     employees: [],
+    totalCount: 0,
     loading: false,
     createLoading: false,
     deleteLoading: false,
@@ -123,7 +138,14 @@ const employeesSlice = createSlice({
             })
             .addCase(fetchEmployees.fulfilled, (state, action) => {
                 state.loading = false;
-                state.employees = action.payload;
+                // Handle both array (old fallback) and object with employees/totalCount return
+                if (action.payload && 'totalCount' in action.payload) {
+                    state.employees = action.payload.employees;
+                    state.totalCount = action.payload.totalCount;
+                } else {
+                    state.employees = action.payload as unknown as FarmvestEmployee[];
+                    state.totalCount = (action.payload as unknown as FarmvestEmployee[]).length;
+                }
             })
             .addCase(fetchEmployees.rejected, (state, action) => {
                 state.loading = false;

@@ -68,10 +68,17 @@ export const farmvestService = {
             throw error;
         }
     },
-    getEmployees: async (role?: string) => {
+    getEmployees: async (params?: { role?: string; sort_by?: number; page?: number; size?: number }) => {
         try {
-            const query = role && role !== '' ? `?role=${role}` : '';
-            const response = await farmvestApi.get(`/api/investors/get_all_investors${query}`);
+            const { role, sort_by = 1, page = 1, size = 20 } = params || {};
+            let query = `?sort_by=${sort_by}&page=${page}&size=${size}`;
+            if (role) query += `&role=${role}`;
+
+            const url = `/api/employee/get_all_employees${query}`;
+            console.log('[FarmVest] Fetching employees with URL:', url);
+            console.log('[FarmVest] Params:', { role, sort_by, page, size });
+            const response = await farmvestApi.get(url);
+            console.log('[FarmVest] API Response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching farmvest employees:', error);
@@ -98,7 +105,7 @@ export const farmvestService = {
     },
     createEmployee: async (employeeData: any) => {
         try {
-            const response = await farmvestApi.post('/api/admin/create_employee', employeeData);
+            const response = await farmvestApi.post('/api/employee/create_employee', employeeData);
             return response.data;
         } catch (error) {
             console.error('Error creating farmvest employee:', error);
@@ -161,6 +168,15 @@ export const farmvestService = {
             return response.data;
         } catch (error) {
             console.error('Error creating farm:', error);
+            throw error;
+        }
+    },
+    deactivateUser: async (mobile: string) => {
+        try {
+            const response = await farmvestApi.put(`/api/users/deactivate/${mobile}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deactivating user ${mobile}:`, error);
             throw error;
         }
     }
