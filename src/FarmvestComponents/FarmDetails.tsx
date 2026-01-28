@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { farmvestService } from '../services/farmvest_api';
 import './FarmDetails.css';
 import ShedPositionsModal from './ShedPositionsModal';
+import { AddShedModal } from './AddShedModal';
 
 const FarmDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -19,50 +20,46 @@ const FarmDetails: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchSheds = async () => {
-            if (!id) return;
-            try {
-                setLoading(true);
-                // If we didn't get farm details from router state, we might want to fetch farm details too
-                // But for now we focus on sheds
-
-                const data = await farmvestService.getShedList(parseInt(id));
-
-                let shedsList: any[] = [];
-                if (Array.isArray(data)) {
-                    shedsList = data;
-                } else if (data && typeof data === 'object') {
-                    if (Array.isArray(data.data)) {
-                        shedsList = data.data;
-                    } else if (Object.keys(data).length > 0) {
-                        shedsList = Object.values(data);
-                    }
-                }
-
-                setSheds(shedsList);
-            } catch (err: any) {
-                console.error('Failed to load sheds', err);
-                // If 404, it means no sheds found - treat as empty list
-                if (err.response && err.response.status === 404) {
-                    setSheds([]);
-                    setError(null);
-                } else {
-                    setError(err.message || 'Failed to fetch shed details');
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (id) {
-            fetchSheds();
-        }
+        fetchSheds();
     }, [id]);
+
+    const fetchSheds = async () => {
+        if (!id) return;
+        try {
+            setLoading(true);
+            const data = await farmvestService.getShedList(parseInt(id));
+
+            let shedsList: any[] = [];
+            if (Array.isArray(data)) {
+                shedsList = data;
+            } else if (data && typeof data === 'object') {
+                if (Array.isArray(data.data)) {
+                    shedsList = data.data;
+                } else if (Object.keys(data).length > 0) {
+                    shedsList = Object.values(data);
+                }
+            }
+
+            setSheds(shedsList);
+        } catch (err: any) {
+            console.error('Failed to load sheds', err);
+            // If 404, it means no sheds found - treat as empty list
+            if (err.response && err.response.status === 404) {
+                setSheds([]);
+                setError(null);
+            } else {
+                setError(err.message || 'Failed to fetch shed details');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // If farm name wasn't passed, we might update it if the API returned it (not guaranteed by this specific endpoint though)
 
     const [selectedShed, setSelectedShed] = useState<any>(null);
     const [isShedModalOpen, setIsShedModalOpen] = useState(false);
+    const [isAddShedModalOpen, setIsAddShedModalOpen] = useState(false);
 
     const handleShedClick = (shed: any) => {
         setSelectedShed(shed);
@@ -82,18 +79,33 @@ const FarmDetails: React.FC = () => {
                     )}
                 </div>
                 <div className="farm-header-right-actions">
-                    <button className="back-button" onClick={() => navigate(-1)}>
-                        <span>←</span> Back to Farms
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-colors flex items-center gap-2"
+                            onClick={() => {
+                                console.log('Add Shed button clicked');
+                                setIsAddShedModalOpen(true);
+                            }}
+                        >
+                            <span>+</span> Add Shed
+                        </button>
+                        <button className="back-button" onClick={() => navigate(-1)}>
+                            <span>←</span> Back to Farms
+                        </button>
+                    </div>
 
                     <div className="manager-details-section">
                         <div className="manager-entry">
                             <span className="info-label">Manager Name:</span>
-                            {/* <span className="info-value">{initialFarm?.manager_name || 'Manager Name'}</span> */}
+                            <span className="info-value">
+                                {initialFarm?.farm_manager_name || initialFarm?.manager_name || (initialFarm?.farm_manager?.name) || '-'}
+                            </span>
                         </div>
                         <div className="manager-entry">
                             <span className="info-label">Phone No:</span>
-                            {/* <span className="info-value">{initialFarm?.mobile_number || initialFarm?.manager_phone || '+91 9999999999'}</span> */}
+                            <span className="info-value">
+                                {initialFarm?.mobile_number || initialFarm?.manager_mobile || initialFarm?.manager_phone || (initialFarm?.farm_manager?.mobile) || '-'}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -202,6 +214,15 @@ const FarmDetails: React.FC = () => {
                     capacity={300} // Forced to 300 per user request (75 rows * 4 cols)
                 />
             )}
+
+            <AddShedModal
+                isOpen={isAddShedModalOpen}
+                onClose={() => setIsAddShedModalOpen(false)}
+                onSuccess={() => {
+                    fetchSheds();
+                }}
+                farmId={parseInt(id || '0')}
+            />
         </div>
     );
 };
