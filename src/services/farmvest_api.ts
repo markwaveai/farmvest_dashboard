@@ -177,6 +177,9 @@ export const farmvestService = {
             return response.data;
         } catch (error) {
             console.error('Error creating shed:', error);
+            throw error;
+        }
+    },
     deactivateUser: async (mobile: string) => {
         try {
             const response = await farmvestApi.put(`/api/users/deactivate/${mobile}`);
