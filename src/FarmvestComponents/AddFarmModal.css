@@ -30,6 +30,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative; /* Ensure relative positioning context */
 }
 
 .modal-header h2 {
@@ -52,6 +53,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    z-index: 10;
 }
 
 .close-button:hover {

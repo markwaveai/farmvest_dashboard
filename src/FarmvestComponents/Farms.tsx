@@ -14,6 +14,8 @@ import './Farms.css';
 // Memoized table row with defensive checks
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
     if (!farm) return null;
+    // Debug logging to inspect structure
+    console.log('Farm Data Row:', farm);
 
     // Safely calculate serial number
     const pageNum = isNaN(currentPage) ? 1 : currentPage;
@@ -34,6 +36,12 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
                         ? farm.total_buffaloes_count.toLocaleString()
                         : (farm.total_buffaloes_count || '0')}
                 </span>
+            </td>
+            <td className="px-4 py-3 text-gray-600">
+                <div className="flex flex-col">
+                    <span className="font-medium text-gray-900">{farm.farm_manager_name || farm.manager_name || (farm.farm_manager?.name) || '-'}</span>
+                    <span className="text-xs text-gray-500 mt-0.5">{farm.mobile_number || farm.manager_mobile || farm.manager_phone || (farm.farm_manager?.mobile) || '-'}</span>
+                </div>
             </td>
         </tr>
     );
@@ -260,6 +268,9 @@ const Farms: React.FC = () => {
                                 </th>
                                 <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('total_buffaloes_count')}>
                                     <div className="flex items-center gap-2">Live Count <span className="text-blue-500 opacity-60">{getSortIcon('total_buffaloes_count')}</span></div>
+                                </th>
+                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group">
+                                    <div className="flex items-center gap-2">Farm Manager</div>
                                 </th>
                             </tr>
                         </thead>

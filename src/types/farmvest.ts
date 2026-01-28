@@ -29,4 +29,6 @@ export interface FarmvestFarm {
     farm_name: string;
     location: string;
     total_buffaloes_count: number;
+    farm_manager_name?: string;
+    mobile_number?: string;
 }

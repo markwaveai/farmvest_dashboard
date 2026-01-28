@@ -155,12 +155,21 @@ export const farmvestService = {
             throw error;
         }
     },
-    createFarm: async (farmData: { farm_name: string; location: string; is_test: boolean }) => {
+    createFarm: async (farmData: { farm_name: string; location: string }) => {
         try {
-            const response = await farmvestApi.post('/api/farm', farmData);
+            const response = await farmvestApi.post('/api/farm/farm', farmData);
             return response.data;
         } catch (error) {
             console.error('Error creating farm:', error);
+            throw error;
+        }
+    },
+    createShed: async (shedData: { farm_id: number; shed_id: string; shed_name: string; capacity: number; cctv_url: string }) => {
+        try {
+            const response = await farmvestApi.post('/api/shed/create_shed', shedData);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating shed:', error);
             throw error;
         }
     }

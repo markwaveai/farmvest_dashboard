@@ -32,8 +32,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
         try {
             await farmvestService.createFarm({
                 farm_name: farmName,
-                location: location.toUpperCase(),
-                is_test: false
+                location: location.toUpperCase()
             });
 
             setFarmName('');
@@ -52,10 +51,32 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
         <div className="add-farm-modal-overlay" onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
         }}>
-            <div className="add-farm-modal-content">
-                <div className="modal-header">
+            <div className="add-farm-modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header" style={{ position: 'relative' }}>
                     <h2>Add New Farm</h2>
-                    <button className="close-button" onClick={onClose}>&times;</button>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        style={{
+                            position: 'absolute',
+                            right: '20px',
+                            top: '20px',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#000',
+                            padding: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 20
+                        }}
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6L6 18" />
+                            <path d="M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
