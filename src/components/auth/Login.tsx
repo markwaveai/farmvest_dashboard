@@ -9,14 +9,13 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [selectedDashboard, setSelectedDashboard] = useState<'animalkart' | 'farmvest'>('animalkart');
+  /* Removed selectedDashboard state */
   const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'enterMobile' | 'enterOtp'>('enterMobile');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [serverOtp, setServerOtp] = useState<string | null>(null);
   const [showSnackbar, setShowSnackbar] = useState(false);
 
   useEffect(() => {
@@ -44,36 +43,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setInfo(null);
 
     // Farmvest Flow: Skip OTP API call, go directly to OTP entry
-    if (selectedDashboard === 'farmvest') {
-      setStep('enterOtp');
-      setInfo('Please enter the OTP to proceed.');
-      return;
-    }
-
-    // Animalkart Flow: Send OTP via WhatsApp
-    setLoading(true);
-    try {
-      const baseUrl = API_CONFIG.getBaseUrl();
-      const res = await axios.post(`${baseUrl}/otp/send-whatsapp`, {
-        mobile,
-        appName: 'animalkart_dashboard', // Always animalkart_dashboard for this flow
-      });
-
-      if (res.data?.statuscode !== 200) {
-        setError(res.data?.message || 'Failed to send OTP');
-        return;
-      }
-
-      const otpFromServer = res.data?.otp || null;
-      setServerOtp(otpFromServer);
-      setStep('enterOtp');
-      setInfo('OTP sent via WhatsApp.');
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || 'Failed to send OTP';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
+    setStep('enterOtp');
+    setInfo('Please enter the OTP to proceed.');
   };
 
   const verifyOtp = async () => {
@@ -82,49 +53,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return;
     }
 
-    if (selectedDashboard === 'animalkart') {
-      if (!serverOtp) {
-        setError('No OTP found from server. Please request a new OTP.');
-        return;
+    // Farmvest Logic
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await farmvestService.staticLogin(mobile, otp);
+
+      // Expecting { access_token, token_type }
+      if (data && data.access_token) {
+        const role = 'Farmvest admin';
+        const session = {
+          mobile,
+          role,
+          access_token: data.access_token,
+          token_type: data.token_type || 'Bearer'
+        };
+        window.localStorage.setItem('ak_dashboard_session', JSON.stringify(session));
+        handleLoginSuccess(session);
+      } else {
+        setError('Login failed: Invalid response from server');
       }
-
-      if (otp !== serverOtp) {
-        setError('Invalid OTP. Please try again.');
-        return;
-      }
-
-      const role = 'Animalkart admin';
-      const session = { mobile, role };
-      window.localStorage.setItem('ak_dashboard_session', JSON.stringify(session));
-
-      handleLoginSuccess(session);
-    } else {
-      // Farmvest Logic
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await farmvestService.staticLogin(mobile, otp);
-
-        // Expecting { access_token, token_type }
-        if (data && data.access_token) {
-          const role = 'Farmvest admin';
-          const session = {
-            mobile,
-            role,
-            access_token: data.access_token,
-            token_type: data.token_type || 'Bearer'
-          };
-          window.localStorage.setItem('ak_dashboard_session', JSON.stringify(session));
-          handleLoginSuccess(session);
-        } else {
-          setError('Login failed: Invalid response from server');
-        }
-      } catch (e: any) {
-        console.error('Farmvest login error:', e);
-        setError(e.response?.data?.message || 'Login failed. Please check your credentials.');
-      } finally {
-        setLoading(false);
-      }
+    } catch (e: any) {
+      console.error('Farmvest login error:', e);
+      setError(e.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -149,7 +102,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             <div>
               <p className="font-bold text-lg">Success!</p>
-              <p className="text-white/90">Welcome to {selectedDashboard === 'animalkart' ? 'AnimalKart' : 'FarmVest'} dashboard</p>
+              <p className="text-white/90">Welcome to Dashboard</p>
             </div>
           </div>
         </div>
@@ -164,12 +117,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {/* Logo Section */}
           <div className="flex justify-start mb-12">
             <img
-              src="/login-logo.png"
-              alt="AnimalKart Logo"
+              src="/header-logo-new.png"
+              alt="FarmVest Logo"
               className="h-10 object-contain"
-              onError={(e) => {
-                e.currentTarget.src = "/header-logo-new.png"; // Fallback to another logo if this one is white-on-transparent
-              }}
             />
           </div>
 
@@ -179,60 +129,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 Welcome back
               </h1>
               <p className="text-gray-500 text-lg">
-                Choose your dashboard to continue
+                Sign in to continue
               </p>
             </div>
 
-            {/* Dashboard Selection */}
-            {step === 'enterMobile' && (
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <button
-                  onClick={() => setSelectedDashboard('animalkart')}
-                  className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left overflow-hidden group ${selectedDashboard === 'animalkart'
-                    ? 'border-blue-600 bg-blue-50/50 ring-4 ring-blue-50'
-                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                    }`}
-                >
-                  <div className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${selectedDashboard === 'animalkart' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-gray-400 border border-gray-100'
-                    }`}>
-                    <LayoutDashboard className="w-6 h-6" />
-                  </div>
-                  <p className={`font-bold text-lg ${selectedDashboard === 'animalkart' ? 'text-blue-900' : 'text-gray-600'}`}>
-                    Animalkart
-                  </p>
-                  <p className="text-xs text-gray-400 font-medium">Core Management</p>
-
-                  {selectedDashboard === 'animalkart' && (
-                    <div className="absolute top-3 right-3 text-blue-600">
-                      <CheckCircle className="w-5 h-5 fill-blue-600 text-white" />
-                    </div>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setSelectedDashboard('farmvest')}
-                  className={`relative p-5 rounded-2xl border-2 transition-all duration-300 text-left overflow-hidden group ${selectedDashboard === 'farmvest'
-                    ? 'border-indigo-600 bg-indigo-50/50 ring-4 ring-indigo-50'
-                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                    }`}
-                >
-                  <div className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${selectedDashboard === 'farmvest' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white text-gray-400 border border-gray-100'
-                    }`}>
-                    <TreePine className="w-6 h-6" />
-                  </div>
-                  <p className={`font-bold text-lg ${selectedDashboard === 'farmvest' ? 'text-indigo-900' : 'text-gray-600'}`}>
-                    Farmvest
-                  </p>
-                  <p className="text-xs text-gray-400 font-medium">Investment Portal</p>
-
-                  {selectedDashboard === 'farmvest' && (
-                    <div className="absolute top-3 right-3 text-indigo-600">
-                      <CheckCircle className="w-5 h-5 fill-indigo-600 text-white" />
-                    </div>
-                  )}
-                </button>
-              </div>
-            )}
+            {/* Dashboard Selection Removed */}
 
             {/* Error/Info Messages */}
             {error && (
@@ -294,10 +195,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <button
                     onClick={sendOtp}
                     disabled={loading}
-                    className={`w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white transition-all duration-200 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider ${selectedDashboard === 'animalkart'
-                      ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
-                      : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20'
-                      }`}
+                    className={`w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white transition-all duration-200 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20`}
                   >
                     {loading ? (
                       <div className="flex items-center gap-2">
@@ -353,11 +251,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="absolute inset-x-0 bottom-0 p-12 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
           <div className="max-w-md">
             <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
-              {selectedDashboard === 'animalkart'
-                ? 'Manage your cattle inventory with ease.'
-                : 'Optimize your farm investments efficiently.'}
+              Optimize your farm investments efficiently.
             </h2>
-            <div className={`w-20 h-1.5 rounded-full ${selectedDashboard === 'animalkart' ? 'bg-blue-500' : 'bg-indigo-500'}`}></div>
+            <div className={`w-20 h-1.5 rounded-full bg-indigo-500`}></div>
           </div>
         </div>
       </div>

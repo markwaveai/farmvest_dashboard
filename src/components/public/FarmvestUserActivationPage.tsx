@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './FarmvestUserActivationPage.css';
 import { ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { farmvestService } from '../../services/farmvest_api';
 
 /* -------------------- Snackbar -------------------- */
 const Snackbar = ({ message, type }: { message: string; type: 'success' | 'error' }) => {
@@ -268,17 +269,34 @@ const FarmvestUserActivationPage = () => {
 
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            if (mode === 'deactivate') {
+                await farmvestService.deactivateUser(formData.mobile);
+                setLoading(false);
+                setModalConfig({
+                    isOpen: true,
+                    type: 'success',
+                    message: 'Account deactivated successfully',
+                });
+            } else {
+                // Keep mock for activation for now unless specified otherwise
+                setTimeout(() => {
+                    setLoading(false);
+                    setModalConfig({
+                        isOpen: true,
+                        type: 'success',
+                        message: 'Account activated successfully (Mock)',
+                    });
+                }, 1500);
+            }
+        } catch (error: any) {
             setLoading(false);
             setModalConfig({
                 isOpen: true,
-                type: 'success',
-                message: mode === 'deactivate'
-                    ? 'Account deactivated successfully (Mock)'
-                    : 'Account activated successfully (Mock)',
+                type: 'error',
+                message: error.response?.data?.message || 'Failed to deactivate account. Please try again.',
             });
-        }, 1500);
+        }
     };
 
     const handleCloseModal = () => {
@@ -308,7 +326,7 @@ const FarmvestUserActivationPage = () => {
                 {/* Left */}
                 <div className="farmvest-hero-content">
                     <div className="farmvest-image-container" style={{ marginTop: 0 }}>
-                        <img src="/buffalo-family.jpg" alt="Farmvest Family" className="farmvest-hero-image" />
+                        <img src="/buffalo-family.png" alt="Farmvest Family" className="farmvest-hero-image" />
                     </div>
                 </div>
 

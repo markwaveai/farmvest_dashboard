@@ -8,6 +8,11 @@ export interface FarmvestEmployee {
     total_investment: number;
     address: string | null;
     active_status: boolean;
+    shed_id?: number | string;
+    shed?: {
+        id: number;
+        shed_id: string;
+    };
 }
 
 export interface FarmvestPagination {

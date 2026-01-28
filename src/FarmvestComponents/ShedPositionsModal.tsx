@@ -142,20 +142,9 @@ const ShedPositionsModal: React.FC<ShedPositionsModalProps> = ({ isOpen, onClose
                                 <div className="animal-icon">
                                     {/* Custom Bull Head Icon matching the reference */}
                                     {/* Custom Bull Head Icon matching the reference */}
-                                    <div
-                                        className="w-8 h-8"
-                                        style={{
-                                            maskImage: `url(${require('../components/emi-calculator/assets/buffalo_icon.png')})`,
-                                            WebkitMaskImage: `url(${require('../components/emi-calculator/assets/buffalo_icon.png')})`,
-                                            maskSize: 'contain',
-                                            WebkitMaskSize: 'contain',
-                                            maskRepeat: 'no-repeat',
-                                            WebkitMaskRepeat: 'no-repeat',
-                                            maskPosition: 'center',
-                                            WebkitMaskPosition: 'center',
-                                            backgroundColor: 'currentColor'
-                                        }}
-                                    />
+                                    <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full text-xs font-bold text-gray-500">
+                                        B
+                                    </div>
                                 </div>
                                 <div className="position-name">{pos.position_name}</div>
                             </div>
