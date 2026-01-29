@@ -1,9 +1,23 @@
 .farmvest-activation-container {
     min-height: 100vh;
-    font-family: 'Inter', sans-serif;
-    color: #000000;
-    background-color: #f3f6fc;
-    /* Default app background */
+    font-family: 'Outfit', 'Inter', sans-serif;
+    color: #1e293b;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Background blob for visual interest */
+.farmvest-activation-container::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    right: -5%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(22, 163, 74, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    z-index: 0;
 }
 
 /* Navbar */
@@ -11,35 +25,42 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 5%;
-    background: #14532d;
-    /* Darker green for Farmvest */
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px 5%;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .farmvest-brand {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: white;
 }
 
-.farmvest-brand img {
-    height: 32px;
-    filter: brightness(0) invert(1);
+.farmvest-brand span {
+    background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-size: 1.75rem !important;
 }
 
 /* Promo banner */
 .farmvest-promo-banner {
-    background: #dcfce7;
-    color: #14532d;
+    background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
+    color: white;
     text-align: center;
-    padding: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
 }
 
 /* Hero Section */
@@ -47,11 +68,13 @@
     display: flex;
     flex-wrap: wrap;
     max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 40px;
-    gap: 40px;
-    align-items: stretch;
+    margin: 40px auto;
+    padding: 0 40px;
+    gap: 60px;
+    align-items: center;
     justify-content: space-between;
+    position: relative;
+    z-index: 1;
 }
 
 .farmvest-hero-content {
@@ -59,40 +82,47 @@
     min-width: 400px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    height: 600px;
+    /* Fixed height to match form approx */
 }
 
+/* Image Container - Glassmorphism Card Style */
 .farmvest-image-container {
-    margin-top: 0;
     position: relative;
     width: 100%;
     height: 100%;
     display: flex;
-    overflow: hidden;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 32px;
+    box-shadow:
+        0 20px 50px -12px rgba(0, 0, 0, 0.05),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    padding: 40px;
+    transition: transform 0.4s ease;
+}
+
+.farmvest-image-container:hover {
+    transform: translateY(-5px);
 }
 
 .farmvest-hero-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
-    animation: slowZoom 20s infinite alternate ease-in-out;
-}
-
-@keyframes slowZoom {
-    0% {
-        transform: scale(1);
-    }
-
-    100% {
-        transform: scale(1.1);
-    }
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.1));
+    /* Removed zoom animation for a cleaner look */
 }
 
 /* Form Section */
 .farmvest-form-container {
-    flex: 0 0 420px;
+    flex: 0 0 450px;
+    /* Widened slightly */
     max-width: 100%;
     display: flex;
     flex-direction: column;
@@ -100,103 +130,140 @@
 
 .farmvest-form-card {
     background: white;
-    padding: 35px;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-    height: 100%;
+    padding: 40px;
+    border-radius: 32px;
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(0, 0, 0, 0.02);
+    height: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Stylish top accent for form */
+.farmvest-form-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #16a34a, #22c55e);
 }
 
 .farmvest-form-header {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 30px;
 }
 
 .farmvest-form-title {
-    color: #000000;
-    font-size: 1.3rem;
+    color: #0f172a;
+    font-size: 1.75rem;
     font-weight: 800;
-    margin-bottom: 10px;
-    line-height: 1.3;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
 }
 
 .farmvest-form-subtitle {
-    margin-bottom: 15px;
-    color: #000000;
+    margin-bottom: 10px;
+    color: #64748b;
     font-size: 0.95rem;
+    line-height: 1.5;
 }
 
 /* Inputs */
 .farmvest-input {
     width: 100%;
-    padding: 14px 20px;
-    margin-bottom: 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 50px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    border: 2px solid transparent;
+    border-radius: 16px;
     font-size: 1rem;
+    font-weight: 500;
     outline: none;
-    transition: all 0.2s;
-    background: #f8fafc;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #f1f5f9;
+    color: #1e293b;
 }
 
 .farmvest-input:focus {
-    border-color: #16a34a;
     background: white;
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+    border-color: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.1);
+}
+
+.farmvest-input::placeholder {
+    color: #94a3b8;
 }
 
 /* Main button */
 .farmvest-btn {
-    background-color: #16a34a !important;
-    color: white !important;
-    transition: all 0.2s ease-in-out;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em;
+    font-size: 0.95rem;
+    padding: 16px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 20px -5px rgba(22, 163, 74, 0.3);
 }
 
 .farmvest-btn:hover {
-    background-color: #15803d !important;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(22, 163, 74, 0.4);
 }
 
 /* Mode Switch */
 .farmvest-mode-switch {
     display: flex;
-    gap: 10px;
-    margin-bottom: 18px;
+    gap: 6px;
+    margin-bottom: 30px;
     padding: 6px;
-    border-radius: 16px;
-    background: #f1f5f9;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
 }
 
 .farmvest-mode-btn {
     flex: 1;
-    padding: 12px 14px;
+    padding: 12px;
     border-radius: 14px;
-    font-weight: 800;
-    font-size: 14px;
+    font-weight: 700;
+    font-size: 0.9rem;
     border: none;
     cursor: pointer;
     background: transparent;
-    color: #334155;
-    transition: all 0.25s ease;
+    color: #64748b;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .farmvest-mode-btn:hover {
-    background: rgba(0, 0, 0, 0.04);
+    color: #1e293b;
+    background: rgba(0, 0, 0, 0.03);
 }
 
 .farmvest-mode-btn.active {
-    background: #111827;
-    color: white;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
+    background: white;
+    color: #16a34a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .farmvest-mode-btn.danger.active {
-    background: #ef4444;
-    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+}
+
+/* Link Styling */
+.farmvest-form-card a {
+    color: #64748b !important;
+    font-size: 0.8rem;
+    text-decoration: none !important;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.farmvest-form-card a:hover {
+    color: #16a34a !important;
 }
 
 /* Responsive */
@@ -204,65 +271,40 @@
     .farmvest-hero {
         flex-direction: column;
         padding: 40px 20px;
-        gap: 30px;
-        align-items: center;
+        gap: 40px;
     }
 
     .farmvest-hero-content {
         width: 100%;
         min-width: auto;
-    }
-
-    .farmvest-image-container {
-        height: 350px;
-        width: 100%;
+        height: 400px;
     }
 
     .farmvest-navbar {
-        flex-direction: row;
-        padding: 12px 20px;
+        padding: 15px 20px;
     }
 
     .farmvest-form-container {
-        flex: auto;
         width: 100%;
         max-width: 500px;
-    }
-
-    .farmvest-form-card {
-        padding: 24px;
-        height: auto;
     }
 }
 
 @media (max-width: 640px) {
-    .farmvest-navbar {
-        padding: 12px 16px;
-    }
-
-    .farmvest-brand {
-        font-size: 1.2rem;
-    }
-
-    .farmvest-image-container {
+    .farmvest-hero-content {
         height: 250px;
     }
 
-    .farmvest-hero {
-        padding: 24px 16px;
-    }
-
-    .farmvest-form-container {
-        max-width: 100%;
+    .farmvest-image-container {
+        padding: 20px;
     }
 
     .farmvest-form-card {
-        padding: 18px;
-        border-radius: 18px;
+        padding: 24px;
+        border-radius: 24px;
     }
 
-    .farmvest-mode-btn {
-        font-size: 13px;
-        padding: 10px 10px;
+    .farmvest-brand span {
+        font-size: 1.4rem !important;
     }
 }

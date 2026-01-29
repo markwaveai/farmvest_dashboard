@@ -144,7 +144,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
             <button className="sidebar-close-btn-mobile" onClick={(e) => { e.stopPropagation(); dispatch(setSidebarOpen(false)); }}>
               <X size={20} />
             </button>
-            <img src="/header-logo.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '28px' }} />
+            <img src="/header-logo.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
           </div>
           <ul className="sidebar-menu" style={{ marginTop: '10px' }}>
             <li>

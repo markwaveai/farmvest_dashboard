@@ -109,27 +109,29 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       )}
 
       {/* Left side: Form Content */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-8 lg:p-20 relative bg-white">
-        {/* Subtle background element */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 lg:p-20 relative bg-white overflow-hidden">
+        {/* Subtle background element - Modern accent */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600"></div>
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse"></div>
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md relative z-10">
           {/* Logo Section */}
-          <div className="flex justify-start mb-12">
+          <div className="flex justify-center mb-5 transform transition-transform duration-500 hover:scale-105">
             <img
               src="/header-logo-new.png"
               alt="FarmVest Logo"
-              className="h-10 object-contain"
+              className="h-24 object-contain"
             />
           </div>
 
           <div className="space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            <div className="space-y-2 text-center">
+              <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight">
                 Welcome back
               </h1>
-              <p className="text-gray-500 text-lg">
-                Sign in to continue
+              <p className="text-gray-500 text-lg font-medium">
+                Sign in to manage your farm assets
               </p>
             </div>
 
@@ -195,7 +197,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <button
                     onClick={sendOtp}
                     disabled={loading}
-                    className={`w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white transition-all duration-200 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20`}
+                    className={`w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white transition-all duration-300 shadow-[0_10px_30px_rgba(79,70,229,0.3)] hover:shadow-[0_20px_40px_rgba(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-blue-600`}
                   >
                     {loading ? (
                       <div className="flex items-center gap-2">
@@ -209,7 +211,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <button
                       onClick={verifyOtp}
                       disabled={loading}
-                      className="w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white bg-green-600 hover:bg-green-700 active:scale-[0.98] transition-all duration-200 shadow-xl shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                      className="w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-emerald-600 to-green-500 hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest"
                     >
                       {loading ? 'Verifying...' : 'Enter OTP'}
                     </button>
@@ -231,10 +233,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             {/* Footer */}
-            <div className="pt-12 text-center">
-              <p className="text-gray-400 text-xs font-medium tracking-widest uppercase">
-                @Powered by Markwave
-              </p>
+            <div className="pt-16 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-50 border border-gray-100 mb-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <p className="text-gray-400 text-[10px] font-bold tracking-[0.2em] uppercase">
+                  Powered by Markwave AI
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -243,7 +248,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       {/* Right side: Visuals */}
       <div className="hidden md:block md:w-1/2 relative overflow-hidden bg-gray-100">
         <img
-          src="/dashboard_wallpaper.jpeg"
+          src="/dashboard_wallpaper.png"
           alt="AnimalKart Background"
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-10000 hover:scale-110"
         />
