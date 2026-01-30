@@ -1,22 +1,25 @@
-  /* Soft UI Theme Variables */
+  /* Premium UI Theme Variables */
   :root {
-    --primary-color: #35d1f5;
-    --secondary-color: #8392ab;
-    --bg-color: #f3f4f6;
-    /* Light gray background for content */
-    --sidebar-bg: #1e293b;
-    /* Dark Slate Blue */
-    --header-bg: #1e293b;
-    /* Match Sidebar */
+    --primary-gradient: linear-gradient(135deg, #35d1f5 0%, #2563eb 100%);
+    --secondary-gradient: linear-gradient(135deg, #8392ab 0%, #475569 100%);
+    --accent-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%);
+    --success-gradient: linear-gradient(135deg, #17ad37 0%, #98ec2d 100%);
+
+    --primary-color: #2563eb;
+    --secondary-color: #64748b;
+    --bg-color: #f8fafc;
+    --sidebar-bg: #0f172a;
+    /* Deeper Dark Blue */
+    --header-bg: rgba(15, 23, 42, 0.95);
+    /* Semi-transparent for glass effect */
     --card-bg: #ffffff;
-    --text-main: #344767;
-    --text-muted: #67748e;
-    --text-light: #ffffff;
-    --soft-shadow: 0 20px 27px 0 rgba(0, 0, 0, 0.05);
-    --hover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --active-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.09), 0 2px 3px -1px rgba(0, 0, 0, 0.07);
-    --border-radius-lg: 1rem;
-    --border-radius-md: 0.75rem;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --text-light: #f8fafc;
+    --soft-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --border-radius-lg: 1.25rem;
+    --border-radius-md: 0.875rem;
   }
 
   /* Layout Containers */
@@ -193,17 +196,18 @@
   }
 
   .nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.12);
     color: #ffffff;
-    transform: translateX(2px);
+    padding-left: 18px;
   }
 
   .nav-item.active,
   .nav-item.active-main {
-    background-color: #475569;
+    background: var(--primary-gradient);
     color: #ffffff !important;
     font-weight: 700;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+    transform: scale(1.02);
   }
 
   .nav-text {
@@ -315,16 +319,17 @@
   /* Header Styles in Layout Body */
   .app-header {
     background: var(--header-bg);
-    height: 70px;
-    padding: 0 24px;
+    backdrop-filter: blur(10px);
+    height: 80px;
+    padding: 0 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.1);
     z-index: 1000;
-    /* Ensure high enough */
     color: white;
-    position: relative;
+    position: sticky;
+    top: 0;
   }
 
   .hide-mobile {
@@ -332,7 +337,7 @@
   }
 
   .header-logo {
-    height: 30px;
+    height: 55px;
     width: auto;
     transition: all 0.3s ease;
   }
@@ -402,12 +407,13 @@
   }
 
   .status-pill {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 6px 16px;
-    border-radius: 20px;
+    background: rgba(34, 197, 94, 0.15);
+    padding: 8px 18px;
+    border-radius: 50px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
   }
 
   .status-dot-green {
@@ -445,10 +451,12 @@
   }
 
   .admin-avatar-small {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: var(--primary-gradient);
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
   }
 
   /* Main Content Area */
@@ -471,19 +479,21 @@
     flex: 1;
     min-width: 200px;
     background: white;
-    padding: 7px;
-    border-radius: 12px;
+    padding: 12px;
+    border-radius: var(--border-radius-lg);
     display: flex;
     align-items: center;
     gap: 16px;
     border: 1px solid #e2e8f0;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--soft-shadow);
   }
 
   .stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    transform: translateY(-5px);
+    box-shadow: var(--hover-shadow);
+    border-color: #e2e8f0;
   }
 
   .card-icon-wrapper {
@@ -786,11 +796,13 @@
   }
 
   .action-btn.approve {
-    background-image: linear-gradient(310deg, #17ad37 0%, #98ec2d 100%);
+    background: var(--success-gradient);
+    box-shadow: 0 4px 12px rgba(23, 173, 55, 0.2);
   }
 
   .action-btn.reject {
-    background-image: linear-gradient(310deg, #ea0606 0%, #ff667c 100%);
+    background: var(--accent-gradient);
+    box-shadow: 0 4px 12px rgba(234, 6, 6, 0.2);
   }
 
   .action-btn:hover {
@@ -1017,7 +1029,7 @@
     }
 
     .header-logo-sidebar {
-      height: 28px;
+      height: 35px;
       /* Increased for better scale */
       width: auto;
       filter: brightness(0) invert(1);
