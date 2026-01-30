@@ -24,8 +24,10 @@ const storage = getStorage(app);
 export const uploadToFirebase = async (file: File): Promise<string> => {
     try {
         const timestamp = Date.now();
+        const now = new Date();
+        const dateFolder = now.toISOString().split('T')[0];
         const uniqueName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-        const storagePath = `farmvest/buffaloesonboarding/${uniqueName}`;
+        const storagePath = `farmvest/buffaloesonboarding/${dateFolder}/${uniqueName}`;
 
         const storageRef = ref(storage, storagePath);
 
