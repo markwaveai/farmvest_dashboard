@@ -1,0 +1,183 @@
+.common-shed-grid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* --- Row Layout (Horizontal) --- */
+.common-shed-grid.layout-row {
+    gap: 0;
+    background-color: #FFFFFF;
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #E5E7EB;
+}
+
+.common-shed-group.layout-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0;
+}
+
+.common-shed-group.layout-row+.common-shed-group.layout-row {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    /* Subtle separator */
+}
+
+/* Special Sections */
+.common-shed-group.special-section {
+    padding: 12px 20px;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    border: 1px solid #F3F4F6;
+    margin: 8px 0;
+}
+
+.common-shed-group.special-section .group-header {
+    margin: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.common-shed-group.section-drainage {
+    background-color: transparent;
+    color: #4B5563;
+    /* Gray-600 */
+}
+
+.common-shed-group.section-feed-way {
+    background-color: transparent;
+    color: #4B5563;
+    /* Gray-600 */
+}
+
+.group-header.layout-row {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1F2937;
+    margin-left: 4px;
+}
+
+.grid-slots-container.layout-row {
+    display: flex;
+    flex-wrap: nowrap;
+    /* Prevent wrapping */
+    gap: 12px;
+    overflow-x: auto;
+    /* Enable horizontal scrolling */
+    padding-bottom: 8px;
+    /* Space for scrollbar */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+}
+
+/* Scrollbar styling for Webkit */
+.grid-slots-container.layout-row::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* --- Column Layout (Vertical) --- */
+.common-shed-grid.layout-column {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* Default to 4 columns */
+    gap: 16px;
+    padding-bottom: 40px;
+}
+
+.common-shed-group.layout-column {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    backdrop-filter: blur(8px);
+}
+
+.group-header.layout-column {
+    background: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #15803D;
+    align-self: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 8px;
+}
+
+.grid-slots-container.layout-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- Common Slot Styles --- */
+.common-slot-card {
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #F3F4F6;
+    cursor: pointer;
+    transition: all 0.2s;
+    /* Default size, can be overridden */
+    min-width: 60px;
+    min-height: 60px;
+}
+
+.common-slot-card:hover {
+    border-color: #22C55E;
+}
+
+.common-slot-card.occupied {
+    background: #DCFCE7;
+    color: #166534;
+    border-color: #86EFAC;
+}
+
+.common-slot-card.available {
+    /* Default is white/gray */
+    color: #D1D5DB;
+}
+
+/* Helper for Row Layout inner content from ShedPositionsModal */
+.slot-content-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.slot-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+}
+
+.slot-icon.faded {
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
+
+.slot-label {
+    font-size: 12px;
+    font-weight: 500;
+}

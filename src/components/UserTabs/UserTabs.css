@@ -41,7 +41,7 @@
 
   /* Sidebar - Dark Theme Style */
   .sidebar {
-    width: 200px;
+    width: 230px;
     background-color: var(--sidebar-bg);
     display: flex;
     flex-direction: column;

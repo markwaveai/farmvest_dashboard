@@ -40,6 +40,10 @@ const FarmDetails: React.FC = () => {
                 }
             }
 
+            if (shedsList.length > 0) {
+                console.log('[FarmDetails] Shed data structure:', shedsList[0]);
+                console.log('[FarmDetails] All sheds:', shedsList);
+            }
             setSheds(shedsList);
         } catch (err: any) {
             console.error('Failed to load sheds', err);
@@ -163,11 +167,15 @@ const FarmDetails: React.FC = () => {
                                 <div className="shed-supervisor-compact">
                                     <div className="supervisor-entry-compact">
                                         <span className="card-info-label-sm">Supervisor Name:</span>
-                                        {/* <span className="card-info-value-sm">{shed.supervisor_name || 'Supervisor Name'}</span> */}
+                                        <span className="card-info-value-sm">
+                                            {shed.supervisor_details?.name || shed.supervisor_name || '-'}
+                                        </span>
                                     </div>
                                     <div className="supervisor-entry-compact">
                                         <span className="card-info-label-sm">Phone No:</span>
-                                        {/* <span className="card-info-value-sm">{shed.supervisor_phone || shed.mobile_number || '+91 9999999999'}</span> */}
+                                        <span className="card-info-value-sm">
+                                            {shed.supervisor_details?.mobile || shed.supervisor_mobile || shed.mobile_number || '-'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

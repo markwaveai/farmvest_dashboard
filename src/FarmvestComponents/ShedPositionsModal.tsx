@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { farmvestService } from '../services/farmvest_api';
 import './ShedPositionsModal.css';
+import CommonShedGrid from '../components/common/ShedGrid/CommonShedGrid';
 
 interface ShedPositionsModalProps {
     isOpen: boolean;
@@ -111,49 +112,21 @@ const ShedPositionsModal: React.FC<ShedPositionsModalProps> = ({ isOpen, onClose
 
     if (!isOpen) return null;
 
-    // Group positions by Letter (Row)
-    const groupedPositions: { [key: string]: Position[] } = {
-        'A': [], 'B': [], 'C': [], 'D': []
-    };
+    // Transform local positions to CommonShedGrid format
+    const commonPositions = positions.map(p => ({
+        label: p.position_name,
+        status: p.status,
+        meta: { animal_id: p.animal_id }
+    }));
 
-    positions.forEach(pos => {
-        const letter = pos.position_name.charAt(0).toUpperCase();
-        if (groupedPositions[letter]) {
-            groupedPositions[letter].push(pos);
-        }
-    });
-
-    // Helper to render a group
-    const renderGroup = (letter: string) => {
-        const group = groupedPositions[letter];
-        if (!group || group.length === 0) return null;
-
-        return (
-            <div key={letter} className="position-row-section">
-                <h3 className="row-label">Row {letter}</h3>
-                <div className="positions-grid-row">
-                    {group.map((pos) => {
-                        const isOccupied = pos.status.toLowerCase() !== 'available';
-                        return (
-                            <div
-                                key={pos.position_name}
-                                className={`position-card ${isOccupied ? 'occupied' : 'available'}`}
-                            >
-                                <div className="animal-icon">
-                                    {/* Custom Bull Head Icon matching the reference */}
-                                    {/* Custom Bull Head Icon matching the reference */}
-                                    <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full text-xs font-bold text-gray-500">
-                                        B
-                                    </div>
-                                </div>
-                                <div className="position-name">{pos.position_name}</div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
+    // Groups for Row layout are A, B, C, D... but wait.
+    // The previous logic rendered grouped by LETTER: Row A, Row B...
+    // My previous manual rendering grouping was:
+    // positions.forEach(pos => groupedPositions[letter].push(pos))
+    // So 'A', 'B', 'C', 'D' are the groups.
+    // Let's dynamically maintain that or just use static A-D if that's the fixed design?
+    // The grid generation created standard A,B,C,D layout.
+    const rowGroups = ['A', 'B', 'C', 'D'];
 
     return (
         <div className="shed-modal-overlay" onClick={onClose}>
@@ -179,10 +152,24 @@ const ShedPositionsModal: React.FC<ShedPositionsModalProps> = ({ isOpen, onClose
                         </div>
                     ) : (
                         <div className="positions-vertical-container">
-                            {renderGroup('A')}
-                            {renderGroup('B')}
-                            {renderGroup('C')}
-                            {renderGroup('D')}
+                            <CommonShedGrid
+                                positions={commonPositions}
+                                layout="row"
+                                groups={rowGroups}
+                                renderSlot={(pos) => {
+                                    const isOccupied = pos.status.toLowerCase() !== 'available';
+                                    return (
+                                        <div className="slot-content-row">
+                                            <img
+                                                src="/buffalo_green_icon.png"
+                                                alt="Buffalo"
+                                                className={`slot-icon ${isOccupied ? 'faded' : ''}`}
+                                            />
+                                            <span className="slot-label">{pos.label}</span>
+                                        </div>
+                                    );
+                                }}
+                            />
                         </div>
                     )}
                 </div>

@@ -1,0 +1,286 @@
+.unallocated-animals-container {
+    padding: 24px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+}
+
+.unallocated-animals-container::-webkit-scrollbar {
+    display: none;
+}
+
+.ua-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.ua-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1F2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ua-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.ua-select-wrapper {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    min-width: 200px;
+}
+
+.ua-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    appearance: none;
+    font-size: 14px;
+    color: #374151;
+    background: transparent;
+    cursor: pointer;
+}
+
+.ua-select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.video-btn {
+    background: #15803D;
+    /* Green-700 */
+    color: white;
+    border: none;
+    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(21, 128, 61, 0.2);
+}
+
+/* Stats Card */
+.ua-stats-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.ua-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    border-right: 1px solid #F3F4F6;
+}
+
+.ua-stat-item:last-child {
+    border-right: none;
+}
+
+.ua-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ua-stat-label {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 4px;
+}
+
+/* Animal Selection List */
+.ua-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6B7280;
+    margin-bottom: 12px;
+}
+
+.ua-animals-list {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.ua-animals-list::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.ua-animal-avatar-card {
+    min-width: 100px;
+    background: white;
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ua-animal-avatar-card.selected {
+    border-color: #22C55E;
+    background: #F0FDF4;
+}
+
+.ua-animal-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 8px;
+    border: 2px solid #E5E7EB;
+}
+
+.ua-animal-id {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1F2937;
+}
+
+.ua-animal-role {
+    font-size: 11px;
+    color: #9CA3AF;
+}
+
+.ua-animal-time {
+    font-size: 0.65rem;
+    color: #6B7280;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+/* Shed Grid */
+.ua-shed-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 Columns for R1-R4 */
+    gap: 16px;
+    padding-bottom: 40px;
+}
+
+.ua-shed-column {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    backdrop-filter: blur(8px);
+}
+
+.ua-row-header {
+    background: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #15803D;
+    align-self: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 8px;
+}
+
+.common-slot-card {
+    background: white;
+    border-radius: 12px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #D1D5DB;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #F3F4F6;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.common-slot-card:hover {
+    border-color: #22C55E;
+    color: #22C55E;
+}
+
+.slot-inner-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 100%;
+    width: 100%;
+}
+
+.slot-animal-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.common-slot-card .slot-label {
+    font-size: 10px;
+    color: #9CA3AF;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.common-slot-card.occupied {
+    background: #DCFCE7;
+    color: #166534;
+    border-color: #86EFAC;
+}
+
+.slot-time {
+    font-size: 8px;
+    color: #4B5563;
+    margin-top: 1px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}

@@ -1,6 +1,6 @@
 export const API_CONFIG = {
   getBaseUrl: () => {
-   const productionUrl = 'https://animalkart-stagging-services-jn6cma3vvq-el.a.run.app';
+    const productionUrl = 'https://animalkart-stagging-jn6cma3vvq-el.a.run.app';
 
     // Only use CORS proxy in local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -34,4 +34,5 @@ export const API_ENDPOINTS = {
   deactivateConfirm: () => `${API_CONFIG.getBaseUrl()}/users/deactivate/confirm`,
   requestReactivationOtp: () => `${API_CONFIG.getBaseUrl()}/users/reactivate/request-otp`,
   confirmReactivation: () => `${API_CONFIG.getBaseUrl()}/users/reactivate/confirm`,
+  markInTransit: () => `${API_CONFIG.getBaseUrl()}/order-tracking/intransit`,
 };
