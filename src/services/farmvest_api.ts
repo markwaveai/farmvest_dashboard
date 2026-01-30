@@ -71,11 +71,12 @@ export const farmvestService = {
             throw error;
         }
     },
-    getEmployees: async (params?: { role?: string; sort_by?: number; page?: number; size?: number }) => {
+    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number }) => {
         try {
-            const { role, sort_by = 1, page = 1, size = 20 } = params || {};
+            const { role, active_status, sort_by = 1, page = 1, size = 20 } = params || {};
             let query = `?sort_by=${sort_by}&page=${page}&size=${size}`;
             if (role) query += `&role=${role}`;
+            if (active_status !== undefined && active_status !== null && active_status.toString() !== '') query += `&is_active=${active_status}`;
 
             const url = `/api/employee/get_all_employees${query}`;
             console.log('[FarmVest] Fetching employees with URL:', url);
@@ -85,6 +86,19 @@ export const farmvestService = {
             return response.data;
         } catch (error) {
             console.error('Error fetching farmvest employees:', error);
+            throw error;
+        }
+    },
+    getAllInvestors: async (params?: { page?: number; size?: number }) => {
+        try {
+            const { page = 1, size = 20 } = params || {};
+            const url = `/api/investors/get_all_investors?page=${page}&size=${size}`;
+            console.log('[FarmVest] Fetching investors with URL:', url);
+            const response = await farmvestApi.get(url);
+            console.log('[FarmVest] Investors API Response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching farmvest investors:', error);
             throw error;
         }
     },
@@ -302,6 +316,25 @@ export const farmvestService = {
         } catch (error) {
             console.error(`Error searching animal ${rfid}:`, error);
             throw error;
+        }
+    },
+    getAnimalsByInvestor: async (investorId: number) => {
+        try {
+            const response = await farmvestApi.get(`/api/investors/animals?investor_id=${investorId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching animals for investor ${investorId}:`, error);
+            throw error;
+        }
+    },
+    getCalves: async (rfid: string) => {
+        try {
+            const response = await farmvestApi.get(`/api/animal/get_calves?rfid=${rfid}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching calves for animal ${rfid}:`, error);
+            // Return empty array on error so we don't break the whole page
+            return [];
         }
     }
 };

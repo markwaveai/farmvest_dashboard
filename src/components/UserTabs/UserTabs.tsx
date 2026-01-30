@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './UserTabs.css';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
-import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid } from 'lucide-react';
+import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, TrendingUp } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -63,6 +63,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   const currentPath = location.pathname;
   let activeTab = 'farmvest-employees';
   if (currentPath.includes('/farmvest/employees')) activeTab = 'farmvest-employees';
+  else if (currentPath.includes('/farmvest/investors')) activeTab = 'farmvest-investors';
   else if (currentPath.includes('/farmvest/farms')) activeTab = 'farmvest-farms';
   else if (currentPath.includes('/farmvest/user-activation')) activeTab = 'farmvest-activation';
   else if (currentPath.includes('/farmvest/animal-onboarding')) activeTab = 'animal-onboarding';
@@ -140,6 +141,8 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
         </header>
       )}
 
+
+
       <div className="layout-body">
         <nav className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`} onClick={() => dispatch(toggleSidebar())}>
           <div className="sidebar-header">
@@ -154,6 +157,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <Users size={18} />
                   <span className="nav-text">Employees</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-investors' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/investors'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <TrendingUp size={18} />
+                  <span className="nav-text">Investors</span>
                 </div>
               </button>
             </li>
