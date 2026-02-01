@@ -137,7 +137,7 @@ const SupportTicketsTab: React.FC = () => {
                                         key={tab}
                                         onClick={() => setFilter(tab)}
                                         className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filter === tab
-                                            ? 'bg-white text-[#1E293B] shadow-sm'
+                                            ? 'bg-[#f59e0b] text-white shadow-md'
                                             : 'text-[#64748B] hover:text-[#1E293B]'
                                             }`}
                                     >

@@ -20,26 +20,49 @@ import {
 interface AnimalDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    rfid: string;
+    rfid?: string;
+    parkingId?: string;
 }
 
-const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose, rfid }) => {
+const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose, rfid, parkingId }) => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (isOpen && rfid) {
-            fetchAnimalDetails();
+        if (isOpen) {
+            // Priority to Parking ID as it's the new flow
+            if (parkingId) {
+                fetchByParkingId(parkingId);
+            } else if (rfid) {
+                fetchAnimalDetails(rfid);
+            }
         }
-    }, [isOpen, rfid]);
+    }, [isOpen, rfid, parkingId]);
 
-    const fetchAnimalDetails = async () => {
+    const fetchByParkingId = async (pId: string) => {
         try {
             setLoading(true);
             setError(null);
-            console.log(`[AnimalDetailsModal] Fetching details for RFID: ${rfid}`);
-            const result = await farmvestService.searchAnimal(rfid);
+            console.log(`[AnimalDetailsModal] Fetching details for ParkingID: ${pId}`);
+            // Call new API
+            const result = await farmvestService.getAnimalPositionDetails(pId);
+            console.log('[AnimalDetailsModal] API Result:', result);
+            setData(result?.data || result); // Handle wrapped response
+        } catch (err: any) {
+            console.error('Failed to load details by parking ID', err);
+            setError('Failed to load slot details. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const fetchAnimalDetails = async (id: string) => {
+        try {
+            setLoading(true);
+            setError(null);
+            console.log(`[AnimalDetailsModal] Fetching details for RFID: ${id}`);
+            const result = await farmvestService.searchAnimal(id);
             console.log('[AnimalDetailsModal] API Result:', result);
             setData(result);
         } catch (err: any) {
@@ -54,6 +77,9 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
 
     const animal = data?.animal_details || {};
     const investor = data?.investor_details || {};
+    const supervisor = data?.supervisor || {};
+    const manager = data?.farm_manager || {};
+
     const animalImage = (animal.images && Array.isArray(animal.images) && animal.images.length > 0)
         ? animal.images[0]
         : null;
@@ -91,7 +117,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                     ) : error ? (
                         <div className="error-details">
                             <p>{error}</p>
-                            <button onClick={fetchAnimalDetails} className="retry-details-btn">Retry</button>
+                            <button onClick={() => parkingId ? fetchByParkingId(parkingId) : rfid && fetchAnimalDetails(rfid)} className="retry-details-btn">Retry</button>
                         </div>
                     ) : (
                         <>
@@ -113,15 +139,15 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                                 <div className="details-grid">
                                     <div className="detail-item">
                                         <span className="detail-label">RFID Tag</span>
-                                        <span className="detail-value">{animal.rfid_tag_number || 'N/A'}</span>
+                                        <span className="detail-value">{animal.rfid_tag_number || animal.rfid || 'N/A'}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span className="detail-label">Animal ID</span>
                                         <span className="detail-value">{animal.animal_id || 'N/A'}</span>
                                     </div>
                                     <div className="detail-item">
-                                        <span className="detail-label">Type</span>
-                                        <span className="detail-value">{animal.animal_type || 'N/A'}</span>
+                                        <span className="detail-label">Breed</span>
+                                        <span className="detail-value">{animal.breed_name || animal.animal_type || 'N/A'}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span className="detail-label">Age (Months)</span>
@@ -133,10 +159,37 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                                     </div>
                                     <div className="detail-item">
                                         <span className="detail-label">Onboarded At</span>
-                                        <span className="detail-value">{formatDate(animal.onboarded_at)}</span>
+                                        <span className="detail-value">{formatDate(animal.onboarded_at || animal.onboarding_time)}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <span className="detail-label">Location ID</span>
+                                        <span className="detail-value">{animal.parking_id || parkingId || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* New Location Details Section */}
+                            {(data?.farm_details || data?.shed_details) && (
+                                <div className="details-section">
+                                    <h3 className="section-title">
+                                        <MapPin size={16} /> Location Details
+                                    </h3>
+                                    <div className="details-grid">
+                                        <div className="detail-item">
+                                            <span className="detail-label">Farm</span>
+                                            <span className="detail-value">{data.farm_details?.farm_name || 'N/A'}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <span className="detail-label">Location</span>
+                                            <span className="detail-value">{data.farm_details?.location || 'N/A'}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <span className="detail-label">Shed</span>
+                                            <span className="detail-value">{data.shed_details?.shed_name || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="details-section">
                                 <h3 className="section-title">
@@ -155,12 +208,30 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                                         <span className="detail-label">Email</span>
                                         <span className="detail-value">{investor.email || 'N/A'}</span>
                                     </div>
-                                    <div className="detail-item">
-                                        <span className="detail-label">Aadhar Number</span>
-                                        <span className="detail-value">{investor.aadhar_number || 'N/A'}</span>
-                                    </div>
                                 </div>
                             </div>
+
+                            {(manager.full_name || supervisor.full_name) && (
+                                <div className="details-section">
+                                    <h3 className="section-title">
+                                        <Shield size={16} /> Staff Information
+                                    </h3>
+                                    <div className="details-grid">
+                                        {manager.full_name && (
+                                            <div className="detail-item">
+                                                <span className="detail-label">Farm Manager</span>
+                                                <span className="detail-value">{manager.full_name} <br /> <span className="text-xs text-gray-500">{manager.mobile}</span></span>
+                                            </div>
+                                        )}
+                                        {supervisor.full_name && (
+                                            <div className="detail-item">
+                                                <span className="detail-label">Supervisor</span>
+                                                <span className="detail-value">{supervisor.full_name} <br /> <span className="text-xs text-gray-500">{supervisor.mobile}</span></span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

@@ -79,6 +79,35 @@ const Farms: React.FC = () => {
     // Local State for search
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddFarmModalOpen, setIsAddFarmModalOpen] = useState(false);
+    const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+
+    useEffect(() => {
+        const loadLocations = async () => {
+            try {
+                const response = await farmvestService.getLocations();
+                console.log('Fetched locations response:', response);
+
+                // Based on node script test: response.data.locations
+                let locs: string[] = [];
+
+                if (response && response.data && Array.isArray(response.data.locations)) {
+                    locs = response.data.locations;
+                } else if (response && Array.isArray(response.locations)) {
+                    locs = response.locations;
+                } else if (Array.isArray(response)) {
+                    locs = response;
+                }
+
+                // Set locations if valid strings
+                if (locs.length > 0) {
+                    setAvailableLocations(locs.map(l => String(l).toUpperCase()));
+                }
+            } catch (err) {
+                console.error("Failed to load locations", err);
+            }
+        };
+        loadLocations();
+    }, []);
 
     const handleFarmNameClick = useCallback((farm: any) => {
         if (!farm || !farm.id) return;
@@ -169,11 +198,7 @@ const Farms: React.FC = () => {
         }
     }, [totalPages, currentPage, setCurrentPage, farmsLoading]);
 
-    // Extra safeguard for currentPage parsing
-    const currentPageToUse = useMemo(() => {
-        const page = parseInt(searchParams.get('page') || '1', 10);
-        return isNaN(page) || page < 1 ? 1 : page;
-    }, [searchParams]);
+
 
 
     const getSortIcon = useCallback((key: string) => {
@@ -187,28 +212,33 @@ const Farms: React.FC = () => {
                 <div>
                     <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">FarmVest Management</h2>
                     <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
-                        {/* <span className={`inline-block w-2 h-2 rounded-full ${farmsLoading ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`}></span> */}
-                        {/* <span>{location} Operations • {farms.length} Farms Loaded</span> */}
+                        <span>{location} Operations • {filteredFarms.length} Farms Loaded</span>
                     </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
                     <button
                         onClick={() => setIsAddFarmModalOpen(true)}
-                        className="px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md flex items-center gap-2"
+                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
                     >
-                        <span>+</span> Add Farm
+                        <span className="text-lg">+</span> Add Farm
                     </button>
-
-                    {/* Location Selector */}
                     <div className="relative w-full sm:w-56">
                         <select
                             className="w-full p-3 pl-4 pr-10 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
                             value={location}
                             onChange={handleLocationChange}
                         >
-                            <option value="KURNOOL">KURNOOL </option>
-                            <option value="HYDERABAD">HYDERABAD</option>
+                            {availableLocations.length > 0 ? (
+                                availableLocations.map((loc) => (
+                                    <option key={loc} value={loc}>{loc}</option>
+                                ))
+                            ) : (
+                                <>
+                                    <option value="KURNOOL">KURNOOL</option>
+                                    <option value="HYDERABAD">HYDERABAD</option>
+                                </>
+                            )}
                         </select>
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>

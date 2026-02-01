@@ -97,6 +97,15 @@ export const farmvestService = {
             throw error;
         }
     },
+    getLocations: async () => {
+        try {
+            const response = await farmvestApi.get('/api/farm/locations');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching farm locations:', error);
+            throw error;
+        }
+    },
     getAllFarms: async (params?: { location?: string, sort_by?: number, page?: number, size?: number }) => {
         try {
             let url = '/api/farm/get_all_farms';
@@ -171,6 +180,24 @@ export const farmvestService = {
             return response.data;
         } catch (error) {
             console.error(`Error fetching positions for shed ${shedId}:`, error);
+            throw error;
+        }
+    },
+    getAnimalPositions: async (shedId: number) => {
+        try {
+            const response = await farmvestApi.get(`/api/animal/get-position?shed_id=${shedId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching animal positions for shed ${shedId}:`, error);
+            throw error;
+        }
+    },
+    getAnimalPositionDetails: async (parkingId: string) => {
+        try {
+            const response = await farmvestApi.get(`/api/animal/get-position?parking_id=${parkingId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching details for parking grid ${parkingId}:`, error);
             throw error;
         }
     },

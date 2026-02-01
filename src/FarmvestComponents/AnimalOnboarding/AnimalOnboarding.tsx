@@ -339,7 +339,7 @@ const AnimalOnboarding: React.FC = () => {
                         breed_name: "Murrah Buffalo",
                         ear_tag: a.earTag,
                         health_status: "HEALTHY",
-                        images: a.photos.length > 0 ? a.photos : ["https://firebasestorage.googleapis.com/v0/b/app/o/payment_receipt.jpg"],
+                        images: a.photos.length > 0 ? a.photos : [],
                         neckband_id: `NB-${a.rfidTag.split('-').pop() || '0000'}`,
                         rfid_tag: a.rfidTag,
                         status: "high_yield"
@@ -552,7 +552,15 @@ const AnimalOnboarding: React.FC = () => {
                             <select
                                 className="farm-select"
                                 value={selectedFarmId}
-                                onChange={(e) => setSelectedFarmId(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSelectedFarmId(val);
+                                    if (val) {
+                                        localStorage.setItem('fv_selected_farm_id', String(val));
+                                    } else {
+                                        localStorage.removeItem('fv_selected_farm_id');
+                                    }
+                                }}
                                 style={{ maxWidth: '300px' }}
                             >
                                 <option value="">Select Farm Location</option>

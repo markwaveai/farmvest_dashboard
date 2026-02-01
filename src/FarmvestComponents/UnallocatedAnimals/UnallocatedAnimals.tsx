@@ -3,6 +3,7 @@ import './UnallocatedAnimals.css';
 import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2 } from 'lucide-react';
 import CommonShedGrid from '../../components/common/ShedGrid/CommonShedGrid';
 import { farmvestService } from '../../services/farmvest_api';
+import AnimalDetailsModal from '../AnimalDetailsModal';
 
 interface Farm {
     farm_id: number;
@@ -38,7 +39,7 @@ const UnallocatedAnimals: React.FC = () => {
     // ---------------------------------------------------------
     const [farms, setFarms] = useState<Farm[]>([]);
     const [sheds, setSheds] = useState<Shed[]>([]);
-    const [selectedFarmId, setSelectedFarmId] = useState<string>('');
+    const [selectedFarmId, setSelectedFarmId] = useState<string>(() => localStorage.getItem('fv_selected_farm_id') || '');
     const [selectedShedId, setSelectedShedId] = useState<string>('');
     const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
 
@@ -48,8 +49,17 @@ const UnallocatedAnimals: React.FC = () => {
     const [loadingGrid, setLoadingGrid] = useState(false);
     const [selectedShedAlloc, setSelectedShedAlloc] = useState<any>(null);
 
+    // BATCH ALLOCATION STATE
+    // Map<SlotLabel, AnimalID>
+    const [pendingAllocations, setPendingAllocations] = useState<Map<string, string>>(new Map());
+    const [isSaving, setIsSaving] = useState(false);
+
     // Fail-safe "Stop" when API fails
     const [hasError, setHasError] = useState(false);
+
+    // Modal State
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [selectedParkingId, setSelectedParkingId] = useState<string | undefined>(undefined);
 
     // ---------------------------------------------------------
     // 2. STABILITY REFS (Guaranteed One-Time Fetching)
@@ -58,7 +68,7 @@ const UnallocatedAnimals: React.FC = () => {
     const lastShedIdRef = useRef<string | null>(null);
     const isMounted = useRef(false);
 
-    const log = (msg: string) => console.log(`[FarmVest Final] ${new Date().toLocaleTimeString()}: ${msg}`);
+    const log = useCallback((msg: string) => console.log(`[FarmVest Final] ${new Date().toLocaleTimeString()}: ${msg}`), []);
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return '';
@@ -107,10 +117,27 @@ const UnallocatedAnimals: React.FC = () => {
 
             const mapped = animalList.map((a, idx) => {
                 let imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
+
+                // Check all possible image fields
                 if (a.images && Array.isArray(a.images) && a.images.length > 0 && a.images[0]) {
                     imgUrl = a.images[0];
                 } else if (a.image && typeof a.image === 'string' && a.image.trim() !== '') {
                     imgUrl = a.image;
+                } else if (a.photos && Array.isArray(a.photos) && a.photos.length > 0 && a.photos[0]) { // Check 'photos'
+                    imgUrl = a.photos[0];
+                } else if (a.documents && Array.isArray(a.documents) && a.documents.length > 0) { // Check 'documents'
+                    // Sometimes images are stored in documents with type 'image' or just as strings
+                    const docImg = a.documents.find((d: any) => typeof d === 'string' && (d.startsWith('http') || d.startsWith('data:image')));
+                    if (docImg) imgUrl = docImg;
+                }
+
+                // Filter out the specific bad fallback URL from previous onboardings
+                if (imgUrl.includes('payment_receipt.jpg')) {
+                    imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
+                }
+
+                if (imgUrl.includes('unsplash') && (a.rfid || a.rfid_tag_number)) {
+                    console.warn(`[UnallocatedAnimals] Missing image for animal ${a.rfid || a.rfid_tag_number}. Data:`, a);
                 }
 
                 return {
@@ -153,8 +180,8 @@ const UnallocatedAnimals: React.FC = () => {
                     log(`Note: Shed allocation fetch failed (possibly empty or 404): ${sId}`);
                     return null;
                 }),
-                farmvestService.getShedPositions(numericId as any).catch(e => {
-                    log(`Warning: Shed positions fetch failed: ${e.message}`);
+                farmvestService.getAnimalPositions(numericId as any).catch(e => {
+                    log(`Warning: Animal positions fetch failed: ${e.message}`);
                     return [];
                 })
             ]);
@@ -202,7 +229,8 @@ const UnallocatedAnimals: React.FC = () => {
                     status: allocation ? 'Occupied' : (p.status || 'Available'),
                     animal_image: allocation?.animal_image || p.animal_image || p.image,
                     rfid_tag_number: allocation?.rfid_tag_number || p.rfid_tag_number || p.rfid,
-                    onboarding_time: allocation?.investment_details?.order_date || allocation?.order_date || allocation?.created_at || allocation?.onboarded_time || allocation?.onboarded_at || allocation?.onboarding_date || allocation?.placedAt
+                    onboarding_time: allocation?.investment_details?.order_date || allocation?.order_date || allocation?.created_at || allocation?.onboarded_time || allocation?.onboarded_at || allocation?.onboarding_date || allocation?.placedAt,
+                    parking_id: allocation?.parking_id || p.parking_id || p.id // Ensure we have the full ID for details lookup
                 };
             });
 
@@ -233,6 +261,17 @@ const UnallocatedAnimals: React.FC = () => {
                 if (!isMounted.current) return;
                 const list = Array.isArray(data) ? data : (data.farms || data.data || []);
                 setFarms(list);
+
+                // Auto-select or Validate Persisted ID from Onboarding Handoff
+                const persistedId = localStorage.getItem('fv_selected_farm_id');
+                if (persistedId) {
+                    const exists = list.some((f: any) => String(f.farm_id || f.id) === persistedId);
+                    if (exists) {
+                        setSelectedFarmId(persistedId);
+                    }
+                    // CONSUME ONCE: Clear it so it doesn't persist on refresh or direct navigation later
+                    localStorage.removeItem('fv_selected_farm_id');
+                }
             } catch (e: any) {
                 log(`FATAL: Farm load failed: ${e.message}`);
                 setHasError(true);
@@ -319,73 +358,121 @@ const UnallocatedAnimals: React.FC = () => {
     };
 
     const handleGridSlotClick = async (position: any, e?: React.MouseEvent) => {
+        console.log(`[UnallocatedAnimals] Grid slot clicked:`, position);
         if (hasError) { alert("API Connection is currently blocked. Please refresh."); return; }
+
+        const isOccupied = position.status.toLowerCase() !== 'available';
+        console.log(`[UnallocatedAnimals] Slot isOccupied: ${isOccupied} (Status: ${position.status})`);
+
+        if (isOccupied) {
+            // New Requirement: Show Details Modal instead of blocking
+            // Use explicit parking_id if available, otherwise fallback to label/id
+            const pId = position.parking_id || position.label || position.id;
+            console.log(`[UnallocatedAnimals] Opening Details Modal for ParkingID: ${pId}`);
+            alert(`DEBUG: Clicked Occupied Slot!\nStatus: ${position.status}\nParkingID: ${pId}`);
+
+            setSelectedParkingId(pId);
+            setDetailsModalOpen(true);
+            return;
+        }
+
         if (!selectedFarmId) { alert('Please select a farm first.'); return; }
         if (!selectedShedId) { alert('Please select a shed first.'); return; }
         if (!selectedAnimalId) { alert('Please select an animal first.'); return; }
-        if (position.status !== 'Available') { alert('This slot is already occupied.'); return; }
 
-        const selectedAnimal = animals.find(a => a.id === selectedAnimalId);
-        if (!selectedAnimal || !selectedAnimal.rfid) { alert('Selected animal missing RFID tag.'); return; }
+        // BATCH MODE: Toggle pending state
+        const slotLabel = position.label;
+        const currentPending = new Map(pendingAllocations);
 
-        const shedName = sheds.find(s => String(s.shed_id) === selectedShedId)?.shed_name || 'shed';
-        if (!window.confirm(`Allocate animal ${selectedAnimal.rfid} to slot ${position.label} in ${shedName}?`)) return;
+        if (currentPending.has(slotLabel)) {
+            // ALREADY HERE? Toggle off (remove)
+            currentPending.delete(slotLabel);
+        } else {
+            // CHECK: Is this animal already pending in ANOTHER slot?
+            // If so, remove that old slot first (enforce 1-to-1)
+            const entries = Array.from(currentPending.entries());
+            for (const [sLabel, sAnimalId] of entries) {
+                if (sAnimalId === selectedAnimalId) {
+                    currentPending.delete(sLabel);
+                    break;
+                }
+            }
 
-        // Trigger animation immediately after confirmation
-        if (e && e.target) {
-            // Use currentTarget or specific logic to get the slot element effectively
-            // e.currentTarget is the slot card div because we attached onClick there
-            const targetEl = e.currentTarget as HTMLElement;
-            const rect = targetEl.getBoundingClientRect();
-            runFlyAnimation(selectedAnimal.id, rect, selectedAnimal.image);
+            // Add new pending allocation
+            // Note: We allow selecting occupied slots to show the "Red Paw" (invalid) state as requested
+            currentPending.set(slotLabel, selectedAnimalId);
+        }
+        setPendingAllocations(currentPending);
+    };
+
+    const handleSaveAllocation = async () => {
+        if (pendingAllocations.size === 0) {
+            alert("No changes to save.");
+            return;
+        }
+
+        const validAllocations: any[] = [];
+        const invalidAllocations: string[] = [];
+
+        // Validate pending items
+        pendingAllocations.forEach((animalId, slotLabel) => {
+            const slot = gridPositions.find(p => p.label === slotLabel);
+            const isOccupied = slot && slot.status.toLowerCase() !== 'available';
+
+            if (isOccupied) {
+                invalidAllocations.push(slotLabel);
+            } else {
+                // Prepare payload item
+                const animal = animals.find(a => a.id === animalId);
+                if (animal && animal.rfid) {
+                    // Parse row and parking ID. Handles "A1" or "R1-1"
+                    let rowNum = slotLabel.charAt(0);
+                    let parkId = slotLabel.slice(1);
+
+                    if (slotLabel.includes('-')) {
+                        const parts = slotLabel.split('-');
+                        rowNum = parts[0];
+                        parkId = parts[1];
+                    } else if (slotLabel.startsWith('R') && !isNaN(Number(slotLabel.charAt(1)))) {
+                        rowNum = slotLabel.substring(0, 2);
+                        parkId = slotLabel.substring(2);
+                    }
+
+                    validAllocations.push({
+                        rfid_tag_number: animal.rfid,
+                        row_number: rowNum,
+                        parking_id: parkId
+                    });
+                }
+            }
+        });
+
+        if (validAllocations.length === 0) {
+            alert("No valid allocations to save. Please check for red indicators.");
+            return;
         }
 
         try {
-            setLoadingGrid(true);
-            const label = position.label;
+            setIsSaving(true);
+            await farmvestService.allocateAnimal(selectedShedId, validAllocations);
 
-            // Parse row and parking ID. Handles "A1" or "R1-1"
-            let rowNum = label.charAt(0);
-            let parkId = label.slice(1);
+            alert(`Successfully allocated ${validAllocations.length} animals!`);
 
-            // If it's a hyphenated label (like R1-1), split it
-            if (label.includes('-')) {
-                const parts = label.split('-');
-                rowNum = parts[0];
-                parkId = parts[1];
-            } else if (label.startsWith('R') && !isNaN(Number(label.charAt(1)))) {
-                // Potential fallback for "R1-1" without hyphen
-                rowNum = label.substring(0, 2);
-                parkId = label.substring(2);
-            }
-
-            await farmvestService.allocateAnimal(selectedShedId, [
-                {
-                    rfid_tag_number: selectedAnimal.rfid,
-                    row_number: rowNum,
-                    parking_id: parkId
-                }
-            ]);
-
-            alert('Allocation Successful!');
-            // Refresh logic: clear selection and trigger manual refetch
+            // Clear all pending state
+            setPendingAllocations(new Map());
             setSelectedAnimalId(null);
 
-            // To prevent full page reload, we manually trigger the fetch calls
-            // and clear refs to ensure they execute
+            // Refetch data
             lastFarmIdRef.current = null;
             lastShedIdRef.current = null;
             fetchFarmData(Number(selectedFarmId));
             fetchShedDetails(selectedShedId);
+
         } catch (error: any) {
-            log(`Allocation Failed: ${error.message}`);
-            // Extract meaningful error message
             const apiError = error.response?.data?.message || error.message || 'Unknown error';
-            alert(`Allocation Failed: ${apiError}`);
-            // Do NOT setHasError(true) here, so the user can try again
-            // setHasError(true); 
+            alert(`Save Failed: ${apiError}`);
         } finally {
-            if (isMounted.current) setLoadingGrid(false);
+            if (isMounted.current) setIsSaving(false);
         }
     };
 
@@ -393,8 +480,11 @@ const UnallocatedAnimals: React.FC = () => {
     // 5. MEMOIZED DATA
     // ---------------------------------------------------------
     const stats = useMemo(() => {
-        const shed = sheds.find(s => String(s.shed_id) === selectedShedId);
+        // Dropdown now uses 'id' (numeric PK), so we find based on that.
+        // We cast to Number just in case selectedShedId is a string.
+        const shed = sheds.find((s: any) => s.id == selectedShedId);
         const cap = shed?.capacity || 300;
+
         if (selectedShedAlloc) {
             return {
                 capacity: cap,
@@ -443,19 +533,42 @@ const UnallocatedAnimals: React.FC = () => {
         <div className="unallocated-animals-container">
             <div className="ua-header">
                 <h1><span>Shed Allocation</span></h1>
+                <button
+                    className="save-allocation-btn"
+                    onClick={handleSaveAllocation}
+                    disabled={isSaving || pendingAllocations.size === 0}
+                    style={{
+                        marginLeft: 'auto',
+                        backgroundColor: pendingAllocations.size > 0 ? '#f59e0b' : '#9CA3AF',
+                        color: 'white',
+                        padding: '8px 24px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontWeight: 600,
+                        cursor: pendingAllocations.size > 0 ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : null}
+                    {isSaving ? 'Saving...' : `Save Changes (${pendingAllocations.size})`}
+                </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
                 <div className="ua-select-wrapper">
                     <select className="ua-select" value={selectedFarmId} onChange={(e) => {
-                        setSelectedFarmId(e.target.value);
+                        const val = e.target.value;
+                        setSelectedFarmId(val);
+                        // Do NOT save to localStorage here. Only Onboarding saves it.
                         setSelectedShedId('');
                         lastShedIdRef.current = null;
                     }}>
                         <option value="">Select Farm</option>
                         {farms.map((f: any) => (
                             <option key={f.farm_id || f.id} value={f.farm_id || f.id}>
-                                🚜 {f.farm_name || f.name || 'Unnamed Farm'}
+                                🚜 {f.farm_name || f.name || 'Unnamed Farm'} - {f.location || 'Unknown'}
                             </option>
                         ))}
                     </select>
@@ -498,7 +611,7 @@ const UnallocatedAnimals: React.FC = () => {
                             key={animal.id}
                             id={`ua-animal-card-${animal.id}`}
                             className={`ua-animal-avatar-card ${selectedAnimalId === animal.id ? 'selected' : ''}`}
-                            onClick={() => setSelectedAnimalId(animal.id)}
+                            onClick={() => setSelectedAnimalId(prev => prev === animal.id ? null : animal.id)}
                         >
                             <img
                                 src={animal.image}
@@ -533,8 +646,32 @@ const UnallocatedAnimals: React.FC = () => {
                     renderSlot={(pos: any) => {
                         const isOccupied = pos.status.toLowerCase() !== 'available';
                         const displayImg = pos.animal_image || "/buffalo_green_icon.png";
+
+                        // Check pending state
+                        const isPending = pendingAllocations.has(pos.label);
+
                         return (
-                            <div className="slot-inner-icon">
+                            <div className="slot-inner-icon" style={{ position: 'relative' }}>
+                                {isPending ? (
+                                    <div style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: '#FFFFFF', // Solid white
+                                        zIndex: 50, // Higher z-index
+                                        borderRadius: '8px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                    }}>
+                                        <PawPrint
+                                            size={32}
+                                            color={isOccupied ? '#EF4444' : '#22C55E'}
+                                            fill={isOccupied ? '#EF4444' : '#22C55E'}
+                                        />
+                                    </div>
+                                ) : null}
+
                                 <img
                                     src={displayImg}
                                     alt="animal"
@@ -553,6 +690,15 @@ const UnallocatedAnimals: React.FC = () => {
                     }}
                 />
             )}
+            {/* Occupied Slot Details Modal */}
+            <AnimalDetailsModal
+                isOpen={detailsModalOpen}
+                onClose={() => {
+                    setDetailsModalOpen(false);
+                    setSelectedParkingId(undefined);
+                }}
+                parkingId={selectedParkingId}
+            />
         </div>
     );
 };

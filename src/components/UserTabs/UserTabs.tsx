@@ -115,24 +115,58 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
 
       {hasSession && (
         <header className="app-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <button className="sidebar-toggle-btn" onClick={() => dispatch(toggleSidebar())}>
-              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          {/* Left: Hamburger + Dynamic Title */}
+          <div className="flex items-center gap-4">
+            <button className="text-gray-500 lg:hidden" onClick={() => dispatch(toggleSidebar())}>
+              <Menu size={24} />
             </button>
-            <img src="/header-logo.png" alt="Markwave Logo" className="header-logo" />
 
+            <div className="flex flex-col">
+              {/* Mobile/Tablet Title Logic could go here, but matching screenshot usually implies simple breadcrumb or title */}
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-green-100 rounded-lg text-green-700 hidden md:block">
+                  {activeTab === 'farmvest-employees' && <Users size={18} />}
+                  {activeTab === 'farmvest-farms' && <TreePine size={18} />}
+                  {activeTab === 'animal-onboarding' && <PawPrint size={18} />}
+                  {activeTab === 'unallocated-animals' && <LayoutGrid size={18} />}
+                  {activeTab === 'farmvest-activation' && <UserCheck size={18} />}
+                  {activeTab === 'support' && <Mail size={18} />}
+                </div>
+                <h1 className="text-xl font-bold text-white leading-none">
+                  {activeTab === 'farmvest-employees' && 'FarmVest Employees'}
+                  {activeTab === 'farmvest-farms' && 'FarmVest Farms'}
+                  {activeTab === 'animal-onboarding' && 'Animal Onboarding'}
+                  {activeTab === 'unallocated-animals' && 'Unallocated Animals'}
+                  {activeTab === 'farmvest-activation' && 'User Activation'}
+                  {activeTab === 'support' && 'Support Tickets'}
+                  {activeTab === 'privacy' && 'Privacy Policy'}
+                </h1>
+              </div>
+              <span className="text-xs text-gray-300 font-medium mt-1 hidden md:block">
+                {activeTab === 'farmvest-employees' && 'Manage all employees'}
+                {activeTab === 'farmvest-farms' && 'Overview of all farm locations'}
+                {activeTab === 'animal-onboarding' && 'Register new animals'}
+                {activeTab === 'unallocated-animals' && 'Manage shed allocations'}
+                {activeTab === 'farmvest-activation' && 'Activate or deactivate users'}
+                {activeTab === 'support' && 'View and manage tickets'}
+              </span>
+            </div>
           </div>
 
+          {/* Right: Status + Profile */}
           <div className="header-right">
-            <div className="status-pill">
-              <div className="status-dot-green"></div>
-              <span className="status-text">Online</span>
+            <div className="status-pill bg-green-100 border border-green-200 px-4 py-1.5 rounded-full flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-green-600 animate-pulse"></div>
+              <span className="text-sm font-bold text-green-700">Online</span>
             </div>
-            <div onClick={() => dispatch(setShowAdminDetails(true))} className="admin-header-profile">
-              <div className="admin-name-container">
-                <span className="admin-name-text">{displayAdminName}</span>
+
+            <div onClick={() => dispatch(setShowAdminDetails(true))} className="flex items-center gap-3 cursor-pointer ml-6 pl-6 border-l border-gray-200">
+              <div className="text-right hidden md:block">
+                <p className="text-sm font-bold text-white">{displayAdminName || 'Admin User'}</p>
+                <p className="text-xs text-gray-300">{adminRole || 'Administrator'}</p>
               </div>
-              <div className="avatar-circle admin-avatar-small">
+              <div className="w-10 h-10 rounded-full bg-green-900 border-2 border-green-100 shadow-sm overflow-hidden flex items-center justify-center text-white font-bold">
+                {/* Placeholder Avatar using Initials */}
                 {displayAdminName ? displayAdminName.substring(0, 2).toUpperCase() : 'AD'}
               </div>
             </div>
@@ -146,7 +180,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
             <button className="sidebar-close-btn-mobile" onClick={(e) => { e.stopPropagation(); dispatch(setSidebarOpen(false)); }}>
               <X size={20} />
             </button>
-            <img src="/header-logo.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
+            <img src="/header-logo-new.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
           </div>
           <ul className="sidebar-menu" style={{ marginTop: '10px' }}>
             <li>
@@ -166,14 +200,6 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
               </button>
             </li>
             <li>
-              <button className={`nav-item ${activeTab === 'farmvest-activation' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/user-activation'); }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                  <UserCheck size={18} />
-                  <span className="nav-text">User Activation</span>
-                </div>
-              </button>
-            </li>
-            <li>
               <button className={`nav-item ${activeTab === 'animal-onboarding' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/animal-onboarding'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <PawPrint size={18} />
@@ -186,6 +212,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <LayoutGrid size={18} />
                   <span className="nav-text">Unallocated Animals</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-activation' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/user-activation'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <UserCheck size={18} />
+                  <span className="nav-text">User Activation</span>
                 </div>
               </button>
             </li>

@@ -7,9 +7,7 @@ import AddEmployeeModal from './AddEmployee/AddEmployeeModal';
 
 import DeleteEmployeeModal from './DeleteEmployeeModal';
 import Snackbar from '../components/common/Snackbar';
-import { Trash2 } from 'lucide-react';
-
-
+import { Trash2, Search, Users } from 'lucide-react';
 
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
@@ -54,9 +52,6 @@ const Employees: React.FC = () => {
             setSelectedEmployee(null);
         }
     };
-
-
-
 
     // URL Search Params for Pagination
     const [searchParams, setSearchParams] = useSearchParams();
@@ -121,10 +116,7 @@ const Employees: React.FC = () => {
         }));
     }, [dispatch, selectedRole, currentPage]);
 
-    // Client-side pagination adjustment:
-    // If set to server-side, utilize filteredData directly if API returns paginated result
     const currentItems = filteredEmployees;
-    // Use totalCount from API if available, otherwise assume 1 if no data
     const totalPages = Math.ceil((totalCount || filteredEmployees.length) / itemsPerPage) || 1;
 
     const getSortIcon = (key: string) => {
@@ -133,167 +125,138 @@ const Employees: React.FC = () => {
     };
 
     return (
-        <div className="employees-container">
-            <div className="employees-header p-4 border-b border-gray-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="flex items-center justify-between w-full md:w-auto gap-4">
+        <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
+            {/* Page Header Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold">FarmVest Employees</h2>
+                        <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
                         <p className="text-sm text-gray-500 mt-1">Manage all employees ({employees.length} visible)</p>
                     </div>
-                </div>
 
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    <button
-                        onClick={handleAddEmployee}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all active:scale-95 shadow-md whitespace-nowrap"
-                    >
-                        <span className="text-xl leading-none">+</span>
-                        Add Employee
-                    </button>
-                    {/* Role Filter */}
-                    <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        style={{ height: '42px' }}
-                    >
-                        <option value="">All Roles</option>
-                        <option value="FARM_MANAGER">Farm Manager</option>
-                        <option value="SUPERVISOR">Supervisor</option>
-                        <option value="DOCTOR">Doctor</option>
-                        <option value="ASSISTANT_DOCTOR">Assistant Doctor</option>
-                        <option value="admin">Admin</option>
-                    </select>
-
-                    {/* Search Input */}
-                    <div className="w-full md:w-auto relative">
-                        <input
-                            type="text"
-                            placeholder="Search by Name, Email, Phone..."
-                            className="w-full md:w-80 pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <svg
-                            className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            onClick={handleAddEmployee}
+                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all"
                         >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                            <span className="text-lg">+</span> Add Employee
+                        </button>
 
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        <div className="relative">
+                            <select
+                                className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent cursor-pointer min-w-[140px]"
+                                value={selectedRole}
+                                onChange={(e) => setSelectedRole(e.target.value)}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        )}
+                                <option value="">All Roles</option>
+                                <option value="FARM_MANAGER">Farm Manager</option>
+                                <option value="SUPERVISOR">Supervisor</option>
+                                <option value="DOCTOR">Doctor</option>
+                                <option value="ASSISTANT_DOCTOR">Assistant Doctor</option>
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                            </div>
+                        </div>
+
+                        <div className="relative flex-1 min-w-[200px]">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search by Name, Email, Phone..."
+                                className="pl-10 pr-4 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="employees-content p-4">
-
-                <div className="table-container relative overflow-x-auto shadow-md sm:rounded-lg">
-                    <table className="employees-table w-full text-sm text-left text-gray-500">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                {/* Table Content */}
+                <div className="mt-8 overflow-hidden rounded-xl border border-gray-100">
+                    <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-[#f8f9fa]">
                             <tr>
-                                <th className="px-4 py-3 text-center">S.No</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('first_name')}>Name {getSortIcon('first_name')}</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('email')}>Email {getSortIcon('email')}</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('phone_number')}>Phone {getSortIcon('phone_number')}</th>
-                                <th className="px-4 py-3 cursor-pointer">Role</th>
-                                <th className="px-4 py-3 cursor-pointer">Shed</th>
-                                <th className="px-4 py-3 text-center cursor-pointer" onClick={() => requestSort('active_status')}>Status {getSortIcon('active_status')}</th>
-                                <th className="px-4 py-3 text-center">Actions</th>
+                                <th onClick={() => requestSort('id')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
+                                <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Shed</th>
+                                <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-
-                        <tbody>
+                        <tbody className="bg-white divide-y divide-gray-50">
                             {employeesLoading ? (
-                                <TableSkeleton cols={7} rows={10} />
-                            ) : currentItems.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No employees found</td>
-                                </tr>
-                            ) : (
+                                <tr><td colSpan={8} className="p-4"><TableSkeleton cols={8} rows={5} /></td></tr>
+                            ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
-                                    <tr key={employee.id || index} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-4 py-3 text-center">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td
-                                            className="px-4 py-3 font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
-                                            onClick={() => handleNameClick(employee)}
-                                        >
-                                            {`${employee.first_name || ''} ${employee.last_name || ''}`.trim() || '-'}
+                                    <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="font-semibold text-blue-600 cursor-pointer hover:underline" onClick={() => handleNameClick(employee)}>
+                                                {`${employee.first_name || ''} ${employee.last_name || ''}`}
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            {employee.email || '-'}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.email || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.phone_number || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">
+                                                {employee.roles?.[0]?.replace(/_/g, ' ') || '-'}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            {employee.phone_number || '-'}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {employee.roles && employee.roles.length > 0 ? (
-                                                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                                                    {employee.roles[0].replace(/_/g, ' ')}
-                                                </span>
-                                            ) : (
-                                                <span className="text-gray-400">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                                             {employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${employee.active_status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                }`}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-center">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <button
-                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteClick(employee);
-                                                }}
-                                                title="Delete Employee"
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(employee); }}
+                                                className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50"
                                             >
                                                 <Trash2 size={18} />
                                             </button>
                                         </td>
                                     </tr>
-
                                 ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={8}>
+                                        <div className="flex flex-col items-center justify-center py-16 px-4">
+                                            <div className="bg-gray-50 rounded-full p-6 mb-4">
+                                                <Users size={48} className="text-gray-300" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-gray-900 mb-1">No employees added yet</h3>
+                                            <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
+                                                Start by adding your first employee to manage farms efficiently.
+                                            </p>
+                                            <button
+                                                onClick={handleAddEmployee}
+                                                className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-100 transition-all flex items-center gap-2"
+                                            >
+                                                <span className="text-lg">+</span> Add Employee
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-
-                {totalPages > 1 && (
-                    <div className="mt-4">
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
-                    </div>
-                )}
             </div>
-            {/* Specialized Add Employee Modal */}
+
             <AddEmployeeModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
             />
 
-
-
-            {/* Delete Employee Modal */}
             <DeleteEmployeeModal
                 isOpen={isDeleteModalOpen}
                 loading={deleteLoading}
@@ -303,16 +266,22 @@ const Employees: React.FC = () => {
                 onConfirm={handleConfirmDelete}
             />
 
-
-            {/* Notifications */}
             <Snackbar
                 message={successMessage || error}
                 type={successMessage ? 'success' : error ? 'error' : null}
                 onClose={() => dispatch(clearMessages())}
             />
+            {totalPages > 1 && (
+                <div className="mt-4">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
+            )}
         </div>
     );
 };
-
 
 export default Employees;
