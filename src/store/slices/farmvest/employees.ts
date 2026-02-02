@@ -4,7 +4,7 @@ import { FarmvestEmployee } from '../../../types/farmvest';
 
 export const fetchEmployees = createAsyncThunk(
     'farmvestEmployees/fetchEmployees',
-    async (params: { role?: string; sort_by?: number; page?: number; size?: number } | undefined, { rejectWithValue }) => {
+    async (params: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getEmployees(params);
             console.log('fetchEmployees thunk response:', response);
@@ -102,6 +102,25 @@ export const deleteEmployee = createAsyncThunk(
 
 
 
+
+export const updateEmployeeStatus = createAsyncThunk(
+    'farmvestEmployees/updateEmployeeStatus',
+    async ({ mobile, status }: { mobile: string; status: boolean }, { rejectWithValue, dispatch }) => {
+        try {
+            if (status) {
+                await farmvestService.activateUser(mobile);
+            } else {
+                await farmvestService.deactivateUser(mobile);
+            }
+            dispatch(fetchEmployees(undefined));
+            return { mobile, status };
+        } catch (error: any) {
+            const message = error.response?.data?.message || error.message || 'Failed to update employee status';
+            return rejectWithValue(message);
+        }
+    }
+);
+
 export const fetchRoleCounts = createAsyncThunk(
     'farmvestEmployees/fetchRoleCounts',
     async (_, { rejectWithValue }) => {
@@ -109,6 +128,7 @@ export const fetchRoleCounts = createAsyncThunk(
             // Fetch a large number to ensure we get most employees for accurate counts
             // Ideally backend should provide a stats endpoint
             const response = await farmvestService.getEmployees({ size: 1000 });
+
             let allEmployees: any[] = [];
 
             if (Array.isArray(response)) {
@@ -122,16 +142,33 @@ export const fetchRoleCounts = createAsyncThunk(
             }
 
             const counts: Record<string, number> = {};
+            const statusCounts = { active: 0, inactive: 0 };
+
             allEmployees.forEach((emp: any) => {
-                if (emp.roles && Array.isArray(emp.roles)) {
-                    emp.roles.forEach((role: string) => {
-                        counts[role] = (counts[role] || 0) + 1;
-                    });
+                // Roles Count
+                let roleToCount: string | null = null;
+                if (emp.roles && Array.isArray(emp.roles) && emp.roles.length > 0) {
+                    roleToCount = emp.roles[0];
                 } else if (emp.role) {
-                    counts[emp.role] = (counts[emp.role] || 0) + 1;
+                    roleToCount = emp.role;
+                } else if (emp.role_name) {
+                    roleToCount = emp.role_name;
+                }
+
+                if (roleToCount) {
+                    const normalizedRole = String(roleToCount).trim().toUpperCase().replace(/\s+/g, '_');
+                    counts[normalizedRole] = (counts[normalizedRole] || 0) + 1;
+                }
+
+                // Status Count
+                const rawStatus = emp.is_active !== undefined ? emp.is_active : emp.active_status;
+                if (Number(rawStatus)) {
+                    statusCounts.active++;
+                } else {
+                    statusCounts.inactive++;
                 }
             });
-            return counts;
+            return { roleCounts: counts, statusCounts };
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -147,6 +184,8 @@ interface EmployeesState {
     error: string | null;
     successMessage: string | null;
     roleCounts: Record<string, number>;
+    statusCounts: { active: number; inactive: number };
+    updateStatusLoading: string | null;
 }
 
 const initialState: EmployeesState = {
@@ -158,6 +197,8 @@ const initialState: EmployeesState = {
     error: null,
     successMessage: null,
     roleCounts: {},
+    statusCounts: { active: 0, inactive: 0 },
+    updateStatusLoading: null,
 };
 
 const employeesSlice = createSlice({
@@ -176,7 +217,8 @@ const employeesSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchRoleCounts.fulfilled, (state, action) => {
-                state.roleCounts = action.payload;
+                state.roleCounts = action.payload.roleCounts;
+                state.statusCounts = action.payload.statusCounts;
             })
         builder
             .addCase(fetchEmployees.pending, (state) => {
@@ -224,6 +266,25 @@ const employeesSlice = createSlice({
             })
             .addCase(deleteEmployee.rejected, (state, action) => {
                 state.deleteLoading = false;
+                state.error = action.payload as string;
+            })
+            // Update Employee Status
+            .addCase(updateEmployeeStatus.pending, (state, action) => {
+                state.updateStatusLoading = action.meta.arg.mobile;
+                state.error = null;
+            })
+            .addCase(updateEmployeeStatus.fulfilled, (state, action) => {
+                state.updateStatusLoading = null;
+                state.successMessage = `Employee ${action.meta.arg.status ? 'activated' : 'deactivated'} successfully`;
+                // Optimistic update
+                const employee = state.employees.find(e => e.mobile === action.meta.arg.mobile);
+                if (employee) {
+                    employee.active_status = action.meta.arg.status ? 1 : 0;
+                    employee.is_active = action.meta.arg.status ? 1 : 0;
+                }
+            })
+            .addCase(updateEmployeeStatus.rejected, (state, action) => {
+                state.updateStatusLoading = null;
                 state.error = action.payload as string;
             });
     },

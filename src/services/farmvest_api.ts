@@ -20,7 +20,6 @@ const farmvestApi = axios.create({
     baseURL: FARMVEST_API_CONFIG.getBaseUrl(),
     headers: {
         'Content-Type': 'application/json',
-        'Origin': window.location.origin || 'http://localhost:3000',
         'X-Requested-With': 'XMLHttpRequest'
     }
 });
@@ -260,9 +259,18 @@ export const farmvestService = {
             throw error;
         }
     },
+    activateUser: async (mobile: string) => {
+        try {
+            const response = await farmvestApi.put(`/api/users/activate/${mobile}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error activating user ${mobile}:`, error);
+            throw error;
+        }
+    },
     getPaidOrders: async (mobile: string) => {
         try {
-            const url = API_ENDPOINTS.markInTransit();
+            const url = '/api/orders/get_paid_orders';
             console.log('[FarmVest] Fetching paid orders from:', url, 'with mobile:', mobile);
             const response = await farmvestApi.post(url, { mobile });
             console.log('[FarmVest] Paid orders response:', response.data);
@@ -332,18 +340,19 @@ export const farmvestService = {
     getAnimalsByInvestor: async (investorId: number) => {
         try {
             const response = await farmvestApi.get(`/api/investors/animals?investor_id=${investorId}`);
+            console.log(`[FarmVest] getAnimalsByInvestor(${investorId}) response:`, response.data);
             return response.data;
         } catch (error) {
             console.error(`Error fetching animals for investor ${investorId}:`, error);
             throw error;
         }
     },
-    getCalves: async (rfid: string) => {
+    getCalves: async (animalId: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/get_calves?rfid=${rfid}`);
+            const response = await farmvestApi.get(`/api/animal/get_calves?animal_id=${animalId}`);
             return response.data;
-        } catch (error) {
-            console.error(`Error fetching calves for animal ${rfid}:`, error);
+        } catch (error: any) {
+            console.error(`Error fetching calves for animal ${animalId}:`, error);
             return [];
         }
     }

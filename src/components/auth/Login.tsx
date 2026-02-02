@@ -119,7 +119,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {/* Logo Section */}
           <div className="flex justify-center mb-5 transform transition-transform duration-500 hover:scale-105">
             <img
-              src="/header-logo-new.png"
+              src="/farmvest-logo.png"
               alt="FarmVest Logo"
               className="h-24 object-contain"
             />

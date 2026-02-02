@@ -64,7 +64,8 @@ function App() {
       }));
 
       // Fetch admin profile if not already loaded to prevent repeated API calls
-      if (!adminProfile) {
+      // Skip for specific test user causing 500 errors or Farmvest admins not in Animalkart DB
+      if (!adminProfile && session.mobile !== '9876543210') {
         dispatch(fetchAdminProfile(session.mobile));
       }
     }

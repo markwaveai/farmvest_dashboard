@@ -125,14 +125,8 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
             <div className="flex flex-col">
               {/* Mobile/Tablet Title Logic could go here, but matching screenshot usually implies simple breadcrumb or title */}
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-green-100 rounded-lg text-green-700 hidden md:block">
-                  {activeTab === 'farmvest-employees' && <Users size={18} />}
-                  {activeTab === 'farmvest-farms' && <TreePine size={18} />}
-                  {activeTab === 'animal-onboarding' && <PawPrint size={18} />}
-                  {activeTab === 'unallocated-animals' && <LayoutGrid size={18} />}
-                  {activeTab === 'farmvest-investors' && <Briefcase size={18} />}
-                  {activeTab === 'farmvest-activation' && <UserCheck size={18} />}
-                  {activeTab === 'support' && <Mail size={18} />}
+                <div className="hidden md:block">
+                  <img src="/farmvest-logo.png" alt="Logo" className="h-8 w-auto" />
                 </div>
                 <h1 className="text-xl font-bold text-white leading-none">
                   {activeTab === 'farmvest-employees' && 'FarmVest Employees'}
@@ -184,7 +178,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
             <button className="sidebar-close-btn-mobile" onClick={(e) => { e.stopPropagation(); dispatch(setSidebarOpen(false)); }}>
               <X size={20} />
             </button>
-            <img src="/header-logo-new.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
+            <img src="/farmvest-logo.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
           </div>
           <ul className="sidebar-menu" style={{ marginTop: '10px' }}>
             <li>

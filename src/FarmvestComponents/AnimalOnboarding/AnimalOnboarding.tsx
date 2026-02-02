@@ -478,11 +478,11 @@ const AnimalOnboarding: React.FC = () => {
                                             <div className="order-stats-divider"></div>
                                             <div className="order-stats">
                                                 <div className="stat-item">
-                                                    <span className="stat-label"><span className="stat-icon">🐃</span> Buffaloes</span>
+                                                    <span className="stat-label"><span className="stat-icon">🐃</span> Buffalo</span>
                                                     <span className="stat-value">{order.buffaloCount}</span>
                                                 </div>
                                                 <div className="stat-item">
-                                                    <span className="stat-label"><span className="stat-icon">🐄</span> Calves</span>
+                                                    <span className="stat-label"><span className="stat-icon">🐄</span> Calf</span>
                                                     <span className="stat-value">{order.calfCount}</span>
                                                 </div>
                                                 <div className="stat-item total-amount">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Milk, Activity, Tag, Info } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Milk, Activity, Tag, Info, ChevronDown, ChevronRight } from 'lucide-react';
 import { farmvestService } from '../services/farmvest_api';
 import TableSkeleton from '../components/common/TableSkeleton';
 
@@ -11,6 +11,15 @@ const InvestorDetailsPage: React.FC = () => {
     const [animals, setAnimals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [animalsLoading, setAnimalsLoading] = useState(true);
+    const [expandedRow, setExpandedRow] = useState<number | string | null>(null);
+
+    const toggleRow = (id: number | string) => {
+        if (expandedRow === id) {
+            setExpandedRow(null);
+        } else {
+            setExpandedRow(id);
+        }
+    };
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -40,7 +49,66 @@ const InvestorDetailsPage: React.FC = () => {
                 // Fetch Animals
                 setAnimalsLoading(true);
                 const animalsResponse = await farmvestService.getAnimalsByInvestor(Number(id));
-                setAnimals(Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse.data || []));
+                console.log('[DEBUG-ANIMALS] Raw response:', animalsResponse);
+                let allAnimals = Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse.data || []);
+                console.log('[DEBUG-ANIMALS] Parsed list:', allAnimals);
+
+                // Client-side processing: Separating Buffaloes and Calves
+                if (allAnimals.length > 0) {
+                    // Filter for Buffaloes
+                    const buffaloes = allAnimals.filter((a: any) =>
+                        (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
+                    );
+
+                    // Fetch calves for each buffalo
+                    const enrichedBuffaloes = await Promise.all(buffaloes.map(async (buffalo: any) => {
+                        // For display: prioritize readable tags (rfid_tag) over generic ids which might be UUIDs
+                        const buffaloDisplayTag = buffalo.rfid_tag || buffalo.tag_id || buffalo.rfid_tag_number;
+
+                        // For fetching: prioritize stable IDs (animal_id, id)
+                        const buffaloFetchId = String(buffalo.animal_id || buffalo.id || buffalo.rfid_tag_number);
+
+                        let myCalves = [];
+                        if (buffaloFetchId) {
+                            try {
+                                const calvesResponse = await farmvestService.getCalves(buffaloFetchId);
+                                console.log(`[DEBUG-CALF] Response for ${buffaloFetchId}:`, calvesResponse);
+
+                                if (Array.isArray(calvesResponse)) {
+                                    myCalves = calvesResponse;
+                                } else if (calvesResponse && Array.isArray(calvesResponse.data)) {
+                                    myCalves = calvesResponse.data;
+                                } else if (calvesResponse && Array.isArray(calvesResponse.calves)) {
+                                    myCalves = calvesResponse.calves;
+                                }
+                            } catch (e) {
+                                console.warn(`[DEBUG-CALF] Failed to fetch calves for ${buffaloFetchId}`, e);
+                            }
+                        }
+
+                        return {
+                            ...buffalo,
+                            rfid_tag_number: buffaloDisplayTag || '-',
+                            breed: buffalo.breed || buffalo.breed_name || 'Murrah',
+                            age_months: buffalo.age_months || buffalo.age || (buffalo.age_in_months ? buffalo.age_in_months : 0),
+                            animal_type: 'BUFFALO',
+                            farm_name: (buffalo.farm && buffalo.farm.farm_name) || (buffalo.farm_details && buffalo.farm_details.farm_name) || (buffalo.Farm && buffalo.Farm.farm_name) || buffalo.farm_name || '-',
+                            farm_location: (buffalo.farm && buffalo.farm.location) || (buffalo.farm_details && buffalo.farm_details.location) || (buffalo.Farm && buffalo.Farm.location) || buffalo.farm_location || buffalo.location || '',
+                            associated_calves: myCalves.map((c: any) => ({
+                                ...c,
+                                rfid_tag_number: c.rfid || c.rfid_tag_number || c.rfidTag || c.rfid_tag || c.TagId || c.tag_id || '-',
+                                age_months: c.age || c.age_months || 0,
+                                animal_type: 'CALF',
+                                gender: c.gender || 'Female',
+                                farm_location: (c.farm && c.farm.location) || c.location || (buffalo.farm && buffalo.farm.location) || (buffalo.farm_details && buffalo.farm_details.location) || (buffalo.Farm && buffalo.Farm.location) || buffalo.farm_location || buffalo.location || ''
+                            }))
+                        };
+                    }));
+
+                    setAnimals(enrichedBuffaloes);
+                } else {
+                    setAnimals([]);
+                }
 
             } catch (error) {
                 console.error("Error loading investor details:", error);
@@ -74,7 +142,7 @@ const InvestorDetailsPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
+        <div className="p-6 max-w-full mx-auto min-h-screen">
             {/* Header */}
             <div className="mb-6">
                 <button
@@ -128,15 +196,18 @@ const InvestorDetailsPage: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                        <Milk size={20} className="mr-2 text-orange-500" /> Buffalo Portfolio
+                        <Milk size={20} className="mr-2 text-orange-500" /> Livestock Portfolio
                     </h3>
 
                     <div className="flex items-center gap-3">
                         <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-blue-100">
-                            <span className="text-lg mr-2">🐮</span> {animals ? animals.length : 0} Animals
+                            <span className="text-lg mr-2">🐃</span> {animals ? animals.filter((a: any) => String(a.animal_type || a.type || '').toUpperCase() === 'BUFFALO').length : 0} Buffaloes
+                        </div>
+                        <div className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-orange-100">
+                            <span className="text-lg mr-2">🐄</span> {animals ? animals.reduce((acc, curr) => acc + (curr.associated_calves?.length || 0), 0) : 0} Calf
                         </div>
                         <div className="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-green-100">
-                            <span className="text-lg mr-2">🏡</span> {animals ? new Set(animals.map(a => a.farm_name || a.farm_id).filter(Boolean)).size : 0} Farms
+                            <span className="text-lg mr-2">🏡</span> {animals ? new Set(animals.map((a: any) => a.farm_name || a.farm_id).filter(Boolean)).size : 0} Farms
                         </div>
                         <div className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-purple-100">
                             <span className="text-lg mr-2">🛖</span> {animals ? new Set(animals.map(a => a.shed_name || a.shed_id).filter(Boolean)).size : 0} Sheds
@@ -148,65 +219,135 @@ const InvestorDetailsPage: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-4 py-4 text-left w-10"></th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tag ID</th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Farm</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Shed</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Position</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Shed</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Position</th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Breed</th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Gender</th>
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Age (Months)</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Lactation</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Milk Prod. (L)</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Location</th>
+
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {animalsLoading ? (
-                                <tr><td colSpan={10} className="p-4"><TableSkeleton cols={10} rows={3} /></td></tr>
+                                <TableSkeleton cols={9} rows={3} />
                             ) : animals.length > 0 ? (
                                 animals.map((animal: any, index: number) => (
-                                    <tr key={animal.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <span className="p-1.5 bg-blue-100 text-blue-600 rounded mr-2">
-                                                    <Tag size={14} />
+                                    <React.Fragment key={animal.id || index}>
+                                        <tr className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => toggleRow(animal.id || index)}>
+                                            <td className="px-4 py-4 text-gray-400">
+                                                {animal.associated_calves?.length > 0 ? (
+                                                    expandedRow === (animal.id || index) ? <ChevronDown size={20} /> : <ChevronRight size={20} />
+                                                ) : <div className="w-5" />}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <span className="p-1.5 bg-blue-100 text-blue-600 rounded mr-2">
+                                                        <Tag size={14} />
+                                                    </span>
+                                                    <span className="font-bold text-gray-900">{animal.rfid_tag_number}</span>
+                                                    <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">Buffalo</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                                                {animal.farm_name || animal.farm?.farm_name || '-'}{animal.farm_location || animal.location ? ` - ${animal.farm_location || animal.location}` : ''}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                                {animal.shed_name || animal.shed_id || (animal.shed ? animal.shed.shed_id : '-') || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono text-center">
+                                                {animal.position || (animal.row_number && animal.parking_id ? `${animal.row_number}-${animal.parking_id}` : (animal.parking_id || '-'))}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{animal.breed}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{animal.gender || 'Female'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{animal.age_months}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                                {animal.farm_location || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
+                                                    Active
                                                 </span>
-                                                <span className="font-bold text-gray-900">{animal.rfid_tag_number || animal.tag_id || '-'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
-                                            {animal.farm_name || animal.farm?.farm_name || '-'}{animal.farm_location || animal.location ? ` - ${animal.farm_location || animal.location}` : ''}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {animal.shed_name || animal.shed_id || (animal.shed ? animal.shed.shed_id : '-') || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
-                                            {animal.position || (animal.row_number && animal.parking_id ? `${animal.row_number}-${animal.parking_id}` : (animal.parking_id || '-'))}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{animal.breed || 'Murrah'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{animal.gender || 'Female'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
-                                            {animal.age_in_months || (animal.dob || animal.date_of_birth ? Math.floor((new Date().getTime() - new Date(animal.dob || animal.date_of_birth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : '-')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                                {animal.lactation_status || '-'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 font-bold">
-                                            {animal.milk_production_capacity ? `${animal.milk_production_capacity} L` : '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${animal.health_status === 'Healthy' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                                }`}>
-                                                {animal.health_status || 'Good'}
-                                            </span>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                        </tr>
+                                        {expandedRow === (animal.id || index) && animal.associated_calves?.length > 0 && (
+                                            <tr className="bg-gray-50 border-b border-gray-100">
+                                                <td colSpan={10} className="p-4 pl-14">
+                                                    <div className="rounded-lg border border-[#113025] bg-white overflow-hidden">
+                                                        <div className="px-4 py-2 bg-[#113025] border-b border-[#113025] flex items-center">
+                                                            <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                                                <Milk size={14} className="mr-2 text-white" /> Associated Calf ({animal.associated_calves.length})
+                                                            </span>
+                                                        </div>
+                                                        <table className="min-w-full divide-y divide-[#113025]/10">
+                                                            <thead className="bg-[#113025]">
+                                                                <tr>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Tag ID</th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Farm</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Shed</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Position</th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Breed</th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Gender</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Age (Months)</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Location</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-[#113025]/10 bg-white">
+                                                                {animal.associated_calves.map((calf: any, cIndex: number) => (
+                                                                    <tr key={cIndex}>
+                                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                                            <div className="flex items-center">
+                                                                                <span className="p-1.5 bg-[#113025]/10 text-[#113025] rounded mr-2">
+                                                                                    <Tag size={12} />
+                                                                                </span>
+                                                                                <span className="font-bold text-gray-800 text-sm">{calf.rfid_tag_number}</span>
+                                                                                <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#113025]/10 text-[#113025] uppercase">Calf</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                                                                            {calf.farm_name || animal.farm_name || '-'}{calf.farm_location || animal.farm_location ? ` - ${calf.farm_location || animal.farm_location}` : ''}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                                                            {calf.shed_name || calf.shed_id || animal.shed_name || animal.shed_id || '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono text-center">
+                                                                            {calf.position || '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                                            {calf.breed || animal.breed || 'Murrah'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                                            {calf.gender || 'Female'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                                                            {calf.age_months}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                                                            {calf.farm_location || '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                                Active
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={10} className="py-12 text-center text-gray-400 text-sm">
+                                    <td colSpan={9} className="py-12 text-center text-gray-400 text-sm">
                                         No buffaloes assigned to this investor yet.
                                     </td>
                                 </tr>

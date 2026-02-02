@@ -94,13 +94,13 @@ const Investors: React.FC = () => {
     }, [navigate]);
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
+        <div className="p-6 max-w-full mx-auto min-h-screen">
             {/* Page Header Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">FarmVest Investors</h1>
-                        <p className="text-sm text-gray-500 mt-1">Manage all investors ({investors.length} visible)</p>
+                        <p className="text-sm text-gray-500 mt-1">Manage all investors (Total: {totalCount || 0} | {investors.length} visible)</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -137,12 +137,12 @@ const Investors: React.FC = () => {
                                 <tr><td colSpan={6} className="p-4"><TableSkeleton cols={6} rows={5} /></td></tr>
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((investor: any, index: number) => (
-                                    <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors">
+                                    <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => handleNameClick(investor)}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div
                                                 className="font-semibold text-blue-600 cursor-pointer hover:underline"
-                                                onClick={() => handleNameClick(investor)}
+                                                onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
                                             >
                                                 {`${investor.first_name || ''} ${investor.last_name || ''}`}
                                             </div>

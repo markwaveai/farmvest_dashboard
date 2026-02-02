@@ -4,10 +4,10 @@ export const API_CONFIG = {
 
     // Only use CORS proxy in local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return productionUrl;
-    } else {
       const corsUrl = 'https://cors-612299373064.asia-south1.run.app';
       return `${corsUrl}/${productionUrl}`;
+    } else {
+      return productionUrl;
     }
   }
 };

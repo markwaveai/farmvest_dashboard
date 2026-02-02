@@ -1,8 +1,8 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
-import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee } from '../store/slices/farmvest/employees';
+import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee, updateEmployeeStatus } from '../store/slices/farmvest/employees';
 import AddEmployeeModal from './AddEmployee/AddEmployeeModal';
 
 import DeleteEmployeeModal from './DeleteEmployeeModal';
@@ -20,7 +20,9 @@ const Employees: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
     const [selectedEmployee, setSelectedEmployee] = React.useState<any>(null);
     const [selectedRole, setSelectedRole] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
     const {
         employees,
@@ -29,7 +31,9 @@ const Employees: React.FC = () => {
         error,
         successMessage,
         deleteLoading,
-        roleCounts
+        roleCounts,
+        statusCounts,
+        updateStatusLoading
     } = useAppSelector((state: RootState) => state.farmvestEmployees);
 
     useEffect(() => {
@@ -118,11 +122,12 @@ const Employees: React.FC = () => {
     useEffect(() => {
         dispatch(fetchEmployees({
             role: selectedRole || undefined,
+            active_status: selectedStatus ? parseInt(selectedStatus) : undefined,
             page: currentPage,
             size: itemsPerPage,
             sort_by: 1
         }));
-    }, [dispatch, selectedRole, currentPage, itemsPerPage]);
+    }, [dispatch, selectedRole, selectedStatus, currentPage, itemsPerPage]);
 
     const currentItems = filteredEmployees;
     const totalPages = Math.ceil((totalCount || filteredEmployees.length) / itemsPerPage) || 1;
@@ -138,16 +143,32 @@ const Employees: React.FC = () => {
         return role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     };
 
-    const roles = [
-        { value: '', label: 'All Roles' },
-        { value: 'FARM_MANAGER', label: 'Farm Manager' },
-        { value: 'SUPERVISOR', label: 'Supervisor' },
-        { value: 'DOCTOR', label: 'Doctor' },
-        { value: 'ASSISTANT_DOCTOR', label: 'Assistant Doctor' }
-    ];
+    const roles = useMemo(() => {
+        const baseRoles = [
+            { value: '', label: 'All Roles' },
+            { value: 'FARM_MANAGER', label: 'Farm Manager' },
+            { value: 'SUPERVISOR', label: 'Supervisor' },
+            { value: 'DOCTOR', label: 'Doctor' },
+            { value: 'ASSISTANT_DOCTOR', label: 'Assistant Doctor' },
+            { value: 'ADMIN', label: 'Admin' }
+        ];
+
+        // Add any other roles found in roleCounts that aren't in baseRoles
+        const existingRoleValues = new Set(baseRoles.map(r => r.value));
+        Object.keys(roleCounts).forEach(roleKey => {
+            if (!existingRoleValues.has(roleKey) && roleKey) {
+                baseRoles.push({
+                    value: roleKey,
+                    label: roleKey.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+                });
+            }
+        });
+
+        return baseRoles;
+    }, [roleCounts, totalCount]);
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
+        <div className="p-6 max-w-full mx-auto min-h-screen">
             {/* Backdrop for Dropdown */}
             {isDropdownOpen && (
                 <div
@@ -160,8 +181,8 @@ const Employees: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-sm text-gray-500 mt-1">Manage all employees ({employees.length} visible)</p>
+                        <h1 className="text-2xl font-bold text-gray-900">FarmVest Employees</h1>
+                        <p className="text-base text-gray-500 mt-1">Manage all employees (Total: {totalCount || 0} | {employees.length} visible)</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -194,11 +215,9 @@ const Employees: React.FC = () => {
                                         >
                                             <span className="flex items-center">
                                                 {option.label}
-                                                {option.value !== '' && (
-                                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
-                                                        {roleCounts[option.value] || 0}
-                                                    </span>
-                                                )}
+                                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {option.value === '' ? totalCount : (roleCounts[option.value] || 0)}
+                                                </span>
                                             </span>
                                             {selectedRole === option.value && <Check size={16} />}
                                         </button>
@@ -206,6 +225,46 @@ const Employees: React.FC = () => {
                                 </div>
                             )}
                         </div>
+
+                        <div className="relative z-20">
+                            <button
+                                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                className="flex items-center justify-between min-w-[150px] bg-white border border-gray-200 text-gray-700 py-2.5 px-4 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
+                            >
+                                <span className="truncate">
+                                    {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
+                                </span>
+                                <ChevronDown size={16} className={`ml-2 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isStatusDropdownOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {[
+                                        { value: '', label: 'All Status', count: totalCount },
+                                        { value: '1', label: 'Active', count: statusCounts.active },
+                                        { value: '0', label: 'Inactive', count: statusCounts.inactive }
+                                    ].map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => {
+                                                setSelectedStatus(option.value);
+                                                setIsStatusDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
+                                        >
+                                            <span className="flex items-center">
+                                                {option.label}
+                                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedStatus === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {option.count}
+                                                </span>
+                                            </span>
+                                            {selectedStatus === option.value && <Check size={16} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
 
                         <div className="relative flex-1 min-w-[200px]">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -227,66 +286,57 @@ const Employees: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-[#f8f9fa]">
                             <tr>
-                                <th onClick={() => requestSort('id')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
-                                <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
-                                <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
-                                <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('joining_date')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Farm</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Shed</th>
-                                <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th onClick={() => requestSort('id')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                <th onClick={() => requestSort('first_name')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
+                                <th onClick={() => requestSort('email')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                <th onClick={() => requestSort('phone_number')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                <th onClick={() => requestSort('joining_date')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
+                                <th className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider">Farm</th>
+                                <th className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider">Shed</th>
+                                <th onClick={() => requestSort('active_status')} className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {employeesLoading ? (
-                                <tr><td colSpan={9} className="p-4"><TableSkeleton cols={9} rows={5} /></td></tr>
+                                <tr><td colSpan={8} className="p-4"><TableSkeleton cols={8} rows={5} /></td></tr>
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-semibold text-blue-600 cursor-pointer hover:underline" onClick={() => handleNameClick(employee)}>
+                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                        <td className="px-8 py-5 whitespace-nowrap">
+                                            <div className="font-semibold text-blue-600 cursor-pointer hover:underline text-base" onClick={() => handleNameClick(employee)}>
                                                 {`${employee.first_name || ''} ${employee.last_name || ''}`}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.email || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.phone_number || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-600">{employee.email || '-'}</td>
+                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-600">{employee.phone_number || '-'}</td>
+                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-600">
                                             {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN', {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             }) : '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">
+                                        <td className="px-8 py-5 whitespace-nowrap text-center">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[13px] font-bold bg-blue-50 text-blue-700">
                                                 {employee.roles?.[0] ? employee.roles[0].replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase()) : '-'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                        <td className="px-8 py-5 whitespace-nowrap text-center text-base text-gray-500">
                                             {employee.farm_name || employee.farm?.farm_name || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                        <td className="px-8 py-5 whitespace-nowrap text-center text-base text-gray-500">
                                             {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <td className="px-8 py-5 whitespace-nowrap text-center">
+                                            <span className={`inline-flex items-center px-3 py-1.5 rounded text-[13px] font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(employee); }}
-                                                className="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={9}>
+                                    <td colSpan={8}>
                                         <div className="flex flex-col items-center justify-center py-16 px-4">
                                             <div className="bg-gray-50 rounded-full p-6 mb-4">
                                                 <Users size={48} className="text-gray-300" />

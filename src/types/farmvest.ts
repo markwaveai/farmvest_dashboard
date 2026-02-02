@@ -4,14 +4,23 @@ export interface FarmvestEmployee {
     last_name: string;
     email: string;
     phone_number: string;
-    // roles: string[]; // Access removed in new API
-    total_investment: number;
-    address: string | null;
-    active_status: boolean;
+    mobile?: string;
+    roles?: string[];
+    role?: string;
+    total_investment?: number;
+    address?: string | null;
+    active_status: number | boolean;
+    is_active?: number | boolean;
     shed_id?: number | string;
+    shed_name?: string;
+    farm_name?: string;
     shed?: {
         id: number;
         shed_id: string;
+        shed_name?: string;
+    };
+    farm?: {
+        farm_name: string;
     };
     joining_date?: string;
 }

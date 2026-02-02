@@ -63,7 +63,7 @@ const EmployeeDetailsPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6 max-w-full mx-auto">
             <button
                 onClick={handleBack}
                 className="flex items-center text-gray-600 mb-6 hover:text-blue-600 transition-colors font-medium"

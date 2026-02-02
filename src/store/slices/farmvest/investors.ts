@@ -23,17 +23,19 @@ export const fetchInvestors = createAsyncThunk(
             }
 
             // Map data if needed, or pass through. Assuming shape is similar to users/employees or specific investor shape
-            const mappedData = rawData.map((item: any, index: number) => ({
-                id: item.id || item.investor_id || index,
-                first_name: item.first_name || '',
-                last_name: item.last_name || '',
-                email: item.email || '',
-                mobile: item.mobile || item.phone_number || '',
-                phone_number: item.mobile || item.phone_number || '',
-                active_status: item.active_status !== undefined ? item.active_status : (item.is_active ? 1 : 0),
-                created_at: item.created_at || '',
-                ...item
-            }));
+            const mappedData = rawData.map((item: any, index: number) => {
+                if (index === 0) console.log('Sample Investor Item:', item);
+                return {
+                    id: item.id || item.investor_id || index,
+                    first_name: item.first_name || '',
+                    last_name: item.last_name || '',
+                    email: item.email || '',
+                    mobile: item.mobile || item.phone_number || '',
+                    phone_number: item.mobile || item.phone_number || '',
+                    active_status: item.active_status !== undefined ? item.active_status : (item.is_active ? 1 : 0),
+                    created_at: item.created_at || '',
+                };
+            });
 
             return { investors: mappedData, totalCount };
         } catch (error: any) {
