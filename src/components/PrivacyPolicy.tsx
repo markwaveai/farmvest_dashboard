@@ -131,7 +131,7 @@ const PrivacyPolicy: React.FC = () => {
         setContent(editContent);
         localStorage.setItem('privacy_policy_content_v1', editContent);
         setIsEditing(false);
-        alert('Privacy Policy updated successfully!');
+        console.log('Privacy Policy updated successfully!');
     };
 
     const handleCancel = () => {

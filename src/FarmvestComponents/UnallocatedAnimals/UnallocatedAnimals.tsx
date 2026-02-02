@@ -28,6 +28,8 @@ interface Animal {
     images?: string[];
     // New fields from user's JSON
     rfid?: string;
+    uuid?: string; // Raw Backend UUID
+    isOccupied?: boolean;
     investor_name?: string;
     display_text?: string;
     onboarding_time?: string;
@@ -60,6 +62,7 @@ const UnallocatedAnimals: React.FC = () => {
     // Modal State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [selectedParkingId, setSelectedParkingId] = useState<string | undefined>(undefined);
+    const [selectedRowContext, setSelectedRowContext] = useState<string | undefined>(undefined);
 
     // ---------------------------------------------------------
     // 2. STABILITY REFS (Guaranteed One-Time Fetching)
@@ -75,11 +78,16 @@ const UnallocatedAnimals: React.FC = () => {
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return dateString;
-            return date.toLocaleTimeString('en-IN', {
-                hour: '2-digit',
+
+            const day = date.getDate();
+            const month = date.getMonth() + 1; // 0-indexed
+            const time = date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
             });
+
+            return `${day}/${month} ${time}`;
         } catch {
             return dateString;
         }
@@ -149,6 +157,7 @@ const UnallocatedAnimals: React.FC = () => {
                     display_text: a.display_text,
                     investor_name: a.investor_name,
                     // Extensive fallbacks to find the onboarding date
+                    uuid: a.animal_id || a.id, // Store raw UUID for API calls
                     onboarding_time: a.investment_details?.order_date || a.order_date || a.created_at || a.onboarded_time || a.onboarded_at || a.onboarding_date || a.placedAt
                 };
             });
@@ -174,40 +183,106 @@ const UnallocatedAnimals: React.FC = () => {
         log(`>>> START FETCH SHED: ${sId}`);
         try {
             setLoadingGrid(true);
-            const numericId = isNaN(Number(sId)) ? sId : Number(sId);
-            const [allocResponse, gridData] = await Promise.all([
-                farmvestService.getShedAllocation(sId).catch(e => {
-                    log(`Note: Shed allocation fetch failed (possibly empty or 404): ${sId}`);
-                    return null;
+
+            // DYNAMIC SHED ID CALCULATION RESTORED
+            // Formula: ((FarmIndex - 1) * 12) + ShedIndex
+            let numericId = Number(sId);
+            if (selectedFarmId) {
+                const farmIndex = farms.findIndex((f: any) => String(f.farm_id || f.id) === String(selectedFarmId)) + 1;
+                const shedIndex = sheds.findIndex((s: any) => String(s.shed_id || s.id) === String(sId)) + 1;
+                if (farmIndex > 0 && shedIndex > 0) {
+                    numericId = ((farmIndex - 1) * 12) + shedIndex;
+                }
+            }
+            if (isNaN(numericId)) numericId = Number(sId);
+
+            log(`Fetching Shed: ${sId} (Numeric: ${numericId})`);
+
+            const [animalsResponse, gridData] = await Promise.all([
+                farmvestService.getTotalAnimals(Number(selectedFarmId), Number(sId)).catch(e => {
+                    log(`Note: Animal fetch failed (possibly empty): ${sId}`);
+                    return { data: [] };
                 }),
-                farmvestService.getAnimalPositions(numericId as any).catch(e => {
-                    log(`Warning: Animal positions fetch failed: ${e.message}`);
+                // Use available_positions as requested by USER
+                farmvestService.getShedPositions(numericId as any).catch(e => {
+                    log(`Warning: Shed positions fetch failed: ${e.message}`);
                     return [];
                 })
             ]);
 
             if (!isMounted.current) return;
 
-            const allocations = allocResponse?.data?.allocations || [];
+            const allocatedAnimals = animalsResponse?.data || [];
             const allocationMap = new Map();
             const rowToLetter: { [key: string]: string } = { 'R1': 'A', 'R2': 'B', 'R3': 'C', 'R4': 'D' };
 
-            allocations.forEach((a: any) => {
+            allocatedAnimals.forEach((a: any) => {
+                // Key it by the short identifier we expect in the grid (e.g. "A1")
+                // Row can be R1, R2...
                 const rowLetter = rowToLetter[a.row_number] || a.row_number;
-                // Mapped Keys (A1, A-1)
-                allocationMap.set(`${rowLetter}${a.parking_id}`, a);
-                allocationMap.set(`${rowLetter}-${a.parking_id}`, a);
-                // Original Keys (R11, R1-1)
-                allocationMap.set(`${a.row_number}${a.parking_id}`, a);
-                allocationMap.set(`${a.row_number}-${a.parking_id}`, a);
+
+                // Try to extract the short label from the long parking_id or use provided info
+                let shortId = null;
+                if (a.parking_id) {
+                    const match = a.parking_id.match(/[A-DF][0-9]+$/);
+                    shortId = match ? match[0] : a.parking_id;
+                }
+
+                if (shortId) {
+                    allocationMap.set(shortId, a);
+                    // Also key by the literal label if it's stored differently
+                    allocationMap.set(`${rowLetter}${shortId.replace(/^\D+/, '')}`, a);
+                }
+
+                // Fallback: search by RFID too if needed
+                if (a.rfid_tag_number) allocationMap.set(a.rfid_tag_number, a);
             });
 
             // 3. Process Positions Layout and Merge with Allocations
-            let positions = Array.isArray(gridData) ? gridData : (gridData.data || []);
+            let positions: any[] = [];
+            const extractPositions = (pkg: any, rowContext?: string) => {
+                if (!pkg) return;
 
-            // If API returns no positions, generate base layout to ensure allocations show somewhere
+                if (Array.isArray(pkg)) {
+                    const processed = pkg.map(p => {
+                        const base = typeof p === 'string' ? { label: p, id: p } : { ...p };
+                        return { ...base, _rowContext: rowContext };
+                    });
+                    positions = positions.concat(processed);
+                } else if (typeof pkg === 'object') {
+                    if (pkg.available || pkg.filled) {
+                        if (Array.isArray(pkg.available)) {
+                            const avail = pkg.available.map((p: any) => {
+                                const base = typeof p === 'string' ? { label: p, id: p } : { ...p };
+                                return { ...base, status: 'Available', _rowContext: rowContext };
+                            });
+                            positions = positions.concat(avail);
+                        }
+                        if (Array.isArray(pkg.filled)) {
+                            const filled = pkg.filled.map((p: any) => {
+                                const base = typeof p === 'string' ? { label: p, id: p } : { ...p };
+                                return { ...base, status: 'Occupied', _rowContext: rowContext };
+                            });
+                            positions = positions.concat(filled);
+                        }
+                        return;
+                    }
+                    if (pkg.data && (Array.isArray(pkg.data) || typeof pkg.data === 'object')) {
+                        extractPositions(pkg.data, rowContext);
+                        return;
+                    }
+                    Object.entries(pkg).forEach(([key, val]: [string, any]) => {
+                        const isRowKey = key.match(/^[R|r][0-9]+/);
+                        const nextContext = isRowKey ? key : rowContext;
+                        extractPositions(val, nextContext);
+                    });
+                }
+            };
+            extractPositions(gridData);
+
+            // Mock generation if empty
             if (positions.length === 0) {
-                log(`Shed ${sId} layout empty from API. Generating base grid for mapping.`);
+                log(`Shed ${sId} layout empty from API. Generating base grid.`);
                 const mock: any[] = [];
                 ['A', 'B', 'C', 'D'].forEach(r => {
                     for (let i = 1; i <= 75; i++) mock.push({ label: `${r}${i}`, status: 'Available', id: `${r}${i}` });
@@ -216,28 +291,31 @@ const UnallocatedAnimals: React.FC = () => {
             }
 
             const mergedPositions = positions.map((p: any) => {
-                const label = p.position_name || p.label || p.id || "";
-                const allocation = allocationMap.get(label);
-
-                if (allocation) {
-                    log(`Matched Allocation: Label ${label} -> RFID ${allocation.rfid_tag_number}`);
+                let rawLabel = p.position_name || p.label || p.id || "";
+                if ((!rawLabel || !isNaN(Number(rawLabel))) && p._rowContext) {
+                    const letter = rowToLetter[p._rowContext.toUpperCase()] || p._rowContext;
+                    rawLabel = `${letter}${rawLabel}`;
                 }
 
+                let standardLabel = String(rawLabel);
+
+                // Find allocation
+                const animal = allocationMap.get(standardLabel) || allocationMap.get(rawLabel) || allocationMap.get(p.id);
+                const isOccupiedFromGrid = p.status && String(p.status).toLowerCase() !== 'available';
+                const finalStatus = (animal || isOccupiedFromGrid) ? 'Occupied' : 'Available';
+
                 return {
-                    id: p.id,
-                    label: label,
-                    status: allocation ? 'Occupied' : (p.status || 'Available'),
-                    animal_image: allocation?.animal_image || p.animal_image || p.image,
-                    rfid_tag_number: allocation?.rfid_tag_number || p.rfid_tag_number || p.rfid,
-                    onboarding_time: allocation?.investment_details?.order_date || allocation?.order_date || allocation?.created_at || allocation?.onboarded_time || allocation?.onboarded_at || allocation?.onboarding_date || allocation?.placedAt,
-                    parking_id: allocation?.parking_id || p.parking_id || p.id // Ensure we have the full ID for details lookup
+                    ...p,
+                    label: standardLabel,
+                    status: finalStatus,
+                    isOccupied: (finalStatus === 'Occupied'),
+                    animal_image: animal?.images?.[0] || p.animal_image || p.image,
+                    rfid_tag_number: animal?.rfid_tag_number || p.rfid_tag_number,
+                    parking_id: animal?.parking_id || p.parking_id || p.id,
+                    _animal: animal // Store full object for easy modal access
                 };
             });
 
-            const occupied = mergedPositions.filter((p: any) => p.status.toLowerCase() !== 'available');
-            log(`<<< END FETCH SHED: ${mergedPositions.length} positions total, ${occupied.length} occupied slots found.`);
-
-            setSelectedShedAlloc(allocResponse);
             setGridPositions(mergedPositions);
         } catch (e: any) {
             log(`CRITICAL: Shed detail handler exception: ${e.message}`);
@@ -359,26 +437,28 @@ const UnallocatedAnimals: React.FC = () => {
 
     const handleGridSlotClick = async (position: any, e?: React.MouseEvent) => {
         console.log(`[UnallocatedAnimals] Grid slot clicked:`, position);
-        if (hasError) { alert("API Connection is currently blocked. Please refresh."); return; }
+        if (hasError) { console.error("API Connection is currently blocked. Please refresh."); return; }
 
         const isOccupied = position.status.toLowerCase() !== 'available';
         console.log(`[UnallocatedAnimals] Slot isOccupied: ${isOccupied} (Status: ${position.status})`);
 
         if (isOccupied) {
             // New Requirement: Show Details Modal instead of blocking
-            // Use explicit parking_id if available, otherwise fallback to label/id
+            // Use explicit parking_id if available (LONG one), otherwise fallback to label (SHORT one)
             const pId = position.parking_id || position.label || position.id;
-            console.log(`[UnallocatedAnimals] Opening Details Modal for ParkingID: ${pId}`);
-            alert(`DEBUG: Clicked Occupied Slot!\nStatus: ${position.status}\nParkingID: ${pId}`);
+            const rContext = position._rowContext;
+
+            console.log(`[UnallocatedAnimals] Opening Details Modal for ParkingID: ${pId}, Context: ${rContext}`);
 
             setSelectedParkingId(pId);
+            setSelectedRowContext(rContext);
             setDetailsModalOpen(true);
             return;
         }
 
-        if (!selectedFarmId) { alert('Please select a farm first.'); return; }
-        if (!selectedShedId) { alert('Please select a shed first.'); return; }
-        if (!selectedAnimalId) { alert('Please select an animal first.'); return; }
+        if (!selectedFarmId) { console.warn('Please select a farm first.'); return; }
+        if (!selectedShedId) { console.warn('Please select a shed first.'); return; }
+        if (!selectedAnimalId) { console.warn('Please select an animal first.'); return; }
 
         // BATCH MODE: Toggle pending state
         const slotLabel = position.label;
@@ -407,7 +487,7 @@ const UnallocatedAnimals: React.FC = () => {
 
     const handleSaveAllocation = async () => {
         if (pendingAllocations.size === 0) {
-            alert("No changes to save.");
+            console.warn("No changes to save.");
             return;
         }
 
@@ -425,30 +505,34 @@ const UnallocatedAnimals: React.FC = () => {
                 // Prepare payload item
                 const animal = animals.find(a => a.id === animalId);
                 if (animal && animal.rfid) {
-                    // Parse row and parking ID. Handles "A1" or "R1-1"
-                    let rowNum = slotLabel.charAt(0);
-                    let parkId = slotLabel.slice(1);
+                    // NEW REQUIREMENT (Step 906):
+                    // row_number: "R1", "R2"...
+                    // parking_id: "A1", "A2", "B1"... (The Label)
 
-                    if (slotLabel.includes('-')) {
-                        const parts = slotLabel.split('-');
-                        rowNum = parts[0];
-                        parkId = parts[1];
-                    } else if (slotLabel.startsWith('R') && !isNaN(Number(slotLabel.charAt(1)))) {
-                        rowNum = slotLabel.substring(0, 2);
-                        parkId = slotLabel.substring(2);
+                    let rowNum = 'R1';
+                    const letter = slotLabel.charAt(0).toUpperCase();
+
+                    if (letter === 'A') rowNum = 'R1';
+                    else if (letter === 'B') rowNum = 'R2';
+                    else if (letter === 'C') rowNum = 'R3';
+                    else if (letter === 'D') rowNum = 'R4';
+                    else if (slotLabel.startsWith('R')) {
+                        // Fallback for R1-1 style
+                        const match = slotLabel.match(/^R(\d+)/);
+                        if (match) rowNum = `R${match[1]}`;
                     }
 
                     validAllocations.push({
-                        rfid_tag_number: animal.rfid,
-                        row_number: rowNum,
-                        parking_id: parkId
+                        rfid_tag_number: animal.uuid || animal.rfid || animal.id, // User Request: Convert RFID to UUID
+                        row_number: rowNum,    // "R1"
+                        parking_id: slotLabel  // "A1"
                     });
                 }
             }
         });
 
         if (validAllocations.length === 0) {
-            alert("No valid allocations to save. Please check for red indicators.");
+            console.warn("No valid allocations to save. Please check for red indicators.");
             return;
         }
 
@@ -456,7 +540,7 @@ const UnallocatedAnimals: React.FC = () => {
             setIsSaving(true);
             await farmvestService.allocateAnimal(selectedShedId, validAllocations);
 
-            alert(`Successfully allocated ${validAllocations.length} animals!`);
+            console.log(`Successfully allocated ${validAllocations.length} animals!`);
 
             // Clear all pending state
             setPendingAllocations(new Map());
@@ -470,7 +554,7 @@ const UnallocatedAnimals: React.FC = () => {
 
         } catch (error: any) {
             const apiError = error.response?.data?.message || error.message || 'Unknown error';
-            alert(`Save Failed: ${apiError}`);
+            console.error(`Save Failed: ${apiError}`);
         } finally {
             if (isMounted.current) setIsSaving(false);
         }
@@ -579,8 +663,8 @@ const UnallocatedAnimals: React.FC = () => {
                     <select className="ua-select" value={selectedShedId} onChange={(e) => setSelectedShedId(e.target.value)} disabled={!selectedFarmId}>
                         <option value="">{!selectedFarmId ? "Select Farm First" : (sheds.length === 0 ? "No Sheds Found" : "Select Shed")}</option>
                         {sheds.map((s: any) => (
-                            <option key={s.shed_id || s.id} value={s.shed_id || s.id}>
-                                🏠 {s.shed_name}
+                            <option key={s.id || s.shed_id} value={s.id || s.shed_id}>
+                                🏠 {s.shed_name || s.name || 'Unnamed Shed'}
                             </option>
                         ))}
                     </select>
@@ -588,21 +672,33 @@ const UnallocatedAnimals: React.FC = () => {
                 </div>
             </div>
 
-            <div className="ua-stats-card">
-                <div className="ua-stat-item">
-                    <div className="ua-stat-value"><LayoutGrid size={24} color="#3B82F6" />{stats.capacity}</div>
-                    <span className="ua-stat-label">Capacity</span>
-                </div>
-                <div className="ua-stat-item">
-                    <div className="ua-stat-value"><PawPrint size={24} color="#15803D" />{stats.allocated}</div>
-                    <span className="ua-stat-label">Allocated</span>
-                </div>
-                <div className="ua-stat-item">
-                    <div className="ua-stat-value"><ShoppingBag size={24} color="#F97316" />{stats.pending}</div>
-                    <span className="ua-stat-label">Pending</span>
-                </div>
-            </div>
+            {/* Stats Cards - Updated to use Shed Object Data */}
+            {selectedShedId && (() => {
+                // Find the full shed object from the list
+                const shed = sheds.find((s: any) => String(s.id) === selectedShedId || s.shed_id === selectedShedId) || {} as any;
+                // Use API values or fallbacks
+                const capacity = shed.capacity || 300;
+                const allocated = shed.current_buffaloes ?? shed.entry_count ?? 0;
+                // Pending is local state
+                const pendingCount = pendingAllocations.size;
 
+                return (
+                    <div className="ua-stats-card">
+                        <div className="ua-stat-item">
+                            <div className="ua-stat-value"><LayoutGrid size={24} color="#3B82F6" />{capacity}</div>
+                            <span className="ua-stat-label">Capacity</span>
+                        </div>
+                        <div className="ua-stat-item">
+                            <div className="ua-stat-value"><PawPrint size={24} color="#15803D" />{allocated}</div>
+                            <span className="ua-stat-label">Allocated</span>
+                        </div>
+                        <div className="ua-stat-item">
+                            <div className="ua-stat-value"><ShoppingBag size={24} color="#F97316" />{pendingCount}</div>
+                            <span className="ua-stat-label">Pending</span>
+                        </div>
+                    </div>
+                );
+            })()}
             <div className="ua-section-title">Select Animal to Allocate</div>
             <div className="ua-animals-list">
                 {loadingAnimals ? <div style={{ padding: '20px' }}>Loading animals...</div> : (
@@ -627,7 +723,7 @@ const UnallocatedAnimals: React.FC = () => {
                             <span className="ua-animal-id" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{animal.display_text || animal.rfid || 'Animal'}</span>
                             {animal.onboarding_time && (
                                 <span className="ua-animal-time" style={{ fontSize: '0.65rem', color: '#6B7280', marginTop: '2px' }}>
-                                    Onboarded at: {formatDate(animal.onboarding_time)}
+                                    {formatDate(animal.onboarding_time)}
                                 </span>
                             )}
                         </div>
@@ -691,21 +787,31 @@ const UnallocatedAnimals: React.FC = () => {
                                                 <div className="flex gap-2 bg-gray-50/50 p-2 rounded-xl border border-dashed border-gray-200 relative pt-3">
                                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-blue-200"></div>
                                                     {chunk.map((pos) => {
-                                                        const isOccupied = pos.status.toLowerCase() !== 'available';
+                                                        const rawStatus = String(pos.status || 'Available').trim().toLowerCase();
+                                                        const isOccupied = rawStatus !== 'available' || (pos.animal && pos.animal.length > 0) || pos.isOccupied;
                                                         const isPending = pendingAllocations.has(pos.label);
                                                         const displayImg = pos.animal_image || "/buffalo_green_icon.png";
 
                                                         return (
                                                             <div
                                                                 key={pos.label}
-                                                                className="flex-shrink-0 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
-                                                                onClick={(e) => handleGridSlotClick(pos, e)}
+                                                                className={`flex-shrink-0 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform`}
+                                                                onClick={(e) => {
+                                                                    handleGridSlotClick(pos, e);
+                                                                }}
                                                             >
                                                                 <div className={`
                                                                     w-14 h-14 border rounded-lg flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
-                                                                    ${isOccupied && !isPending ? 'opacity-50 grayscale' : 'border-gray-200'}
+                                                                    ${isOccupied && !isPending ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}
                                                                     ${isPending ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}
                                                                 `}>
+                                                                    {/* Occupied State - Green Paw */}
+                                                                    {isOccupied && !isPending && (
+                                                                        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
+                                                                            <PawPrint size={24} color="#22C55E" fill="#22C55E" />
+                                                                            <span className="text-[9px] font-bold text-emerald-600 mt-1">{pos.label}</span>
+                                                                        </div>
+                                                                    )}
                                                                     {/* Pending Overlay */}
                                                                     {isPending && (
                                                                         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
@@ -717,12 +823,17 @@ const UnallocatedAnimals: React.FC = () => {
                                                                         </div>
                                                                     )}
 
-                                                                    <img
-                                                                        src={displayImg}
-                                                                        alt="Buffalo"
-                                                                        className={`w-6 h-6 object-contain mb-1 ${isOccupied && !pos.animal_image ? 'faded' : ''}`}
-                                                                    />
-                                                                    <span className="text-[10px] font-bold text-gray-400">{isOccupied ? (pos.rfid_tag_number || pos.label) : pos.label}</span>
+                                                                    {/* Available State Content (Hidden if Occupied/Pawned) */}
+                                                                    {!isOccupied && !isPending && (
+                                                                        <>
+                                                                            <img
+                                                                                src={displayImg}
+                                                                                alt="Buffalo"
+                                                                                className={`w-6 h-6 object-contain mb-1`}
+                                                                            />
+                                                                            <span className="text-[10px] font-bold text-gray-400">{pos.label}</span>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         );
@@ -761,8 +872,12 @@ const UnallocatedAnimals: React.FC = () => {
                 onClose={() => {
                     setDetailsModalOpen(false);
                     setSelectedParkingId(undefined);
+                    setSelectedRowContext(undefined);
                 }}
                 parkingId={selectedParkingId}
+                farmId={selectedFarmId ? Number(selectedFarmId) : undefined}
+                shedId={selectedShedId ? Number(selectedShedId) : undefined}
+                rowNumber={selectedRowContext}
             />
         </div>
     );

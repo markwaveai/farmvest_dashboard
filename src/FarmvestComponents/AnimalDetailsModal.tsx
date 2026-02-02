@@ -22,9 +22,12 @@ interface AnimalDetailsModalProps {
     onClose: () => void;
     rfid?: string;
     parkingId?: string;
+    farmId?: number;
+    shedId?: number;
+    rowNumber?: string;
 }
 
-const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose, rfid, parkingId }) => {
+const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose, rfid, parkingId, farmId, shedId, rowNumber }) => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,20 +36,40 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
         if (isOpen) {
             // Priority to Parking ID as it's the new flow
             if (parkingId) {
-                fetchByParkingId(parkingId);
+                fetchByParkingId(parkingId, farmId, shedId, rowNumber);
             } else if (rfid) {
                 fetchAnimalDetails(rfid);
             }
         }
-    }, [isOpen, rfid, parkingId]);
+    }, [isOpen, rfid, parkingId, farmId, shedId, rowNumber]);
 
-    const fetchByParkingId = async (pId: string) => {
+    const fetchByParkingId = async (pId: string, fId?: number, sId?: number, rNum?: string) => {
         try {
             setLoading(true);
             setError(null);
-            console.log(`[AnimalDetailsModal] Fetching details for ParkingID: ${pId}`);
-            // Call new API
-            const result = await farmvestService.getAnimalPositionDetails(pId);
+
+            // Log full context for debugging
+            console.log(`[AnimalDetailsModal] Fetching position details:`, {
+                parkingId: pId,
+                farmId: fId,
+                shedId: sId,
+                rowNumber: rNum
+            });
+
+            // Prevent API calls with invalid numeric identifiers
+            if ((fId !== undefined && isNaN(fId)) || (sId !== undefined && isNaN(sId))) {
+                console.error('[AnimalDetailsModal] Invalid ID types:', { fId, sId });
+                setError('Invalid identifiers provided. Please select farm and shed again.');
+                setLoading(false);
+                return;
+            }
+
+            const result = await farmvestService.getAnimalPositionDetails({
+                parkingId: pId,
+                farmId: fId,
+                shedId: sId,
+                rowNumber: rNum
+            });
             console.log('[AnimalDetailsModal] API Result:', result);
             setData(result?.data || result); // Handle wrapped response
         } catch (err: any) {
@@ -117,7 +140,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                     ) : error ? (
                         <div className="error-details">
                             <p>{error}</p>
-                            <button onClick={() => parkingId ? fetchByParkingId(parkingId) : rfid && fetchAnimalDetails(rfid)} className="retry-details-btn">Retry</button>
+                            <button onClick={() => parkingId ? fetchByParkingId(parkingId, farmId, shedId, rowNumber) : rfid && fetchAnimalDetails(rfid)} className="retry-details-btn">Retry</button>
                         </div>
                     ) : (
                         <>

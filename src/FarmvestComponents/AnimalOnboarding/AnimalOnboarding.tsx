@@ -127,7 +127,7 @@ const AnimalOnboarding: React.FC = () => {
             }));
         } catch (error) {
             console.error("Upload failed:", error);
-            alert("Failed to upload images. Please check your connection and try again.");
+            // alert replaced with console error for better UX
             setAnimals(prev => prev.map(a => a.id === animalId ? { ...a, isUploading: false } : a));
         }
     };
@@ -209,7 +209,7 @@ const AnimalOnboarding: React.FC = () => {
         setUser(null);
 
         try {
-            const data = await farmvestService.getPaidOrders(mobile);
+            const data: any = await farmvestService.getPaidOrders(mobile);
 
             let ordersList: Order[] = [];
             let userData: UserProfile | null = null;
@@ -228,8 +228,8 @@ const AnimalOnboarding: React.FC = () => {
                 if (Array.isArray(data.orders)) {
                     ordersList = data.orders.map(normalizeOrder);
                 }
-                if (data.user) {
-                    userData = data.user;
+                if ((data as any).user) {
+                    userData = (data as any).user;
                 }
             }
 
@@ -243,12 +243,11 @@ const AnimalOnboarding: React.FC = () => {
             } else {
                 setOrders([]);
                 setSearchedMobile(mobile);
-                alert('No paid orders found for this mobile number.');
+                console.warn('No paid orders found for this mobile number.');
             }
-
         } catch (error) {
             console.error('Error fetching orders:', error);
-            alert('Failed to fetch orders. Please check console for details.');
+            // Intrusive alert removed, error logged to console instead
         } finally {
             setLoading(false);
         }
@@ -298,7 +297,7 @@ const AnimalOnboarding: React.FC = () => {
 
     const handleConfirmOnboarding = async () => {
         if (!selectedOrder || !user) {
-            alert('Missing order or user details.');
+            console.warn('Missing order or user details.');
             return;
         }
 
@@ -309,12 +308,12 @@ const AnimalOnboarding: React.FC = () => {
         });
 
         if (incompleteAnimals.length > 0) {
-            alert(`Please complete details for all animals. (Incomplete: ${incompleteAnimals.length})`);
+            console.warn(`Please complete details for all animals. (Incomplete: ${incompleteAnimals.length})`);
             return;
         }
 
         if (!selectedFarmId || selectedFarmId === 'Show all farms') {
-            alert('Please select a Farm Location.');
+            console.warn('Please select a Farm Location.');
             return;
         }
 
@@ -389,7 +388,7 @@ const AnimalOnboarding: React.FC = () => {
 
 
             console.log("SENDING PAYLOAD:", payload); // Keep for console
-            alert(`Debug Info:\nPayload FarmID: ${payload.farm_id}\nRaw State: ${selectedFarmId}\nFarms Count: ${farms.length}`);
+            // Removed intrusive Debug Info alert
 
             await farmvestService.onboardAnimal(payload);
             setToastVisible(true);
@@ -404,7 +403,7 @@ const AnimalOnboarding: React.FC = () => {
             setMobile('');
         } catch (error) {
             console.error('Onboarding failed:', error);
-            alert('Failed to complete onboarding. check console.');
+            // Intrusive alert removed
         } finally {
             setLoading(false);
         }

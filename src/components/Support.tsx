@@ -204,7 +204,7 @@ const Support: React.FC = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         console.log('Support form submitted:', formData);
-        alert('Thank you for contacting support! We will get back to you shortly.');
+        console.log('Thank you for contacting support! We will get back to you shortly.');
         // Reset form
         setFormData({
             firstName: '',

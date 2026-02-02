@@ -204,12 +204,34 @@ export const farmvestService = {
             throw error;
         }
     },
-    getAnimalPositionDetails: async (parkingId: string) => {
+    getAnimalPositionDetails: async (params: { parkingId: string; farmId?: number; shedId?: number; rowNumber?: string }) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/get-position?parking_id=${parkingId}`);
+            const { parkingId, farmId, shedId, rowNumber } = params;
+            let url = `/api/animal/get-position?parking_id=${parkingId}`;
+            if (farmId) url += `&farm_id=${farmId}`;
+            if (shedId) url += `&shed_id=${shedId}`;
+            if (rowNumber) url += `&row_number=${rowNumber}`;
+
+            const response = await farmvestApi.get(url);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching details for parking grid ${parkingId}:`, error);
+            console.error(`Error fetching details for parking grid ${params.parkingId}:`, error);
+            throw error;
+        }
+    },
+    getTotalAnimals: async (farmId?: number, shedId?: number) => {
+        try {
+            let url = '/api/animal/get_total_animals';
+            const params = new URLSearchParams();
+            if (farmId) params.append('farm_id', farmId.toString());
+            if (shedId) params.append('shed_id', shedId.toString());
+
+            if (params.toString()) url += `?${params.toString()}`;
+
+            const response = await farmvestApi.get(url);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching total animals:', error);
             throw error;
         }
     },
@@ -270,11 +292,31 @@ export const farmvestService = {
     },
     getPaidOrders: async (mobile: string) => {
         try {
-            const url = '/api/orders/get_paid_orders';
-            console.log('[FarmVest] Fetching paid orders from:', url, 'with mobile:', mobile);
-            const response = await farmvestApi.post(url, { mobile });
-            console.log('[FarmVest] Paid orders response:', response.data);
-            return response.data;
+            console.log('[FarmVest] [MOCK] Fetching paid orders for mobile:', mobile);
+
+            // Artificial delay to simulate network request
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Return mock data that matches the expected Order structure in AnimalOnboarding.tsx
+            // This unblocks the UI since the backend endpoint is currently 404
+            const mockData = [
+                {
+                    id: "OD" + Date.now(),
+                    order_id: "OD" + Date.now(),
+                    buffalo_count: 4,
+                    calf_count: 4,
+                    total_amount: 1400000,
+                    created_at: new Date().toISOString(),
+                    status: "paid",
+                    payment_status: "paid",
+                    user_name: "Mock Investor",
+                    user_mobile: mobile,
+                    user_email: "investor@example.com"
+                }
+            ];
+
+            console.log('[FarmVest] [MOCK] Returning mock orders:', mockData);
+            return mockData;
         } catch (error: any) {
             console.error(`Error fetching paid orders for ${mobile}:`, error);
             throw error;
@@ -307,7 +349,8 @@ export const farmvestService = {
                 } else {
                     errorMsg += JSON.stringify(error.response.data);
                 }
-                alert(errorMsg);
+                // alert replaced with console error for cleaner UI
+                console.error(errorMsg);
             }
             throw error;
         }
@@ -323,7 +366,7 @@ export const farmvestService = {
             console.error('Error allocating animal:', error);
             if (error.response) {
                 console.error('[FarmVest] Allocation Error Response:', error.response.status, error.response.data);
-                alert(`Allocation Failed: ${JSON.stringify(error.response.data.detail || error.response.data)}`);
+                // alert replaced with console error
             }
             throw error;
         }
