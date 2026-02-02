@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './UserTabs.css';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
-import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid } from 'lucide-react';
+import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -67,6 +67,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   else if (currentPath.includes('/farmvest/user-activation')) activeTab = 'farmvest-activation';
   else if (currentPath.includes('/farmvest/animal-onboarding')) activeTab = 'animal-onboarding';
   else if (currentPath.includes('/farmvest/unallocated-animals')) activeTab = 'unallocated-animals';
+  else if (currentPath.includes('/farmvest/investors')) activeTab = 'farmvest-investors';
   else if (currentPath.includes('/support-tickets')) activeTab = 'support-tickets';
   else if (currentPath.includes('/privacy-policy')) activeTab = 'privacy';
   else if (currentPath.includes('/support')) activeTab = 'support';
@@ -129,6 +130,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-farms' && <TreePine size={18} />}
                   {activeTab === 'animal-onboarding' && <PawPrint size={18} />}
                   {activeTab === 'unallocated-animals' && <LayoutGrid size={18} />}
+                  {activeTab === 'farmvest-investors' && <Briefcase size={18} />}
                   {activeTab === 'farmvest-activation' && <UserCheck size={18} />}
                   {activeTab === 'support' && <Mail size={18} />}
                 </div>
@@ -137,6 +139,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-farms' && 'FarmVest Farms'}
                   {activeTab === 'animal-onboarding' && 'Animal Onboarding'}
                   {activeTab === 'unallocated-animals' && 'Unallocated Animals'}
+                  {activeTab === 'farmvest-investors' && 'FarmVest Investors'}
                   {activeTab === 'farmvest-activation' && 'User Activation'}
                   {activeTab === 'support' && 'Support Tickets'}
                   {activeTab === 'privacy' && 'Privacy Policy'}
@@ -147,6 +150,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 {activeTab === 'farmvest-farms' && 'Overview of all farm locations'}
                 {activeTab === 'animal-onboarding' && 'Register new animals'}
                 {activeTab === 'unallocated-animals' && 'Manage shed allocations'}
+                {activeTab === 'farmvest-investors' && 'View all registered investors'}
                 {activeTab === 'farmvest-activation' && 'Activate or deactivate users'}
                 {activeTab === 'support' && 'View and manage tickets'}
               </span>
@@ -212,6 +216,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <LayoutGrid size={18} />
                   <span className="nav-text">Unallocated Animals</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-investors' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/investors'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <Briefcase size={18} />
+                  <span className="nav-text">Investors</span>
                 </div>
               </button>
             </li>

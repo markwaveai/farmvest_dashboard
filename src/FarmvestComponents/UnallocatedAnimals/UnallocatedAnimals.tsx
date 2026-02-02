@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import './UnallocatedAnimals.css';
-import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2 } from 'lucide-react';
+import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2, Camera } from 'lucide-react';
 import CommonShedGrid from '../../components/common/ShedGrid/CommonShedGrid';
 import { farmvestService } from '../../services/farmvest_api';
 import AnimalDetailsModal from '../AnimalDetailsModal';
@@ -638,57 +638,122 @@ const UnallocatedAnimals: React.FC = () => {
             {loadingGrid ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Loader2 size={32} className="animate-spin" color="#2E7D32" /></div>
             ) : (
-                <CommonShedGrid
-                    positions={displayPositions}
-                    layout="row"
-                    groups={rows}
-                    onSlotClick={(pos, e) => handleGridSlotClick(pos, e)}
-                    renderSlot={(pos: any) => {
-                        const isOccupied = pos.status.toLowerCase() !== 'available';
-                        const displayImg = pos.animal_image || "/buffalo_green_icon.png";
-
-                        // Check pending state
-                        const isPending = pendingAllocations.has(pos.label);
-
-                        return (
-                            <div className="slot-inner-icon" style={{ position: 'relative' }}>
-                                {isPending ? (
-                                    <div style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: '#FFFFFF', // Solid white
-                                        zIndex: 50, // Higher z-index
-                                        borderRadius: '8px',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                    }}>
-                                        <PawPrint
-                                            size={32}
-                                            color={isOccupied ? '#EF4444' : '#22C55E'}
-                                            fill={isOccupied ? '#EF4444' : '#22C55E'}
-                                        />
-                                    </div>
-                                ) : null}
-
-                                <img
-                                    src={displayImg}
-                                    alt="animal"
-                                    className={`slot-animal-icon ${isOccupied && !pos.animal_image ? 'faded' : ''}`}
-                                />
-                                <span className="slot-label">
-                                    {isOccupied ? (pos.rfid_tag_number || pos.label) : pos.label}
-                                </span>
-                                {isOccupied && pos.onboarding_time && (
-                                    <span className="slot-time">
-                                        {formatDate(pos.onboarding_time)}
-                                    </span>
-                                )}
+                <div className="space-y-2 p-4">
+                    {(() => {
+                        const Separator = ({ label }: { label: string }) => (
+                            <div className="w-full bg-white border border-gray-100 rounded-lg py-3 mb-6 shadow-sm flex items-center justify-center">
+                                <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">{label}</span>
                             </div>
                         );
-                    }}
-                />
+
+                        // Group positions
+                        const groupedPositions: Record<string, any[]> = { A: [], B: [], C: [], D: [] };
+                        const sortPositions = (a: any, b: any) => {
+                            const numA = parseInt(a.label.slice(1));
+                            const numB = parseInt(b.label.slice(1));
+                            return numA - numB;
+                        };
+
+                        displayPositions.forEach((pos: any) => {
+                            const letter = pos.label.charAt(0).toUpperCase();
+                            if (groupedPositions[letter]) {
+                                groupedPositions[letter].push(pos);
+                            }
+                        });
+
+                        Object.keys(groupedPositions).forEach(key => {
+                            groupedPositions[key].sort(sortPositions);
+                        });
+
+                        const renderRow = (letter: string, rowLabel: string) => {
+                            const rowPositions = groupedPositions[letter];
+                            const chunks = [];
+                            for (let i = 0; i < rowPositions.length; i += 4) {
+                                chunks.push(rowPositions.slice(i, i + 4));
+                            }
+
+                            return (
+                                <div className="mb-6">
+                                    <h4 className="text-sm font-bold text-gray-700 mb-3">{rowLabel}</h4>
+                                    <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide px-2">
+                                        {chunks.map((chunk, groupIndex) => (
+                                            <div key={groupIndex} className="flex flex-col items-center">
+                                                {/* Camera Overhead */}
+                                                <div className="mb-2 flex flex-col items-center animate-pulse">
+                                                    <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
+                                                        <Camera size={14} className="text-blue-600" />
+                                                    </div>
+                                                    <div className="h-3 w-0.5 bg-blue-200 -mt-1"></div>
+                                                    <div className="w-full h-0.5 bg-blue-200"></div>
+                                                </div>
+
+                                                {/* Group of 4 Slots */}
+                                                <div className="flex gap-2 bg-gray-50/50 p-2 rounded-xl border border-dashed border-gray-200 relative pt-3">
+                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-blue-200"></div>
+                                                    {chunk.map((pos) => {
+                                                        const isOccupied = pos.status.toLowerCase() !== 'available';
+                                                        const isPending = pendingAllocations.has(pos.label);
+                                                        const displayImg = pos.animal_image || "/buffalo_green_icon.png";
+
+                                                        return (
+                                                            <div
+                                                                key={pos.label}
+                                                                className="flex-shrink-0 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                                                                onClick={(e) => handleGridSlotClick(pos, e)}
+                                                            >
+                                                                <div className={`
+                                                                    w-14 h-14 border rounded-lg flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
+                                                                    ${isOccupied && !isPending ? 'opacity-50 grayscale' : 'border-gray-200'}
+                                                                    ${isPending ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}
+                                                                `}>
+                                                                    {/* Pending Overlay */}
+                                                                    {isPending && (
+                                                                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
+                                                                            <PawPrint
+                                                                                size={24}
+                                                                                color={isOccupied ? '#EF4444' : '#22C55E'}
+                                                                                fill={isOccupied ? '#EF4444' : '#22C55E'}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    <img
+                                                                        src={displayImg}
+                                                                        alt="Buffalo"
+                                                                        className={`w-6 h-6 object-contain mb-1 ${isOccupied && !pos.animal_image ? 'faded' : ''}`}
+                                                                    />
+                                                                    <span className="text-[10px] font-bold text-gray-400">{isOccupied ? (pos.rfid_tag_number || pos.label) : pos.label}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        };
+
+                        return (
+                            <div className="space-y-2">
+                                <Separator label="DRAINAGE" />
+                                {renderRow('A', 'Row R1')}
+
+                                <Separator label="FEED WAY" />
+                                {renderRow('B', 'Row R2')}
+
+                                <Separator label="DRAINAGE" />
+                                {renderRow('C', 'Row R3')}
+
+                                <Separator label="FEED WAY" />
+                                {renderRow('D', 'Row R4')}
+
+                                <Separator label="DRAINAGE" />
+                            </div>
+                        );
+                    })()}
+                </div>
             )}
             {/* Occupied Slot Details Modal */}
             <AnimalDetailsModal

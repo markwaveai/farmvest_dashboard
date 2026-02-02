@@ -13,6 +13,7 @@ export interface FarmvestEmployee {
         id: number;
         shed_id: string;
     };
+    joining_date?: string;
 }
 
 export interface FarmvestPagination {

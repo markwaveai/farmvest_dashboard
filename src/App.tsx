@@ -25,6 +25,8 @@ const FarmVestFarmDetails = React.lazy(() => import('./FarmvestComponents/FarmDe
 const FarmVestEmployeeDetails = React.lazy(() => import('./FarmvestComponents/EmployeeDetailsPage'));
 const FarmVestAnimalOnboarding = React.lazy(() => import('./FarmvestComponents/AnimalOnboarding/AnimalOnboarding'));
 const FarmVestUnallocatedAnimals = React.lazy(() => import('./FarmvestComponents/UnallocatedAnimals/UnallocatedAnimals'));
+const FarmVestInvestors = React.lazy(() => import('./FarmvestComponents/Investors'));
+const FarmVestInvestorDetails = React.lazy(() => import('./FarmvestComponents/InvestorDetailsPage'));
 
 interface Session {
   mobile: string;
@@ -167,6 +169,22 @@ function App() {
           <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
             <React.Suspense fallback={<UsersPageSkeleton />}>
               <FarmVestUnallocatedAnimals />
+            </React.Suspense>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/farmvest/investors" element={
+          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+            <React.Suspense fallback={<UsersPageSkeleton />}>
+              <FarmVestInvestors />
+            </React.Suspense>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/farmvest/investors/:id" element={
+          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+            <React.Suspense fallback={<UsersPageSkeleton />}>
+              <FarmVestInvestorDetails />
             </React.Suspense>
           </ProtectedRoute>
         } />

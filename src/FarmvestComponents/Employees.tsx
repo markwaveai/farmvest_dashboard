@@ -2,13 +2,12 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
-import { fetchEmployees, clearMessages, deleteEmployee } from '../store/slices/farmvest/employees';
+import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee } from '../store/slices/farmvest/employees';
 import AddEmployeeModal from './AddEmployee/AddEmployeeModal';
 
 import DeleteEmployeeModal from './DeleteEmployeeModal';
 import Snackbar from '../components/common/Snackbar';
-import { Trash2, Search, Users } from 'lucide-react';
-
+import { Trash2, Search, Users, ChevronDown, Check } from 'lucide-react';
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
@@ -21,6 +20,7 @@ const Employees: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
     const [selectedEmployee, setSelectedEmployee] = React.useState<any>(null);
     const [selectedRole, setSelectedRole] = useState('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const {
         employees,
@@ -28,8 +28,15 @@ const Employees: React.FC = () => {
         loading: employeesLoading,
         error,
         successMessage,
-        deleteLoading
+        deleteLoading,
+        roleCounts
     } = useAppSelector((state: RootState) => state.farmvestEmployees);
+
+    useEffect(() => {
+        dispatch(fetchRoleCounts());
+    }, [dispatch]);
+
+    // ... (rest of the component)
 
     const handleAddEmployee = useCallback(() => {
         setIsModalOpen(true);
@@ -50,6 +57,7 @@ const Employees: React.FC = () => {
         if (deleteEmployee.fulfilled.match(result)) {
             setIsDeleteModalOpen(false);
             setSelectedEmployee(null);
+            dispatch(fetchRoleCounts()); // Refresh counts
         }
     };
 
@@ -114,7 +122,7 @@ const Employees: React.FC = () => {
             size: itemsPerPage,
             sort_by: 1
         }));
-    }, [dispatch, selectedRole, currentPage]);
+    }, [dispatch, selectedRole, currentPage, itemsPerPage]);
 
     const currentItems = filteredEmployees;
     const totalPages = Math.ceil((totalCount || filteredEmployees.length) / itemsPerPage) || 1;
@@ -124,8 +132,30 @@ const Employees: React.FC = () => {
         return sortConfig.direction === 'asc' ? '↑' : '↓';
     };
 
+    // Helper to format role name
+    const formatRoleName = (role: string) => {
+        if (!role) return 'All Roles';
+        return role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    };
+
+    const roles = [
+        { value: '', label: 'All Roles' },
+        { value: 'FARM_MANAGER', label: 'Farm Manager' },
+        { value: 'SUPERVISOR', label: 'Supervisor' },
+        { value: 'DOCTOR', label: 'Doctor' },
+        { value: 'ASSISTANT_DOCTOR', label: 'Assistant Doctor' }
+    ];
+
     return (
         <div className="p-6 max-w-[1600px] mx-auto min-h-screen">
+            {/* Backdrop for Dropdown */}
+            {isDropdownOpen && (
+                <div
+                    className="fixed inset-0 z-10 bg-transparent"
+                    onClick={() => setIsDropdownOpen(false)}
+                />
+            )}
+
             {/* Page Header Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -142,21 +172,39 @@ const Employees: React.FC = () => {
                             <span className="text-lg">+</span> Add Employee
                         </button>
 
-                        <div className="relative">
-                            <select
-                                className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent cursor-pointer min-w-[140px]"
-                                value={selectedRole}
-                                onChange={(e) => setSelectedRole(e.target.value)}
+                        <div className="relative z-20">
+                            <button
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                className="flex items-center justify-between min-w-[180px] bg-white border border-gray-200 text-gray-700 py-2.5 px-4 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
                             >
-                                <option value="">All Roles</option>
-                                <option value="FARM_MANAGER">Farm Manager</option>
-                                <option value="SUPERVISOR">Supervisor</option>
-                                <option value="DOCTOR">Doctor</option>
-                                <option value="ASSISTANT_DOCTOR">Assistant Doctor</option>
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                            </div>
+                                <span className="truncate">{formatRoleName(selectedRole)}</span>
+                                <ChevronDown size={16} className={`ml-2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isDropdownOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {roles.map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => {
+                                                setSelectedRole(option.value);
+                                                setIsDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
+                                        >
+                                            <span className="flex items-center">
+                                                {option.label}
+                                                {option.value !== '' && (
+                                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
+                                                        {roleCounts[option.value] || 0}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            {selectedRole === option.value && <Check size={16} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="relative flex-1 min-w-[200px]">
@@ -171,11 +219,11 @@ const Employees: React.FC = () => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                    </div>
-                </div>
+                    </div >
+                </div >
 
                 {/* Table Content */}
-                <div className="mt-8 overflow-hidden rounded-xl border border-gray-100">
+                < div className="mt-8 overflow-hidden rounded-xl border border-gray-100" >
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-[#f8f9fa]">
                             <tr>
@@ -183,7 +231,9 @@ const Employees: React.FC = () => {
                                 <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
                                 <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
                                 <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                <th onClick={() => requestSort('joining_date')} className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Farm</th>
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Shed</th>
                                 <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -191,7 +241,7 @@ const Employees: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {employeesLoading ? (
-                                <tr><td colSpan={8} className="p-4"><TableSkeleton cols={8} rows={5} /></td></tr>
+                                <tr><td colSpan={9} className="p-4"><TableSkeleton cols={9} rows={5} /></td></tr>
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
@@ -203,13 +253,21 @@ const Employees: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.email || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.phone_number || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN', {
+                                                day: 'numeric', month: 'short', year: 'numeric'
+                                            }) : '-'}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">
-                                                {employee.roles?.[0]?.replace(/_/g, ' ') || '-'}
+                                                {employee.roles?.[0] ? employee.roles[0].replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase()) : '-'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                            {employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
+                                            {employee.farm_name || employee.farm?.farm_name || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                            {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -228,7 +286,7 @@ const Employees: React.FC = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={8}>
+                                    <td colSpan={9}>
                                         <div className="flex flex-col items-center justify-center py-16 px-4">
                                             <div className="bg-gray-50 rounded-full p-6 mb-4">
                                                 <Users size={48} className="text-gray-300" />
@@ -249,8 +307,8 @@ const Employees: React.FC = () => {
                             )}
                         </tbody>
                     </table>
-                </div>
-            </div>
+                </div >
+            </div >
 
             <AddEmployeeModal
                 isOpen={isModalOpen}
@@ -271,16 +329,18 @@ const Employees: React.FC = () => {
                 type={successMessage ? 'success' : error ? 'error' : null}
                 onClose={() => dispatch(clearMessages())}
             />
-            {totalPages > 1 && (
-                <div className="mt-4">
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                    />
-                </div>
-            )}
-        </div>
+            {
+                totalPages > 1 && (
+                    <div className="mt-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

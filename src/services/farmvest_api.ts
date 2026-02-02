@@ -7,10 +7,10 @@ export const FARMVEST_API_CONFIG = {
 
         // Only use CORS proxy in local development
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return productionUrl;
-        } else {
             const corsUrl = process.env.REACT_APP_CORS_URL || 'https://cors-612299373064.asia-south1.run.app';
             return `${corsUrl}/${productionUrl}`;
+        } else {
+            return productionUrl;
         }
     },
     getApiKey: () => process.env.REACT_APP_FARMVEST_API_KEY || 'bWFya3dhdmUtZmFybXZlc3QtdGVzdHRpbmctYXBpa2V5'
@@ -19,7 +19,9 @@ export const FARMVEST_API_CONFIG = {
 const farmvestApi = axios.create({
     baseURL: FARMVEST_API_CONFIG.getBaseUrl(),
     headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Origin': window.location.origin || 'http://localhost:3000',
+        'X-Requested-With': 'XMLHttpRequest'
     }
 });
 
@@ -47,9 +49,9 @@ farmvestApi.interceptors.request.use((config) => {
     if (token) {
         config.headers['Authorization'] = `${tokenType} ${token}`;
     } else {
-        // Fallback to the API Key, ensuring Bearer prefix is used
+        // Fallback to the API Key, sending it raw without Bearer prefix as expected by backend
         const apiKey = FARMVEST_API_CONFIG.getApiKey();
-        config.headers['Authorization'] = apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`;
+        config.headers['Authorization'] = apiKey;
     }
 
     return config;
@@ -71,11 +73,12 @@ export const farmvestService = {
             throw error;
         }
     },
-    getEmployees: async (params?: { role?: string; sort_by?: number; page?: number; size?: number }) => {
+    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number }) => {
         try {
-            const { role, sort_by = 1, page = 1, size = 20 } = params || {};
+            const { role, active_status, sort_by = 1, page = 1, size = 20 } = params || {};
             let query = `?sort_by=${sort_by}&page=${page}&size=${size}`;
             if (role) query += `&role=${role}`;
+            if (active_status !== undefined && active_status !== null && active_status.toString() !== '') query += `&is_active=${active_status}`;
 
             const url = `/api/employee/get_all_employees${query}`;
             console.log('[FarmVest] Fetching employees with URL:', url);
@@ -85,6 +88,19 @@ export const farmvestService = {
             return response.data;
         } catch (error) {
             console.error('Error fetching farmvest employees:', error);
+            throw error;
+        }
+    },
+    getAllInvestors: async (params?: { page?: number; size?: number }) => {
+        try {
+            const { page = 1, size = 20 } = params || {};
+            const url = `/api/investors/get_all_investors?page=${page}&size=${size}`;
+            console.log('[FarmVest] Fetching investors with URL:', url);
+            const response = await farmvestApi.get(url);
+            console.log('[FarmVest] Investors API Response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching farmvest investors:', error);
             throw error;
         }
     },
@@ -156,9 +172,6 @@ export const farmvestService = {
             const url = `/api/shed/list?farm_id=${farmId}`;
             console.log(`[FarmVest] Fetching sheds from: ${url}`);
             const response = await farmvestApi.get(url);
-            // If response.data is the list, return it.
-            // If response.data.data is the list (common pattern), return that.
-            // Let's return response.data for now and handle parsing in the component as we are not 100% sure of the structure.
             return response.data;
         } catch (error) {
             console.error(`Error fetching sheds for farm ${farmId}:`, error);
@@ -249,23 +262,13 @@ export const farmvestService = {
     },
     getPaidOrders: async (mobile: string) => {
         try {
-            // using the AnimalKart staging endpoint
-            // API_ENDPOINTS.markInTransit() points to /order-tracking/intransit
             const url = API_ENDPOINTS.markInTransit();
             console.log('[FarmVest] Fetching paid orders from:', url, 'with mobile:', mobile);
-            // 405 error on GET suggests POST is required. Sending mobile in body.
             const response = await farmvestApi.post(url, { mobile });
             console.log('[FarmVest] Paid orders response:', response.data);
             return response.data;
         } catch (error: any) {
             console.error(`Error fetching paid orders for ${mobile}:`, error);
-            if (error.response) {
-                console.error('[FarmVest] Error Response:', error.response.status, error.response.data);
-            } else if (error.request) {
-                console.error('[FarmVest] No response received:', error.request);
-            } else {
-                console.error('[FarmVest] Request setup error:', error.message);
-            }
             throw error;
         }
     },
@@ -273,7 +276,6 @@ export const farmvestService = {
         try {
             console.log('[FarmVest] Onboarding animal with data:', JSON.stringify(onboardingData, null, 2));
 
-            // Append farm_id to URL if present (backend might expect it as query param)
             let url = '/api/animal/onboard_animal';
             if (onboardingData.farm_id !== undefined && onboardingData.farm_id !== null) {
                 url += `?farm_id=${onboardingData.farm_id}`;
@@ -288,11 +290,8 @@ export const farmvestService = {
             console.error('Error onboarding animals:', error);
             if (error.response) {
                 console.error('[FarmVest] Onboard Error Response:', error.response.status, error.response.data);
-
-                // Construct a helpful error message from the detail array
                 let errorMsg = `Onboarding Error (${error.response.status}): `;
                 if (error.response.data && Array.isArray(error.response.data.detail)) {
-                    // Show first 3 errors to avoid huge alert
                     const details = error.response.data.detail.slice(0, 3).map((d: any) =>
                         `${d.loc.join('.')} : ${d.msg}`
                     ).join('\n');
@@ -300,7 +299,6 @@ export const farmvestService = {
                 } else {
                     errorMsg += JSON.stringify(error.response.data);
                 }
-
                 alert(errorMsg);
             }
             throw error;
@@ -329,6 +327,24 @@ export const farmvestService = {
         } catch (error) {
             console.error(`Error searching animal ${rfid}:`, error);
             throw error;
+        }
+    },
+    getAnimalsByInvestor: async (investorId: number) => {
+        try {
+            const response = await farmvestApi.get(`/api/investors/animals?investor_id=${investorId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching animals for investor ${investorId}:`, error);
+            throw error;
+        }
+    },
+    getCalves: async (rfid: string) => {
+        try {
+            const response = await farmvestApi.get(`/api/animal/get_calves?rfid=${rfid}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching calves for animal ${rfid}:`, error);
+            return [];
         }
     }
 };
