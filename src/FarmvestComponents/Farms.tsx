@@ -30,8 +30,8 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
             <td className="px-4 py-3 text-gray-600">
                 {farm.location || '-'}
             </td>
-            <td className="px-4 py-3">
-                <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm">
+            <td className="px-4 py-3 text-center">
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm mx-auto">
                     {typeof farm.total_buffaloes_count === 'number'
                         ? farm.total_buffaloes_count.toLocaleString()
                         : (farm.total_buffaloes_count || '0')}
@@ -208,9 +208,9 @@ const Farms: React.FC = () => {
 
     return (
         <div className="farms-container animate-fadeIn">
-            <div className="farms-header p-6 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">FarmVest Management</h2>
+                    <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">FarmVest Management</h2>
                     <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
                         <span>{location} Operations • {filteredFarms.length} Farms Loaded</span>
                     </div>
@@ -219,13 +219,13 @@ const Farms: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
                     <button
                         onClick={() => setIsAddFarmModalOpen(true)}
-                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
+                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
                     >
-                        <span className="text-lg">+</span> Add Farm
+                        <span className="text-base">+</span> Add Farm
                     </button>
-                    <div className="relative w-full sm:w-56">
+                    <div className="relative w-full sm:w-36">
                         <select
-                            className="w-full p-3 pl-4 pr-10 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
+                            className="w-full py-2 px-3 pl-4 pr-10 border border-gray-200 rounded-lg bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
                             value={location}
                             onChange={handleLocationChange}
                         >
@@ -246,11 +246,11 @@ const Farms: React.FC = () => {
                     </div>
 
                     {/* Search Input */}
-                    <div className="w-full sm:w-80 relative group">
+                    <div className="w-full sm:w-56 relative group">
                         <input
                             type="text"
                             placeholder="Find farm name..."
-                            className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
+                            className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -285,21 +285,21 @@ const Farms: React.FC = () => {
                     </div>
                 )}
 
-                <div className="overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-2xl">
-                    <table className="farms-table w-full text-sm text-left border-collapse">
+                <div className="overflow-hidden bg-white border border-gray-100 rounded-2xl shadow-xl">
+                    <table className="farms-table w-full text-xs text-left border-collapse">
                         <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] uppercase font-bold tracking-widest text-gray-400">
                             <tr>
-                                <th className="px-6 py-5 text-center">S.no</th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('farm_name')}>
-                                    <div className="flex items-center gap-2">Farm Name <span className="text-blue-500 opacity-60">{getSortIcon('farm_name')}</span></div>
+                                <th className="px-4 py-3 text-center">S.no</th>
+                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('farm_name')}>
+                                    <div className="flex items-center gap-2">Farm Name <span className="text-blue-500 opacity-60 text-[8px]">{getSortIcon('farm_name')}</span></div>
                                 </th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('location')}>
-                                    <div className="flex items-center gap-2">Location <span className="text-blue-500 opacity-60">{getSortIcon('location')}</span></div>
+                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('location')}>
+                                    <div className="flex items-center gap-2">Location <span className="text-blue-500 opacity-60 text-[8px]">{getSortIcon('location')}</span></div>
                                 </th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('total_buffaloes_count')}>
-                                    <div className="flex items-center gap-2">Live Count <span className="text-blue-500 opacity-60">{getSortIcon('total_buffaloes_count')}</span></div>
+                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group text-center" onClick={() => requestSort('total_buffaloes_count')}>
+                                    <div className="flex items-center justify-center gap-2">Live Count <span className="text-blue-500 opacity-60 text-[8px]">{getSortIcon('total_buffaloes_count')}</span></div>
                                 </th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group">
+                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group">
                                     <div className="flex items-center gap-2">Farm Manager</div>
                                 </th>
                             </tr>
@@ -309,10 +309,10 @@ const Farms: React.FC = () => {
                                 <TableSkeleton cols={4} rows={10} />
                             ) : (currentItems.length === 0 && !farmsError) ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-16 text-center text-gray-400">
-                                        <div className="text-4xl mb-4 grayscale opacity-50">🚜</div>
-                                        <p className="text-lg font-medium text-gray-500">No Farm Records Found</p>
-                                        <p className="text-sm">We couldn't find any farms matching your filter in {location}</p>
+                                    <td colSpan={4} className="px-6 py-16 text-center">
+                                        <div className="text-5xl mb-4 animate-bounce">🚜</div>
+                                        <p className="text-xl font-extrabold text-gray-800 tracking-tight">No Farm Records Found</p>
+                                        <p className="text-sm text-gray-500 mt-2">We couldn't find any farms matching your filter in <span className="font-bold text-blue-600">{location}</span></p>
                                     </td>
                                 </tr>
                             ) : (

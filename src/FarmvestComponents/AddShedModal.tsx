@@ -64,22 +64,9 @@ const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess,
                     <button
                         type="button"
                         onClick={onClose}
-                        style={{
-                            position: 'absolute',
-                            right: '20px',
-                            top: '20px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#000',
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 20
-                        }}
+                        className="close-button"
                     >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 6L6 18" />
                             <path d="M6 6l12 12" />
                         </svg>

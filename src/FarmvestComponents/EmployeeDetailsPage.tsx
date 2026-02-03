@@ -4,7 +4,9 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { RootState } from '../store';
 import { fetchEmployees } from '../store/slices/farmvest/employees';
 import { User, MapPin, Warehouse, ArrowLeft, Mail, Phone, Calendar, Hash } from 'lucide-react';
-import TableSkeleton from '../components/common/TableSkeleton'; // Or create a specific Skeleton
+
+import TableSkeleton from '../components/common/TableSkeleton';
+import './Employees.css'; // Import CSS for animations
 
 const EmployeeDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -75,7 +77,7 @@ const EmployeeDetailsPage: React.FC = () => {
             {employee && (
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-50 to-white px-8 py-8 border-b border-blue-100">
+                    <div className="bg-gradient-to-r from-blue-50 to-white px-8 py-8 border-b border-blue-100 animate-slide-up-fade-1">
                         <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4">
                             <div className="flex items-center gap-4">
                                 <div className="bg-blue-600 p-3 rounded-xl shadow-lg shadow-blue-200">
@@ -106,7 +108,7 @@ const EmployeeDetailsPage: React.FC = () => {
                     <div className="p-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {/* Contact Information */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow animate-slide-up-fade-2">
                                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
                                     <Mail className="w-5 h-5 text-gray-400" />
                                     Contact Details
@@ -114,7 +116,7 @@ const EmployeeDetailsPage: React.FC = () => {
                                 <div className="space-y-4">
                                     <div className="group">
                                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Email Address</label>
-                                        <div className="text-gray-900 font-medium flex items-center gap-2">
+                                        <div className="text-gray-900 font-medium flex items-center gap-2 break-all">
                                             {employee.email || 'N/A'}
                                         </div>
                                     </div>
@@ -129,7 +131,7 @@ const EmployeeDetailsPage: React.FC = () => {
                             </div>
 
                             {/* Assignment Details */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow lg:col-span-2">
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow lg:col-span-2 animate-slide-up-fade-3">
                                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
                                     <MapPin className="w-5 h-5 text-gray-400" />
                                     Assignment Information
@@ -178,7 +180,7 @@ const EmployeeDetailsPage: React.FC = () => {
                             </div>
 
                             {/* System Details */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow animate-slide-up-fade-4">
                                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
                                     <Hash className="w-5 h-5 text-gray-400" />
                                     System Metadata

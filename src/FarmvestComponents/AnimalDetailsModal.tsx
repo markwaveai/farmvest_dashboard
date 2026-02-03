@@ -43,6 +43,25 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
         }
     }, [isOpen, rfid, parkingId, farmId, shedId, rowNumber]);
 
+    // Scroll Reveal Observer
+    useEffect(() => {
+        if (!isOpen || loading || error) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    observer.unobserve(entry.target); // Trigger once
+                }
+            });
+        }, { threshold: 0.1 });
+
+        const sections = document.querySelectorAll('.scroll-reveal-section');
+        sections.forEach(section => observer.observe(section));
+
+        return () => observer.disconnect();
+    }, [isOpen, loading, error, data]); // Re-run when data loads/modals opens
+
     const fetchByParkingId = async (pId: string, fId?: number, sId?: number, rNum?: string) => {
         try {
             setLoading(true);
@@ -144,7 +163,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                         </div>
                     ) : (
                         <>
-                            <div className="animal-image-container">
+                            <div className="animal-image-container scroll-reveal-section">
                                 {animalImage ? (
                                     <img src={animalImage} alt="Animal" className="animal-detail-img" />
                                 ) : (
@@ -155,7 +174,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                                 )}
                             </div>
 
-                            <div className="details-section">
+                            <div className="details-section scroll-reveal-section">
                                 <h3 className="section-title">
                                     <Tag size={16} /> Animal Information
                                 </h3>
@@ -193,7 +212,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
 
                             {/* New Location Details Section */}
                             {(data?.farm_details || data?.shed_details) && (
-                                <div className="details-section">
+                                <div className="details-section scroll-reveal-section">
                                     <h3 className="section-title">
                                         <MapPin size={16} /> Location Details
                                     </h3>
@@ -214,7 +233,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                                 </div>
                             )}
 
-                            <div className="details-section">
+                            <div className="details-section scroll-reveal-section">
                                 <h3 className="section-title">
                                     <User size={16} /> Investor Information
                                 </h3>
@@ -235,7 +254,7 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                             </div>
 
                             {(manager.full_name || supervisor.full_name) && (
-                                <div className="details-section">
+                                <div className="details-section scroll-reveal-section">
                                     <h3 className="section-title">
                                         <Shield size={16} /> Staff Information
                                     </h3>

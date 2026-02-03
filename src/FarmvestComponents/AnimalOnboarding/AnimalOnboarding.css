@@ -1,9 +1,11 @@
 .animal-onboarding-container {
-    background-color: #f3f4f6;
+    background: linear-gradient(180deg, #dcfce7 0%, #ffffff 40%, #ffffff 100%);
     min-height: 100vh;
     padding: 1.5rem;
     font-family: 'Inter', sans-serif;
     position: relative;
+    background-attachment: fixed;
+    /* Ensures gradient covers full scrollable height if needed */
 }
 
 .onboarding-header {
@@ -639,4 +641,79 @@
 
 .onboarding-main-card .search-input-wrapper {
     margin-bottom: 1.5rem;
+}
+
+/* Searchable Dropdown Styling */
+.search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-top: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: -4px;
+    /* Slight overlap with input for seamless look */
+    padding: 0.5rem;
+}
+
+.search-result-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    text-align: left;
+}
+
+.search-result-item:hover {
+    background-color: #F3F4F6;
+}
+
+.search-result-item .member-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.search-result-item .member-mobile {
+    font-size: 0.85rem;
+    color: #6B7280;
+    margin-top: 2px;
+}
+
+.no-results {
+    padding: 1rem;
+    text-align: center;
+    color: #9CA3AF;
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.member-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.member-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.employee-badge {
+    background-color: #E0F2F1;
+    color: #00695C;
+    border: 1px solid #B2DFDB;
 }

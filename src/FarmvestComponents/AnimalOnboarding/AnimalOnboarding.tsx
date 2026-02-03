@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './AnimalOnboarding.css';
 import { useNavigate } from 'react-router-dom';
 import { farmvestService } from '../../services/farmvest_api';
 import { uploadToFirebase } from '../../config/firebaseAppConfig';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
-import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2 } from 'lucide-react';
+import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone } from 'lucide-react';
 
 interface UserProfile {
     name: string;
@@ -39,9 +39,11 @@ interface Farm {
     farm_id: number;
     farm_name: string;
     location: string;
+}interface Employee {
+    id: number;
+    full_name: string;
+    role: string;
 }
-
-
 
 const AnimalOnboarding: React.FC = () => {
     const navigate = useNavigate();
@@ -51,53 +53,131 @@ const AnimalOnboarding: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [searchedMobile, setSearchedMobile] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [searchNotFound, setSearchNotFound] = useState(false);
 
     // API Data States
     const [farms, setFarms] = useState<Farm[]>([]);
     const [selectedFarmId, setSelectedFarmId] = useState<number | string>('');
 
+
     const [animals, setAnimals] = useState<AnimalDetail[]>([]);
     const [toastVisible, setToastVisible] = useState(false);
 
-    // Fetch Farms on load
+    const [allMembers, setAllMembers] = useState<any[]>([]);
+    const [filteredMembers, setFilteredMembers] = useState<any[]>([]);
+    const [selectedMember, setSelectedMember] = useState<any | null>(null);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown on click outside
     useEffect(() => {
-        const fetchFarms = async () => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleMobileChange = (val: string) => {
+        setMobile(val);
+        if (val.length > 0) {
+            const lowerVal = val.toLowerCase();
+            const filtered = allMembers.filter(member =>
+                (member.displayName?.toLowerCase().includes(lowerVal)) ||
+                (member.mobile?.includes(val))
+            );
+            setFilteredMembers(filtered.slice(0, 10)); // Show top 10 matches
+            setShowDropdown(true);
+        } else {
+            setShowDropdown(false);
+        }
+    };
+
+    const handleSelectMember = (member: any) => {
+        setMobile(member.mobile);
+        setSelectedMember(member);
+        setShowDropdown(false);
+    };
+
+    // Fetch initial data on load
+    useEffect(() => {
+        const fetchInitialData = async () => {
             try {
-                console.log("Fetching farms in AnimalOnboarding...");
-                const data = await farmvestService.getAllFarms();
-                console.log("AnimalOnboarding Farms Resp:", data);
+                console.log("Fetching initial data in AnimalOnboarding...");
+                const [farmData, employeeData, investorData] = await Promise.all([
+                    farmvestService.getAllFarms(),
+                    farmvestService.getEmployees(),
+                    farmvestService.getAllInvestors({ size: 1000 })
+                ]);
 
+                // Parse Farms
                 let farmList: Farm[] = [];
-                if (Array.isArray(data)) {
-                    farmList = data;
-                } else if (data.farms && Array.isArray(data.farms)) {
-                    farmList = data.farms;
-                } else if (data.data && Array.isArray(data.data)) {
-                    farmList = data.data;
+                if (Array.isArray(farmData)) {
+                    farmList = farmData;
+                } else if (farmData.farms && Array.isArray(farmData.farms)) {
+                    farmList = farmData.farms;
+                } else if (farmData.data && Array.isArray(farmData.data)) {
+                    farmList = farmData.data;
                 }
-
-                console.log("Parsed Farm list (Raw):", farmList);
-
-                // Normalize farm objects to ensure farm_id exists
                 const normalizedFarms = farmList.map((f: any) => ({
                     farm_id: f.farm_id || f.id || 0,
                     farm_name: f.farm_name || f.name || 'Unknown Farm',
                     location: f.location || ''
                 }));
-
-                console.log("Normalized Farms:", normalizedFarms);
                 setFarms(normalizedFarms);
+
+                // Parse Employees
+                let employeeList: any[] = [];
+                if (Array.isArray(employeeData)) {
+                    employeeList = employeeData;
+                } else if (employeeData.data && Array.isArray(employeeData.data)) {
+                    employeeList = employeeData.data;
+                } else if (employeeData.employees && Array.isArray(employeeData.employees)) {
+                    employeeList = employeeData.employees;
+                }
+
+                // Parse Investors
+                let investorList: any[] = [];
+                if (Array.isArray(investorData)) {
+                    investorList = investorData;
+                } else if (investorData.data && Array.isArray(investorData.data)) {
+                    investorList = investorData.data;
+                } else if (investorData.investors && Array.isArray(investorData.investors)) {
+                    investorList = investorData.investors;
+                }
+
+                // Unified Member List Normalization
+                const normalizedInvestors = investorList.map((inv: any) => ({
+                    ...inv,
+                    displayName: inv.full_name || `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || 'Unknown Investor',
+                    mobile: inv.mobile || inv.mobile_number || '',
+                    type: 'investor'
+                }));
+
+                const normalizedEmployees = employeeList.map((emp: any) => ({
+                    ...emp,
+                    displayName: emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Unknown Employee',
+                    mobile: emp.mobile || emp.mobile_number || '',
+                    type: 'employee'
+                }));
+
+                const combined = [...normalizedInvestors, ...normalizedEmployees];
+                setAllMembers(combined);
+
+                console.log("Initial data loaded:", {
+                    farms: normalizedFarms.length,
+                    employees: normalizedEmployees.length,
+                    investors: normalizedInvestors.length,
+                    totalMembers: combined.length
+                });
             } catch (error) {
-                console.error("Failed to load farms", error);
+                console.error("Failed to load initial data", error);
             }
         };
-        fetchFarms();
+        fetchInitialData();
     }, []);
-
-
-
-
-
 
     // handlePhotoSelect now uploads IMMEDIATELY
     const handlePhotoSelect = async (animalId: number, fileList: FileList) => {
@@ -127,7 +207,6 @@ const AnimalOnboarding: React.FC = () => {
             }));
         } catch (error) {
             console.error("Upload failed:", error);
-            // alert replaced with console error for better UX
             setAnimals(prev => prev.map(a => a.id === animalId ? { ...a, isUploading: false } : a));
         }
     };
@@ -143,13 +222,13 @@ const AnimalOnboarding: React.FC = () => {
     };
 
     // Initialize animals when order is selected
-    React.useEffect(() => {
+    useEffect(() => {
         if (selectedOrder) {
             const newAnimals: AnimalDetail[] = [];
             let currentIndex = 1;
 
             const bCount = selectedOrder.buffaloCount > 0 ? selectedOrder.buffaloCount : 1;
-            const cCount = selectedOrder.calfCount > 0 ? selectedOrder.calfCount : 1;
+            const cCount = selectedOrder.calfCount > 0 ? selectedOrder.calfCount : 0; // Fixed: default to 0 if not specified
 
             // Add Buffaloes
             for (let i = 0; i < bCount; i++) {
@@ -207,12 +286,52 @@ const AnimalOnboarding: React.FC = () => {
         setLoading(true);
         setOrders(null);
         setUser(null);
+        setSearchNotFound(false);
 
         try {
+            let userData: UserProfile | null = null;
+            let isValidUser = false;
+
+            // 0. Pre-validation: Check if user exists locally or in API
+            // Check local cache first
+            const localMatch = allMembers.find(m => (m.mobile || m.mobile_number) === mobile);
+            if (localMatch) {
+                isValidUser = true;
+                userData = {
+                    name: localMatch.displayName,
+                    mobile: localMatch.mobile,
+                    email: localMatch.email || ''
+                };
+            } else {
+                // Check API if not found locally
+                try {
+                    const employeeResults = await farmvestService.searchEmployee(mobile);
+                    if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
+                        isValidUser = true;
+                        const match = employeeResults.find((e: any) =>
+                            (e.mobile || e.mobile_number) === mobile
+                        ) || employeeResults[0];
+                        userData = {
+                            name: match.full_name || `${match.first_name || ''} ${match.last_name || ''}`.trim(),
+                            mobile: match.mobile || match.mobile_number,
+                            email: match.email || ''
+                        };
+                    }
+                } catch (err) {
+                    console.warn('User validation failed:', err);
+                }
+            }
+
+            if (!isValidUser) {
+                setSearchNotFound(true);
+                setLoading(false);
+                return;
+            }
+
+            // proceed to get orders (mock) only if user is valid
             const data: any = await farmvestService.getPaidOrders(mobile);
 
             let ordersList: Order[] = [];
-            let userData: UserProfile | null = null;
 
             if (data && Array.isArray(data)) {
                 ordersList = data.map(normalizeOrder);
@@ -236,7 +355,37 @@ const AnimalOnboarding: React.FC = () => {
             if (ordersList.length > 0) {
                 setOrders(ordersList);
                 if (!userData) {
-                    userData = { name: 'Investor', mobile: mobile, email: '' };
+                    userData = {
+                        name: selectedMember?.displayName || 'Investor',
+                        mobile: mobile,
+                        email: selectedMember?.email || ''
+                    };
+                }
+
+                // Check for generic or mock names and try to fetch real details
+                if (userData.name === 'Mock Investor' || userData.name === 'N/A' || userData.name === 'Investor') {
+                    // 1. Try selected member first
+                    if (selectedMember) {
+                        userData.name = selectedMember.displayName;
+                    } else {
+                        // 2. Try fetching from API as per user request
+                        try {
+                            const employeeResults = await farmvestService.searchEmployee(mobile);
+                            if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
+                                // Find exact match if multiple
+                                const match = employeeResults.find((e: any) =>
+                                    (e.mobile || e.mobile_number) === mobile
+                                ) || employeeResults[0];
+
+                                if (match) {
+                                    userData.name = match.full_name || `${match.first_name || ''} ${match.last_name || ''}`.trim();
+                                    userData.email = match.email || userData.email;
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Failed to fetch employee details:', err);
+                        }
+                    }
                 }
                 setUser(userData);
                 setSearchedMobile(mobile);
@@ -247,7 +396,6 @@ const AnimalOnboarding: React.FC = () => {
             }
         } catch (error) {
             console.error('Error fetching orders:', error);
-            // Intrusive alert removed, error logged to console instead
         } finally {
             setLoading(false);
         }
@@ -317,6 +465,7 @@ const AnimalOnboarding: React.FC = () => {
             return;
         }
 
+
         const getParentRfid = (parentId: number | undefined) => {
             if (!parentId) return '';
             const parent = animals.find(a => a.id === parentId);
@@ -325,8 +474,6 @@ const AnimalOnboarding: React.FC = () => {
 
         setLoading(true);
         try {
-
-            // 2. CONSTRUCT PAYLOAD
             const payload = {
                 animals: animals.map(a => {
                     const isBuffalo = a.type === 'Buffalo';
@@ -359,8 +506,7 @@ const AnimalOnboarding: React.FC = () => {
                     }
                 }),
                 farm_id: Number(selectedFarmId),
-                // We add selected shed logic if the payload supported it, but it doesn't seem to.
-                // However, the allocation call verified space.
+                employee_id: 1, // Default or removed as per request
                 investment_details: {
                     animalkart_order_id: selectedOrder.id,
                     bank_name: "N/A",
@@ -386,14 +532,9 @@ const AnimalOnboarding: React.FC = () => {
                 }
             };
 
-
-            console.log("SENDING PAYLOAD:", payload); // Keep for console
-            // Removed intrusive Debug Info alert
-
             await farmvestService.onboardAnimal(payload);
             setToastVisible(true);
 
-            // Redirect to Unallocated Animals page after short delay to show toast
             setTimeout(() => {
                 navigate('/farmvest/unallocated-animals');
             }, 1500);
@@ -403,7 +544,6 @@ const AnimalOnboarding: React.FC = () => {
             setMobile('');
         } catch (error) {
             console.error('Onboarding failed:', error);
-            // Intrusive alert removed
         } finally {
             setLoading(false);
         }
@@ -422,8 +562,6 @@ const AnimalOnboarding: React.FC = () => {
         return new Date(dateString).toLocaleDateString('en-GB');
     };
 
-
-
     return (
         <div className="animal-onboarding-container">
             <div className="onboarding-header">
@@ -440,21 +578,60 @@ const AnimalOnboarding: React.FC = () => {
             {!selectedOrder && (
                 <>
                     <div className="onboarding-search-container">
-                        <div className="search-input-wrapper">
-                            <span className="phone-icon">📱</span>
+                        <div className="search-input-wrapper" ref={dropdownRef}>
+                            <Smartphone size={20} className="phone-icon" color="#6B7280" />
                             <input
                                 type="text"
-                                placeholder="Investor Mobile"
+                                placeholder="Search by Investor name or mobile number..."
                                 value={mobile}
-                                onChange={(e) => setMobile(e.target.value)}
+                                onChange={(e) => handleMobileChange(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleFind()}
+                                onFocus={() => mobile.length > 0 && setShowDropdown(true)}
                             />
+                            {showDropdown && filteredMembers.length > 0 && (
+                                <div className="search-results-dropdown">
+                                    {filteredMembers.map((member, idx) => (
+                                        <div
+                                            key={`${member.type}-${member.id || idx}`}
+                                            className="search-result-item"
+                                            onClick={() => handleSelectMember(member)}
+                                        >
+                                            <div className="member-info-row">
+                                                <span className="member-name">{member.displayName}</span>
+                                                {member.type === 'employee' && (
+                                                    <span className="member-badge employee-badge">Staff</span>
+                                                )}
+                                            </div>
+                                            <span className="member-mobile">📱 {member.mobile}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {showDropdown && mobile.length > 0 && filteredMembers.length === 0 && (
+                                <div className="search-results-dropdown">
+                                    <div className="no-results">No members found</div>
+                                </div>
+                            )}
                         </div>
                         <button className="find-btn" onClick={handleFind} disabled={loading}>
                             {loading ? 'Finding...' : 'Find'}
                         </button>
                     </div>
-                    {(orders && orders.length > 0) && (
+                    {searchNotFound && (
+                        <div className="search-not-found-message" style={{
+                            textAlign: 'center',
+                            marginTop: '20px',
+                            padding: '20px',
+                            backgroundColor: '#FEF2F2',
+                            color: '#DC2626',
+                            borderRadius: '8px',
+                            border: '1px solid #FECACA'
+                        }}>
+                            <h3>Search not found</h3>
+                            <p>No member found with mobile number: {searchedMobile || mobile}</p>
+                        </div>
+                    )}
+                    {orders && orders.length > 0 && !searchNotFound && (
                         <div className="orders-overlay">
                             <div className="orders-header">
                                 <h2>Paid Orders for {searchedMobile}</h2>
@@ -569,6 +746,7 @@ const AnimalOnboarding: React.FC = () => {
                                     </option>
                                 ))}
                             </select>
+
                         </div>
                     </div>
 

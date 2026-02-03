@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import './UnallocatedAnimals.css';
 import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2, Camera } from 'lucide-react';
 import CommonShedGrid from '../../components/common/ShedGrid/CommonShedGrid';
@@ -39,10 +40,19 @@ const UnallocatedAnimals: React.FC = () => {
     // ---------------------------------------------------------
     // 1. STATE
     // ---------------------------------------------------------
+    const location = useLocation();
+    const navState = location.state as { farmId?: string; shedId?: string } | null;
+
     const [farms, setFarms] = useState<Farm[]>([]);
     const [sheds, setSheds] = useState<Shed[]>([]);
-    const [selectedFarmId, setSelectedFarmId] = useState<string>(() => localStorage.getItem('fv_selected_farm_id') || '');
-    const [selectedShedId, setSelectedShedId] = useState<string>('');
+    const [selectedFarmId, setSelectedFarmId] = useState<string>(() => {
+        if (navState?.farmId) {
+            localStorage.setItem('fv_selected_farm_id', navState.farmId);
+            return navState.farmId;
+        }
+        return localStorage.getItem('fv_selected_farm_id') || '';
+    });
+    const [selectedShedId, setSelectedShedId] = useState<string>(navState?.shedId || '');
     const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
 
     const [animals, setAnimals] = useState<Animal[]>([]);
@@ -702,11 +712,12 @@ const UnallocatedAnimals: React.FC = () => {
             <div className="ua-section-title">Select Animal to Allocate</div>
             <div className="ua-animals-list">
                 {loadingAnimals ? <div style={{ padding: '20px' }}>Loading animals...</div> : (
-                    animals.length > 0 ? animals.map((animal) => (
+                    animals.length > 0 ? animals.map((animal, idx) => (
                         <div
                             key={animal.id}
                             id={`ua-animal-card-${animal.id}`}
-                            className={`ua-animal-avatar-card ${selectedAnimalId === animal.id ? 'selected' : ''}`}
+                            className={`ua-animal-avatar-card card-animate ${selectedAnimalId === animal.id ? 'selected' : ''}`}
+                            style={{ animationDelay: `${idx * 0.05}s` }}
                             onClick={() => setSelectedAnimalId(prev => prev === animal.id ? null : animal.id)}
                         >
                             <img
@@ -737,8 +748,8 @@ const UnallocatedAnimals: React.FC = () => {
                 <div className="space-y-2 p-4">
                     {(() => {
                         const Separator = ({ label }: { label: string }) => (
-                            <div className="w-full bg-white border border-gray-100 rounded-lg py-3 mb-6 shadow-sm flex items-center justify-center">
-                                <span className="text-xs font-bold text-gray-400 tracking-widest uppercase">{label}</span>
+                            <div className="w-full bg-[#f0fdf4]/80 border border-green-100/50 rounded-lg py-1.5 mb-3 shadow-sm flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-green-700/60 tracking-widest uppercase">{label}</span>
                             </div>
                         );
 
@@ -769,23 +780,23 @@ const UnallocatedAnimals: React.FC = () => {
                             }
 
                             return (
-                                <div className="mb-6">
-                                    <h4 className="text-sm font-bold text-gray-700 mb-3">{rowLabel}</h4>
-                                    <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide px-2">
+                                <div className="mb-4">
+                                    <h4 className="text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
+                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
                                         {chunks.map((chunk, groupIndex) => (
                                             <div key={groupIndex} className="flex flex-col items-center">
                                                 {/* Camera Overhead */}
-                                                <div className="mb-2 flex flex-col items-center animate-pulse">
-                                                    <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
-                                                        <Camera size={14} className="text-blue-600" />
+                                                <div className="mb-0.5 flex flex-col items-center animate-pulse">
+                                                    <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
+                                                        <Camera size={11} className="text-blue-600" />
                                                     </div>
-                                                    <div className="h-3 w-0.5 bg-blue-200 -mt-1"></div>
+                                                    <div className="h-1.5 w-0.5 bg-blue-200 -mt-0.5"></div>
                                                     <div className="w-full h-0.5 bg-blue-200"></div>
                                                 </div>
 
                                                 {/* Group of 4 Slots */}
-                                                <div className="flex gap-2 bg-gray-50/50 p-2 rounded-xl border border-dashed border-gray-200 relative pt-3">
-                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-blue-200"></div>
+                                                <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[164px]">
+                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-blue-200"></div>
                                                     {chunk.map((pos) => {
                                                         const rawStatus = String(pos.status || 'Available').trim().toLowerCase();
                                                         const isOccupied = rawStatus !== 'available' || (pos.animal && pos.animal.length > 0) || pos.isOccupied;
@@ -801,22 +812,22 @@ const UnallocatedAnimals: React.FC = () => {
                                                                 }}
                                                             >
                                                                 <div className={`
-                                                                    w-14 h-14 border rounded-lg flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
+                                                                    w-11 h-11 border rounded-md flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
                                                                     ${isOccupied && !isPending ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}
-                                                                    ${isPending ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}
+                                                                    ${isPending ? 'ring-1 ring-emerald-500 border-emerald-500' : ''}
                                                                 `}>
                                                                     {/* Occupied State - Green Paw */}
                                                                     {isOccupied && !isPending && (
                                                                         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
-                                                                            <PawPrint size={24} color="#22C55E" fill="#22C55E" />
-                                                                            <span className="text-[9px] font-bold text-emerald-600 mt-1">{pos.label}</span>
+                                                                            <PawPrint size={18} color="#22C55E" fill="#22C55E" />
+                                                                            <span className="text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
                                                                         </div>
                                                                     )}
                                                                     {/* Pending Overlay */}
                                                                     {isPending && (
                                                                         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
                                                                             <PawPrint
-                                                                                size={24}
+                                                                                size={18}
                                                                                 color={isOccupied ? '#EF4444' : '#22C55E'}
                                                                                 fill={isOccupied ? '#EF4444' : '#22C55E'}
                                                                             />
@@ -829,9 +840,9 @@ const UnallocatedAnimals: React.FC = () => {
                                                                             <img
                                                                                 src={displayImg}
                                                                                 alt="Buffalo"
-                                                                                className={`w-6 h-6 object-contain mb-1`}
+                                                                                className={`w-4 h-4 object-contain mb-0.5`}
                                                                             />
-                                                                            <span className="text-[10px] font-bold text-gray-400">{pos.label}</span>
+                                                                            <span className="text-[8px] font-bold text-gray-400">{pos.label}</span>
                                                                         </>
                                                                     )}
                                                                 </div>
@@ -847,20 +858,22 @@ const UnallocatedAnimals: React.FC = () => {
                         };
 
                         return (
-                            <div className="space-y-2">
-                                <Separator label="DRAINAGE" />
-                                {renderRow('A', 'Row R1')}
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mt-4 w-full max-w-full mx-auto">
+                                <div className="space-y-1">
+                                    <Separator label="DRAINAGE" />
+                                    {renderRow('A', 'Row R1')}
 
-                                <Separator label="FEED WAY" />
-                                {renderRow('B', 'Row R2')}
+                                    <Separator label="FEED WAY" />
+                                    {renderRow('B', 'Row R2')}
 
-                                <Separator label="DRAINAGE" />
-                                {renderRow('C', 'Row R3')}
+                                    <Separator label="DRAINAGE" />
+                                    {renderRow('C', 'Row R3')}
 
-                                <Separator label="FEED WAY" />
-                                {renderRow('D', 'Row R4')}
+                                    <Separator label="FEED WAY" />
+                                    {renderRow('D', 'Row R4')}
 
-                                <Separator label="DRAINAGE" />
+                                    <Separator label="DRAINAGE" />
+                                </div>
                             </div>
                         );
                     })()}

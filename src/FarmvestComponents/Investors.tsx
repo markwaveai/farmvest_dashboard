@@ -124,12 +124,12 @@ const Investors: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-[#f8f9fa]">
                             <tr>
-                                <th onClick={() => requestSort('id')} className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
-                                <th onClick={() => requestSort('first_name')} className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
-                                <th onClick={() => requestSort('email')} className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
-                                <th onClick={() => requestSort('phone_number')} className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('active_status')} className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
-                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Joined Date</th>
+                                <th onClick={() => requestSort('id')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
+                                <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Joined Date</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -138,23 +138,23 @@ const Investors: React.FC = () => {
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((investor: any, index: number) => (
                                     <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
-                                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <div
-                                                className="font-bold text-blue-600 cursor-pointer hover:underline text-xs"
+                                                className="font-semibold text-blue-600 cursor-pointer hover:underline"
                                                 onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
                                             >
                                                 {`${investor.first_name || ''} ${investor.last_name || ''}`}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">{investor.email || '-'}</td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">{investor.phone_number || '-'}</td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black ${investor.active_status ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} uppercase tracking-tighter`}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.email || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.phone_number || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${investor.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {investor.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-center text-xs text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                                             {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
                                         </td>
                                     </tr>

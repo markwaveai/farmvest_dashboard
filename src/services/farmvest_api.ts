@@ -139,6 +139,16 @@ export const farmvestService = {
             throw error;
         }
     },
+    searchEmployee: async (query: string) => {
+        try {
+            const response = await farmvestApi.get(`/api/employee/search_employee?search_query=${query}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error searching employee ${query}:`, error);
+            // Return empty list or null instead of throwing to avoid breaking UI flow if just searching name
+            return [];
+        }
+    },
     createEmployee: async (employeeData: any) => {
         try {
             const response = await farmvestApi.post('/api/employee/create_employee', employeeData);
@@ -309,7 +319,7 @@ export const farmvestService = {
                     created_at: new Date().toISOString(),
                     status: "paid",
                     payment_status: "paid",
-                    user_name: "Mock Investor",
+                    user_name: "Investor",
                     user_mobile: mobile,
                     user_email: "investor@example.com"
                 }

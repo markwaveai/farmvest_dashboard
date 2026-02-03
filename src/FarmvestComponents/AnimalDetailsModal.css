@@ -21,7 +21,7 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: popupSmooth 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animal-details-header {
@@ -160,6 +160,18 @@
     gap: 4px;
 }
 
+/* Scroll Reveal Animation */
+.scroll-reveal-section {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal-section.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .detail-label {
     font-size: 0.75rem;
     color: #6b7280;
@@ -184,14 +196,14 @@
     }
 }
 
-@keyframes slideUp {
-    from {
-        transform: translateY(20px);
+@keyframes popupSmooth {
+    0% {
+        transform: scale(0.8);
         opacity: 0;
     }
 
-    to {
-        transform: translateY(0);
+    100% {
+        transform: scale(1);
         opacity: 1;
     }
 }

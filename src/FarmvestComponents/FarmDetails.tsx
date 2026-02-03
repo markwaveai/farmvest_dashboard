@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { farmvestService } from '../services/farmvest_api';
 import './FarmDetails.css';
-import ShedPositionsModal from './ShedPositionsModal';
 import { AddShedModal } from './AddShedModal';
+import { MapPin, ArrowLeft, Plus } from 'lucide-react';
 
 const FarmDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -61,13 +61,15 @@ const FarmDetails: React.FC = () => {
 
     // If farm name wasn't passed, we might update it if the API returned it (not guaranteed by this specific endpoint though)
 
-    const [selectedShed, setSelectedShed] = useState<any>(null);
-    const [isShedModalOpen, setIsShedModalOpen] = useState(false);
     const [isAddShedModalOpen, setIsAddShedModalOpen] = useState(false);
 
     const handleShedClick = (shed: any) => {
-        setSelectedShed(shed);
-        setIsShedModalOpen(true);
+        navigate('/farmvest/unallocated-animals', {
+            state: {
+                farmId: id,
+                shedId: shed.id || shed.shed_id
+            }
+        });
     };
 
     return (
@@ -77,24 +79,24 @@ const FarmDetails: React.FC = () => {
                     <h1>{farmName}</h1>
                     {farmLocation && (
                         <div className="farm-location">
-                            <span className="material-icons-outlined" style={{ fontSize: 18 }}>place</span>
+                            <MapPin size={14} className="text-gray-400" />
                             {farmLocation}
                         </div>
                     )}
                 </div>
                 <div className="farm-header-right-actions">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <button
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-colors flex items-center gap-2"
+                            className="add-shed-btn"
                             onClick={() => {
                                 console.log('Add Shed button clicked');
                                 setIsAddShedModalOpen(true);
                             }}
                         >
-                            <span>+</span> Add Shed
+                            <Plus size={14} /> Add Shed
                         </button>
                         <button className="back-button" onClick={() => navigate(-1)}>
-                            <span>←</span> Back to Farms
+                            <ArrowLeft size={14} /> Back to Farms
                         </button>
                     </div>
 
@@ -138,17 +140,18 @@ const FarmDetails: React.FC = () => {
                     </div>
                 </div>
             ) : sheds.length === 0 ? (
-                <div className="empty-state-page">
-                    <div className="text-6xl mb-4 grayscale opacity-30">🏚️</div>
-                    <h3 className="text-xl font-bold text-gray-500">No Sheds Found</h3>
-                    <p className="mt-2 text-gray-400">There are no sheds configured for this farm yet.</p>
+                <div className="flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200 animate-fadeIn">
+                    <div className="text-6xl mb-6">🏘️</div>
+                    <h3 className="text-2xl font-extrabold text-gray-800">No Sheds Configured</h3>
+                    <p className="mt-3 text-gray-500 font-medium max-w-sm text-center">There are no sheds configured for this farm yet. Click "Add Shed" to get started.</p>
                 </div>
             ) : (
                 <div className="sheds-grid-container">
                     {sheds.map((shed: any, idx: number) => (
                         <div
                             key={shed.id || idx}
-                            className="shed-detail-card cursor-pointer hover:shadow-lg transition-shadow"
+                            className="shed-detail-card card-animate cursor-pointer hover:shadow-lg transition-shadow"
+                            style={{ animationDelay: `${idx * 0.1}s` }}
                             onClick={() => handleShedClick(shed)}
                         >
                             <div className="shed-card-header">
@@ -179,6 +182,7 @@ const FarmDetails: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            <div className="card-divider"></div>
 
                             <div className="shed-stats">
                                 <div className="stat-row">
@@ -212,16 +216,6 @@ const FarmDetails: React.FC = () => {
                 </div>
             )}
 
-            {/* Shed Positions Modal */}
-            {selectedShed && (
-                <ShedPositionsModal
-                    isOpen={isShedModalOpen}
-                    onClose={() => setIsShedModalOpen(false)}
-                    shedId={selectedShed.id || selectedShed.shed_id}
-                    shedName={selectedShed.shed_name || selectedShed.name || 'Shed Details'}
-                    capacity={300} // Forced to 300 per user request (75 rows * 4 cols)
-                />
-            )}
 
             <AddShedModal
                 isOpen={isAddShedModalOpen}

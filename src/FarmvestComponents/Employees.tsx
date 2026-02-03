@@ -196,6 +196,13 @@ const Employees: React.FC = () => {
         return baseRoles;
     }, [dynamicRoleCounts]);
 
+    // Helper to get initials
+    const getInitials = (first: string, last: string) => {
+        const f = first ? first.charAt(0).toUpperCase() : '';
+        const l = last ? last.charAt(0).toUpperCase() : '';
+        return `${f}${l}` || '#';
+    };
+
     return (
         <div className="p-2 max-w-full mx-auto min-h-screen">
             {/* Backdrop for Dropdown */}
@@ -214,25 +221,25 @@ const Employees: React.FC = () => {
                         <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0} | {totalCount || 0} Filtered)</p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             onClick={handleAddEmployee}
-                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-all"
+                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2.5 py-1.5 rounded-md font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all"
                         >
-                            <span className="text-lg">+</span> Add Employee
+                            <span className="text-xs">+</span> Add Employee
                         </button>
 
                         <div className="relative z-20">
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-between min-w-[180px] bg-white border border-gray-200 text-gray-700 py-2.5 px-4 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
+                                className="flex items-center justify-between min-w-[120px] bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
                             >
                                 <span className="truncate">{formatRoleName(selectedRole)}</span>
-                                <ChevronDown size={16} className={`ml-2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isDropdownOpen && (
-                                <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {roles.map((option) => (
                                         <button
                                             key={option.value}
@@ -240,15 +247,15 @@ const Employees: React.FC = () => {
                                                 setSelectedRole(option.value);
                                                 setIsDropdownOpen(false);
                                             }}
-                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
                                         >
                                             <span className="flex items-center">
                                                 {option.label}
-                                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedRole === option.value ? 'bg-orange-100/10 text-orange-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
                                                     {option.value === '' ? dynamicStatusCounts.total : (dynamicRoleCounts[option.value] || 0)}
                                                 </span>
                                             </span>
-                                            {selectedRole === option.value && <Check size={16} />}
+                                            {selectedRole === option.value && <Check size={14} />}
                                         </button>
                                     ))}
                                 </div>
@@ -258,16 +265,16 @@ const Employees: React.FC = () => {
                         <div className="relative z-20">
                             <button
                                 onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                                className="flex items-center justify-between min-w-[150px] bg-white border border-gray-200 text-gray-700 py-2.5 px-4 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
+                                className="flex items-center justify-between min-w-[100px] bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
                             >
                                 <span className="truncate">
                                     {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
                                 </span>
-                                <ChevronDown size={16} className={`ml-2 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isStatusDropdownOpen && (
-                                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {[
                                         { value: '', label: 'All Status', count: dynamicStatusCounts.total },
                                         { value: '1', label: 'Active', count: dynamicStatusCounts.active },
@@ -279,15 +286,15 @@ const Employees: React.FC = () => {
                                                 setSelectedStatus(option.value);
                                                 setIsStatusDropdownOpen(false);
                                             }}
-                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
                                         >
                                             <span className="flex items-center">
                                                 {option.label}
-                                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedStatus === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
+                                                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${selectedStatus === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
                                                     {option.count}
                                                 </span>
                                             </span>
-                                            {selectedStatus === option.value && <Check size={16} />}
+                                            {selectedStatus === option.value && <Check size={14} />}
                                         </button>
                                     ))}
                                 </div>
@@ -295,14 +302,14 @@ const Employees: React.FC = () => {
                         </div>
 
 
-                        <div className="relative flex-1 min-w-[200px]">
+                        <div className="relative flex-1 min-w-[160px]">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-gray-400" />
+                                <Search className="h-3.5 w-3.5 text-gray-400" />
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search by Name, Email, Phone..."
-                                className="pl-10 pr-4 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                placeholder="Search..."
+                                className="pl-9 pr-4 py-2 w-full border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -311,31 +318,41 @@ const Employees: React.FC = () => {
                 </div >
 
                 {/* Table Content */}
-                < div className="mt-2 overflow-hidden rounded-xl border border-gray-100" >
+                <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100">
                     <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-[#f8f9fa]">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] uppercase font-bold tracking-widest text-gray-400">
                             <tr>
-                                <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
-                                <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
-                                <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
-                                <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('joining_date')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
-                                <th className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Role</th>
-                                <th className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Farm</th>
-                                <th className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Shed</th>
-                                <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left cursor-pointer">S.No {getSortIcon('id')}</th>
+                                <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left cursor-pointer">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 shrink-0"></div>
+                                        <span>Name {getSortIcon('first_name')}</span>
+                                    </div>
+                                </th>
+                                <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left cursor-pointer">Email {getSortIcon('email')}</th>
+                                <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                <th onClick={() => requestSort('joining_date')} className="px-3 py-2.5 text-left cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
+                                <th className="px-3 py-2.5 text-left">Role</th>
+                                <th className="px-3 py-2.5 text-left">Farm</th>
+                                <th className="px-3 py-2.5 text-left">Shed</th>
+                                <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center cursor-pointer">Status {getSortIcon('active_status')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {employeesLoading ? (
-                                <tr><td colSpan={8} className="p-4"><TableSkeleton cols={8} rows={5} /></td></tr>
+                                <tr><td colSpan={9} className="p-4"><TableSkeleton cols={9} rows={5} /></td></tr>
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                         <td className="px-3 py-2 whitespace-nowrap">
-                                            <div className="font-semibold text-blue-600 cursor-pointer hover:underline text-xs" onClick={() => handleNameClick(employee)}>
-                                                {`${employee.first_name || ''} ${employee.last_name || ''}`}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-700 border border-orange-100 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                                                    {getInitials(employee.first_name, employee.last_name)}
+                                                </div>
+                                                <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm" onClick={() => handleNameClick(employee)}>
+                                                    {`${employee.first_name || ''} ${employee.last_name || ''}`}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">{employee.email || '-'}</td>
@@ -345,19 +362,33 @@ const Employees: React.FC = () => {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             }) : '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700">
-                                                {employee.roles?.[0] ? employee.roles[0].replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase()) : '-'}
-                                            </span>
+                                        <td className="px-3 py-2 whitespace-nowrap text-left">
+                                            <div className="flex gap-1 justify-start flex-wrap">
+                                                {(selectedRole && employee.roles?.includes(selectedRole)) ? (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                        {selectedRole.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                                    </span>
+                                                ) : (
+                                                    employee.roles && employee.roles.length > 0 ? (
+                                                        employee.roles.map((role: string, roleIdx: number) => (
+                                                            <span key={roleIdx} className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                                {role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-gray-400">-</span>
+                                                    )
+                                                )}
+                                            </div>
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
+                                        <td className="px-3 py-2 whitespace-nowrap text-left text-xs text-gray-500">
                                             {employee.farm_name || employee.farm?.farm_name || '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
+                                        <td className="px-3 py-2 whitespace-nowrap text-left text-xs text-gray-500">
                                             {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
                                         <td className="px-3 py-2 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
@@ -365,21 +396,44 @@ const Employees: React.FC = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={8}>
+                                    <td colSpan={9}>
                                         <div className="flex flex-col items-center justify-center py-16 px-4">
-                                            <div className="bg-gray-50 rounded-full p-6 mb-4">
-                                                <Users size={48} className="text-gray-300" />
-                                            </div>
-                                            <h3 className="text-lg font-bold text-gray-900 mb-1">No employees added yet</h3>
-                                            <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
-                                                Start by adding your first employee to manage farms efficiently.
-                                            </p>
-                                            <button
-                                                onClick={handleAddEmployee}
-                                                className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-100 transition-all flex items-center gap-2"
-                                            >
-                                                <span className="text-lg">+</span> Add Employee
-                                            </button>
+                                            {activeSearchQuery ? (
+                                                <>
+                                                    <div className="bg-gray-50 rounded-full p-6 mb-4">
+                                                        <Search size={48} className="text-gray-300" />
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-1">No employees found</h3>
+                                                    <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
+                                                        We couldn't find any employees matching "{activeSearchQuery}". Please try a different search term.
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSearchTerm('');
+                                                            setSearchQuery('');
+                                                        }}
+                                                        className="text-blue-600 font-semibold hover:underline"
+                                                    >
+                                                        Clear search
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="bg-gray-50 rounded-full p-6 mb-4">
+                                                        <Users size={48} className="text-gray-300" />
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-1">No employees added yet</h3>
+                                                    <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
+                                                        Start by adding your first employee to manage farms efficiently.
+                                                    </p>
+                                                    <button
+                                                        onClick={handleAddEmployee}
+                                                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-100 transition-all flex items-center gap-2"
+                                                    >
+                                                        <span className="text-lg">+</span> Add Employee
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
