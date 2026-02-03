@@ -142,7 +142,7 @@ const InvestorDetailsPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 max-w-full mx-auto min-h-screen">
+        <div className="p-4 max-w-full mx-auto min-h-screen">
             {/* Header */}
             <div className="mb-6">
                 <button
@@ -153,7 +153,7 @@ const InvestorDetailsPage: React.FC = () => {
                 </button>
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{investor.first_name} {investor.last_name}</h1>
+                        <h1 className="text-xl font-bold text-gray-900">{investor.first_name} {investor.last_name}</h1>
                         <p className="text-gray-500 flex items-center mt-1">
                             <span className={`inline-block w-2 h-2 rounded-full mr-2 ${investor.active_status || investor.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
                             {investor.active_status || investor.is_active ? 'Active Investor' : 'Inactive Investor'}
@@ -163,9 +163,9 @@ const InvestorDetailsPage: React.FC = () => {
             </div>
 
             {/* Profile Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                    <User size={20} className="mr-2 text-blue-500" /> Personal Information
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+                <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center">
+                    <User size={18} className="mr-2 text-blue-500" /> Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="flex items-start p-4 bg-gray-50 rounded-xl">
@@ -193,43 +193,42 @@ const InvestorDetailsPage: React.FC = () => {
             </div>
 
             {/* Investments / Animals Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                        <Milk size={20} className="mr-2 text-orange-500" /> Livestock Portfolio
+                    <h3 className="text-base font-bold text-gray-800 flex items-center">
+                        <Milk size={18} className="mr-2 text-orange-500" /> Livestock Portfolio
                     </h3>
 
-                    <div className="flex items-center gap-3">
-                        <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-blue-100">
-                            <span className="text-lg mr-2">🐃</span> {animals ? animals.filter((a: any) => String(a.animal_type || a.type || '').toUpperCase() === 'BUFFALO').length : 0} Buffaloes
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-blue-100">
+                            <span className="text-base mr-1.5">🐃</span> {animals ? animals.filter((a: any) => String(a.animal_type || a.type || '').toUpperCase() === 'BUFFALO').length : 0} Buffaloes
                         </div>
-                        <div className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-orange-100">
-                            <span className="text-lg mr-2">🐄</span> {animals ? animals.reduce((acc, curr) => acc + (curr.associated_calves?.length || 0), 0) : 0} Calf
+                        <div className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-orange-100">
+                            <span className="text-base mr-1.5">🐄</span> {animals ? animals.reduce((acc, curr) => acc + (curr.associated_calves?.length || 0), 0) : 0} Calf
                         </div>
-                        <div className="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-green-100">
-                            <span className="text-lg mr-2">🏡</span> {animals ? new Set(animals.map((a: any) => a.farm_name || a.farm_id).filter(Boolean)).size : 0} Farms
+                        <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-green-100">
+                            <span className="text-base mr-1.5">🏡</span> {animals ? new Set(animals.map((a: any) => a.farm_name || a.farm_id).filter(Boolean)).size : 0} Farms
                         </div>
-                        <div className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-bold flex items-center shadow-sm border border-purple-100">
-                            <span className="text-lg mr-2">🛖</span> {animals ? new Set(animals.map(a => a.shed_name || a.shed_id).filter(Boolean)).size : 0} Sheds
+                        <div className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-purple-100">
+                            <span className="text-base mr-1.5">🛖</span> {animals ? new Set(animals.map(a => a.shed_name || a.shed_id).filter(Boolean)).size : 0} Sheds
                         </div>
                     </div>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-gray-100">
+                <div className="overflow-x-auto rounded-xl border border-gray-100">
                     <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-[#f8f9fa] border-b border-gray-100">
                             <tr>
-                                <th className="px-4 py-4 text-left w-10"></th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tag ID</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Farm</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Shed</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Position</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Breed</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Gender</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Age (Months)</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Location</th>
-
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-3 py-3 text-left w-10"></th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Tag ID</th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Farm</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Shed</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Position</th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Breed</th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Gender</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Age (M)</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Location</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -238,38 +237,38 @@ const InvestorDetailsPage: React.FC = () => {
                             ) : animals.length > 0 ? (
                                 animals.map((animal: any, index: number) => (
                                     <React.Fragment key={animal.id || index}>
-                                        <tr className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => toggleRow(animal.id || index)}>
-                                            <td className="px-4 py-4 text-gray-400">
+                                        <tr className="hover:bg-amber-50/10 transition-colors cursor-pointer border-b border-gray-50" onClick={() => toggleRow(animal.id || index)}>
+                                            <td className="px-3 py-3 text-gray-400">
                                                 {animal.associated_calves?.length > 0 ? (
-                                                    expandedRow === (animal.id || index) ? <ChevronDown size={20} /> : <ChevronRight size={20} />
+                                                    expandedRow === (animal.id || index) ? <ChevronDown size={18} className="text-amber-600" /> : <ChevronRight size={18} />
                                                 ) : <div className="w-5" />}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                                            <td className="px-4 py-3 whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    <span className="p-1.5 bg-blue-100 text-blue-600 rounded mr-2">
-                                                        <Tag size={14} />
+                                                    <span className="p-1 bg-blue-100 text-blue-600 rounded mr-2">
+                                                        <Tag size={12} />
                                                     </span>
-                                                    <span className="font-bold text-gray-900">{animal.rfid_tag_number}</span>
-                                                    <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">Buffalo</span>
+                                                    <span className="font-black text-gray-900 text-xs">{animal.rfid_tag_number}</span>
+                                                    <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-50 text-blue-600 uppercase tracking-tighter">Buffalo</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                                            <td className="px-4 py-3 whitespace-nowrap text-[11px] text-gray-600 font-bold">
                                                 {animal.farm_name || animal.farm?.farm_name || '-'}{animal.farm_location || animal.location ? ` - ${animal.farm_location || animal.location}` : ''}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[11px] text-gray-500 font-bold">
                                                 {animal.shed_name || animal.shed_id || (animal.shed ? animal.shed.shed_id : '-') || '-'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono text-center">
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[10px] text-gray-400 font-black font-mono">
                                                 {animal.position || (animal.row_number && animal.parking_id ? `${animal.row_number}-${animal.parking_id}` : (animal.parking_id || '-'))}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{animal.breed}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{animal.gender || 'Female'}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{animal.age_months}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                            <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-gray-600">{animal.breed}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-gray-600">{animal.gender || 'Female'}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[11px] font-black text-gray-700">{animal.age_months}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[11px] font-bold text-gray-500">
                                                 {animal.farm_location || '-'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-green-50 text-green-700 uppercase`}>
                                                     Active
                                                 </span>
                                             </td>

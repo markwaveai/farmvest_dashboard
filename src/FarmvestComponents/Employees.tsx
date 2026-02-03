@@ -26,7 +26,9 @@ const Employees: React.FC = () => {
 
     const {
         employees,
+        allEmployees,
         totalCount,
+        globalTotalCount,
         loading: employeesLoading,
         error,
         successMessage,
@@ -143,6 +145,33 @@ const Employees: React.FC = () => {
         return role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     };
 
+    // Dynamic Counts based on filters
+    const dynamicRoleCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        allEmployees.forEach(emp => {
+            const matchesStatus = !selectedStatus || String(emp.active_status) === selectedStatus;
+            if (matchesStatus) {
+                const role = emp.roles?.[0] || 'INVESTOR';
+                const normRole = String(role).trim().toUpperCase().replace(/\s+/g, '_');
+                counts[normRole] = (counts[normRole] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [allEmployees, selectedStatus]);
+
+    const dynamicStatusCounts = useMemo(() => {
+        const counts = { active: 0, inactive: 0, total: 0 };
+        allEmployees.forEach(emp => {
+            const matchesRole = !selectedRole || (emp.roles?.[0] || 'INVESTOR').trim().toUpperCase().replace(/\s+/g, '_') === selectedRole;
+            if (matchesRole) {
+                counts.total++;
+                if (emp.active_status) counts.active++;
+                else counts.inactive++;
+            }
+        });
+        return counts;
+    }, [allEmployees, selectedRole]);
+
     const roles = useMemo(() => {
         const baseRoles = [
             { value: '', label: 'All Roles' },
@@ -153,9 +182,9 @@ const Employees: React.FC = () => {
             { value: 'ADMIN', label: 'Admin' }
         ];
 
-        // Add any other roles found in roleCounts that aren't in baseRoles
+        // Add any other roles found in allEmployees
         const existingRoleValues = new Set(baseRoles.map(r => r.value));
-        Object.keys(roleCounts).forEach(roleKey => {
+        Object.keys(dynamicRoleCounts).forEach(roleKey => {
             if (!existingRoleValues.has(roleKey) && roleKey) {
                 baseRoles.push({
                     value: roleKey,
@@ -165,7 +194,7 @@ const Employees: React.FC = () => {
         });
 
         return baseRoles;
-    }, [roleCounts, totalCount]);
+    }, [dynamicRoleCounts]);
 
     return (
         <div className="p-2 max-w-full mx-auto min-h-screen">
@@ -182,7 +211,7 @@ const Employees: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {totalCount || 0} | {employees.length} visible)</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0} | {totalCount || 0} Filtered)</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -215,8 +244,8 @@ const Employees: React.FC = () => {
                                         >
                                             <span className="flex items-center">
                                                 {option.label}
-                                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
-                                                    {option.value === '' ? totalCount : (roleCounts[option.value] || 0)}
+                                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${selectedRole === option.value ? 'bg-orange-100/10 text-orange-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {option.value === '' ? dynamicStatusCounts.total : (dynamicRoleCounts[option.value] || 0)}
                                                 </span>
                                             </span>
                                             {selectedRole === option.value && <Check size={16} />}
@@ -240,9 +269,9 @@ const Employees: React.FC = () => {
                             {isStatusDropdownOpen && (
                                 <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {[
-                                        { value: '', label: 'All Status', count: totalCount },
-                                        { value: '1', label: 'Active', count: statusCounts.active },
-                                        { value: '0', label: 'Inactive', count: statusCounts.inactive }
+                                        { value: '', label: 'All Status', count: dynamicStatusCounts.total },
+                                        { value: '1', label: 'Active', count: dynamicStatusCounts.active },
+                                        { value: '0', label: 'Inactive', count: dynamicStatusCounts.inactive }
                                     ].map((option) => (
                                         <button
                                             key={option.value}

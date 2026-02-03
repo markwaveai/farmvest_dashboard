@@ -371,12 +371,12 @@ export const farmvestService = {
             throw error;
         }
     },
-    searchAnimal: async (rfid: string) => {
+    searchAnimal: async (queryStr: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/search_animal?search_query=${rfid}`);
+            const response = await farmvestApi.get(`/api/animal/search_animal?query_str=${queryStr}`);
             return response.data;
         } catch (error) {
-            console.error(`Error searching animal ${rfid}:`, error);
+            console.error(`Error searching animal ${queryStr}:`, error);
             throw error;
         }
     },

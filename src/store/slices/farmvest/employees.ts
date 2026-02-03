@@ -168,7 +168,27 @@ export const fetchRoleCounts = createAsyncThunk(
                     statusCounts.inactive++;
                 }
             });
-            return { roleCounts: counts, statusCounts };
+
+            // Map allEmployees to follow the same structure as fetchEmployees for consistency
+            const mappedEmployees = allEmployees.map((item: any, index: number) => {
+                const rawStatus = item.is_active !== undefined ? item.is_active : item.active_status;
+                const isActive = Number(rawStatus) ? 1 : 0;
+                return {
+                    ...item,
+                    id: item.id || item.investor_id || index,
+                    first_name: item.first_name || '',
+                    last_name: item.last_name || '',
+                    email: item.email || '',
+                    mobile: item.mobile || item.phone_number || '',
+                    phone_number: item.mobile || item.phone_number || '',
+                    roles: item.roles || ['Investor'],
+                    is_active: isActive,
+                    active_status: isActive,
+                    joining_date: (item.created_at || item.joining_date || '').split('T')[0]
+                };
+            });
+
+            return { roleCounts: counts, statusCounts, allEmployees: mappedEmployees };
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -177,7 +197,9 @@ export const fetchRoleCounts = createAsyncThunk(
 
 interface EmployeesState {
     employees: FarmvestEmployee[];
+    allEmployees: FarmvestEmployee[];
     totalCount: number;
+    globalTotalCount: number;
     loading: boolean;
     createLoading: boolean;
     deleteLoading: boolean;
@@ -190,7 +212,9 @@ interface EmployeesState {
 
 const initialState: EmployeesState = {
     employees: [],
+    allEmployees: [],
     totalCount: 0,
+    globalTotalCount: 0,
     loading: false,
     createLoading: false,
     deleteLoading: false,
@@ -219,6 +243,8 @@ const employeesSlice = createSlice({
             .addCase(fetchRoleCounts.fulfilled, (state, action) => {
                 state.roleCounts = action.payload.roleCounts;
                 state.statusCounts = action.payload.statusCounts;
+                state.allEmployees = action.payload.allEmployees || [];
+                state.globalTotalCount = (action.payload.allEmployees || []).length;
             })
         builder
             .addCase(fetchEmployees.pending, (state) => {
