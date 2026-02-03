@@ -168,7 +168,7 @@ const Employees: React.FC = () => {
     }, [roleCounts, totalCount]);
 
     return (
-        <div className="p-6 max-w-full mx-auto min-h-screen">
+        <div className="p-2 max-w-full mx-auto min-h-screen">
             {/* Backdrop for Dropdown */}
             {isDropdownOpen && (
                 <div
@@ -178,11 +178,11 @@ const Employees: React.FC = () => {
             )}
 
             {/* Page Header Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mb-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-base text-gray-500 mt-1">Manage all employees (Total: {totalCount || 0} | {employees.length} visible)</p>
+                        <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
+                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {totalCount || 0} | {employees.length} visible)</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -282,19 +282,19 @@ const Employees: React.FC = () => {
                 </div >
 
                 {/* Table Content */}
-                < div className="mt-8 overflow-hidden rounded-xl border border-gray-100" >
+                < div className="mt-2 overflow-hidden rounded-xl border border-gray-100" >
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-[#f8f9fa]">
                             <tr>
-                                <th onClick={() => requestSort('id')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
-                                <th onClick={() => requestSort('first_name')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
-                                <th onClick={() => requestSort('email')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
-                                <th onClick={() => requestSort('phone_number')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('joining_date')} className="px-8 py-5 text-left text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
-                                <th className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider">Role</th>
-                                <th className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider">Farm</th>
-                                <th className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider">Shed</th>
-                                <th onClick={() => requestSort('active_status')} className="px-8 py-5 text-center text-sm font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
+                                <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                <th onClick={() => requestSort('joining_date')} className="px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
+                                <th className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Farm</th>
+                                <th className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">Shed</th>
+                                <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center text-[11px] font-extrabold text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -303,32 +303,32 @@ const Employees: React.FC = () => {
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td className="px-8 py-5 whitespace-nowrap">
-                                            <div className="font-semibold text-blue-600 cursor-pointer hover:underline text-base" onClick={() => handleNameClick(employee)}>
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                        <td className="px-3 py-2 whitespace-nowrap">
+                                            <div className="font-semibold text-blue-600 cursor-pointer hover:underline text-xs" onClick={() => handleNameClick(employee)}>
                                                 {`${employee.first_name || ''} ${employee.last_name || ''}`}
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-600">{employee.email || '-'}</td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-600">{employee.phone_number || '-'}</td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-base text-gray-600">
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">{employee.email || '-'}</td>
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">{employee.phone_number || '-'}</td>
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">
                                             {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN', {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             }) : '-'}
                                         </td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-center">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[13px] font-bold bg-blue-50 text-blue-700">
+                                        <td className="px-3 py-2 whitespace-nowrap text-center">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700">
                                                 {employee.roles?.[0] ? employee.roles[0].replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase()) : '-'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-center text-base text-gray-500">
+                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
                                             {employee.farm_name || employee.farm?.farm_name || '-'}
                                         </td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-center text-base text-gray-500">
+                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
                                             {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-3 py-1.5 rounded text-[13px] font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <td className="px-3 py-2 whitespace-nowrap text-center">
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
