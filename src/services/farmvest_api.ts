@@ -92,8 +92,11 @@ export const farmvestService = {
     },
     getAllInvestors: async (params?: { page?: number; size?: number }) => {
         try {
-            const { page = 1, size = 20 } = params || {};
-            const url = `/api/investors/get_all_investors?page=${page}&size=${size}`;
+            const { page = 1, size = 5000 } = params || {};
+            // Build URL using the config endpoint + query params
+            const baseUrl = API_ENDPOINTS.getAllInvestors();
+            const url = `${baseUrl}?page=${page}&size=${size}`;
+
             console.log('[FarmVest] Fetching investors with URL:', url);
             const response = await farmvestApi.get(url);
             console.log('[FarmVest] Investors API Response:', response.data);
@@ -336,7 +339,7 @@ export const farmvestService = {
         try {
             console.log('[FarmVest] Onboarding animal with data:', JSON.stringify(onboardingData, null, 2));
 
-            let url = '/api/animal/onboard_animal';
+            let url = API_ENDPOINTS.onboardAnimal();
             if (onboardingData.farm_id !== undefined && onboardingData.farm_id !== null) {
                 url += `?farm_id=${onboardingData.farm_id}`;
             }
@@ -350,17 +353,10 @@ export const farmvestService = {
             console.error('Error onboarding animals:', error);
             if (error.response) {
                 console.error('[FarmVest] Onboard Error Response:', error.response.status, error.response.data);
-                let errorMsg = `Onboarding Error (${error.response.status}): `;
+                // Log detailed validation errors if available
                 if (error.response.data && Array.isArray(error.response.data.detail)) {
-                    const details = error.response.data.detail.slice(0, 3).map((d: any) =>
-                        `${d.loc.join('.')} : ${d.msg}`
-                    ).join('\n');
-                    errorMsg += '\n' + details;
-                } else {
-                    errorMsg += JSON.stringify(error.response.data);
+                    console.error('Validation Details:', error.response.data.detail);
                 }
-                // alert replaced with console error for cleaner UI
-                console.error(errorMsg);
             }
             throw error;
         }

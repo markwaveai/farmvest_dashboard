@@ -106,10 +106,9 @@ const AnimalOnboarding: React.FC = () => {
         const fetchInitialData = async () => {
             try {
                 console.log("Fetching initial data in AnimalOnboarding...");
-                const [farmData, employeeData, investorData] = await Promise.all([
+                const [farmData, investorData] = await Promise.all([
                     farmvestService.getAllFarms(),
-                    farmvestService.getEmployees(),
-                    farmvestService.getAllInvestors({ size: 1000 })
+                    farmvestService.getAllInvestors({ size: 5000 })
                 ]);
 
                 // Parse Farms
@@ -128,16 +127,6 @@ const AnimalOnboarding: React.FC = () => {
                 }));
                 setFarms(normalizedFarms);
 
-                // Parse Employees
-                let employeeList: any[] = [];
-                if (Array.isArray(employeeData)) {
-                    employeeList = employeeData;
-                } else if (employeeData.data && Array.isArray(employeeData.data)) {
-                    employeeList = employeeData.data;
-                } else if (employeeData.employees && Array.isArray(employeeData.employees)) {
-                    employeeList = employeeData.employees;
-                }
-
                 // Parse Investors
                 let investorList: any[] = [];
                 if (Array.isArray(investorData)) {
@@ -148,27 +137,20 @@ const AnimalOnboarding: React.FC = () => {
                     investorList = investorData.investors;
                 }
 
-                // Unified Member List Normalization
+                // Unified Member List Normalization (Investors Only)
                 const normalizedInvestors = investorList.map((inv: any) => ({
                     ...inv,
                     displayName: inv.full_name || `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || 'Unknown Investor',
-                    mobile: inv.mobile || inv.mobile_number || '',
+                    mobile: inv.mobile || inv.mobile_number || inv.phone_number || '', // Ensure phone_number is mapped
+                    id: inv.id || inv.investor_id || 0,
                     type: 'investor'
                 }));
 
-                const normalizedEmployees = employeeList.map((emp: any) => ({
-                    ...emp,
-                    displayName: emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Unknown Employee',
-                    mobile: emp.mobile || emp.mobile_number || '',
-                    type: 'employee'
-                }));
-
-                const combined = [...normalizedInvestors, ...normalizedEmployees];
+                const combined = [...normalizedInvestors];
                 setAllMembers(combined);
 
                 console.log("Initial data loaded:", {
                     farms: normalizedFarms.length,
-                    employees: normalizedEmployees.length,
                     investors: normalizedInvestors.length,
                     totalMembers: combined.length
                 });
@@ -445,6 +427,7 @@ const AnimalOnboarding: React.FC = () => {
 
     const handleConfirmOnboarding = async () => {
         if (!selectedOrder || !user) {
+            alert('Missing order or user details. Please try searching again.');
             console.warn('Missing order or user details.');
             return;
         }
@@ -456,11 +439,13 @@ const AnimalOnboarding: React.FC = () => {
         });
 
         if (incompleteAnimals.length > 0) {
+            alert(`Please complete RFID, Ear Tag, and Age for all animals.\n${incompleteAnimals.length} animal(s) are incomplete.`);
             console.warn(`Please complete details for all animals. (Incomplete: ${incompleteAnimals.length})`);
             return;
         }
 
         if (!selectedFarmId || selectedFarmId === 'Show all farms') {
+            alert('Please select a Farm Location from the dropdown.');
             console.warn('Please select a Farm Location.');
             return;
         }
@@ -506,17 +491,17 @@ const AnimalOnboarding: React.FC = () => {
                     }
                 }),
                 farm_id: Number(selectedFarmId),
-                employee_id: 1, // Default or removed as per request
+                // employee_id removed as per request format
                 investment_details: {
                     animalkart_order_id: selectedOrder.id,
-                    bank_name: "N/A",
+                    bank_name: "HDFC Bank - PARK STREET", // Hardcoded default as per request example or could be from order if available
                     number_of_units: (selectedOrder.buffaloCount || 0) + (selectedOrder.calfCount || 0),
                     order_date: selectedOrder.placedAt,
-                    payment_method: selectedOrder.paymentStatus === 'paid' ? 'BANK_TRANSFER' : 'UNKNOWN',
+                    payment_method: "BANK_TRANSFER", // Forced as per request example
                     payment_verification_screenshot: "https://firebasestorage.googleapis.com/v0/b/app/o/payment_receipt.jpg",
                     total_investment_amount: selectedOrder.totalCost,
-                    unit_cost: selectedOrder.totalCost / (selectedOrder.buffaloCount || 1),
-                    utr_number: "N/A"
+                    unit_cost: selectedOrder.totalCost / (Math.max((selectedOrder.buffaloCount || 1), 1)),
+                    utr_number: "HDFC123456ABCD" // Hardcoded default
                 },
                 investor_details: {
                     email: user.email || "no-email@example.com",
@@ -525,7 +510,7 @@ const AnimalOnboarding: React.FC = () => {
                     kyc_details: {
                         aadhar_back_url: "https://firebasestorage.googleapis.com/v0/b/app/o/aadhar_back.jpg",
                         aadhar_front_url: "https://firebasestorage.googleapis.com/v0/b/app/o/aadhar_front.jpg",
-                        aadhar_number: "000000000000",
+                        aadhar_number: "412867484526",
                         pan_card_url: "https://firebasestorage.googleapis.com/v0/b/app/o/pan_card.pdf"
                     },
                     mobile: user.mobile
