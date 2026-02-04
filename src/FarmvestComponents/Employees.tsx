@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
 import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee, updateEmployeeStatus } from '../store/slices/farmvest/employees';
@@ -67,22 +67,24 @@ const Employees: React.FC = () => {
         }
     };
 
-    // URL Search Params for Pagination
-    const [searchParams, setSearchParams] = useSearchParams();
-    const currentPage = parseInt(searchParams.get('page') || '1', 10);
+    // Local State for Pagination (Removed URL params to fix navigation issues)
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // const [searchParams, setSearchParams] = useSearchParams();
+    // const currentPage = parseInt(searchParams.get('page') || '1', 10);
     const itemsPerPage = 20;
 
     // Search State
     const [searchTerm, setSearchTerm] = React.useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('');
 
-    const setCurrentPage = useCallback((page: number) => {
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set('page', String(page));
-            return newParams;
-        });
-    }, [setSearchParams]);
+    // const setCurrentPage = useCallback((page: number) => {
+    //     setSearchParams(prev => {
+    //         const newParams = new URLSearchParams(prev);
+    //         newParams.set('page', String(page));
+    //         return newParams;
+    //     });
+    // }, [setSearchParams]);
 
     // Custom Search Function
     const searchFn = useCallback((item: any, query: string) => {
@@ -280,7 +282,7 @@ const Employees: React.FC = () => {
     };
 
     return (
-        <div className="p-2 max-w-full mx-auto min-h-screen">
+        <div className="p-2 h-full flex flex-col max-w-full mx-auto overflow-hidden">
             {/* Backdrop for Dropdown */}
             {isDropdownOpen && (
                 <div
@@ -289,21 +291,27 @@ const Employees: React.FC = () => {
                 />
             )}
 
-            {/* Page Header Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mb-3">
+            {/* Page Header Card - Fixed Height */}
+            <div className="flex-none bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mb-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0} | {totalCount || 0} Filtered)</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0} | {filteredEmployees.length} Filtered)</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            onClick={handleAddEmployee}
-                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2.5 py-1.5 rounded-md font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all"
-                        >
-                            <span className="text-xs">+</span> Add Employee
-                        </button>
+                        <div className="relative flex-1 min-w-[160px]">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-3.5 w-3.5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                className="pl-9 pr-4 py-2 w-full border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
 
                         <div className="relative z-20">
                             <button
@@ -377,39 +385,34 @@ const Employees: React.FC = () => {
                             )}
                         </div>
 
-
-                        <div className="relative flex-1 min-w-[160px]">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-3.5 w-3.5 text-gray-400" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="pl-9 pr-4 py-2 w-full border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                        <button
+                            onClick={handleAddEmployee}
+                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2.5 py-1.5 rounded-md font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all"
+                        >
+                            <span className="text-xs">+</span> Add Employee
+                        </button>
                     </div >
                 </div >
+            </div>
 
-                {/* Table Content */}
-                <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100">
-                    <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700">
+            {/* Table Content - Flex Grow */}
+            <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-auto max-h-[calc(100vh-200px)]">
+                    <table className="min-w-full divide-y divide-gray-100 relative">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left cursor-pointer">S.No {getSortIcon('id')}</th>
+                                <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">S.No {getSortIcon('id')}</th>
 
-                                <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left cursor-pointer">
+                                <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">
                                     <span>Name {getSortIcon('first_name')}</span>
                                 </th>
-                                <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left cursor-pointer">Email {getSortIcon('email')}</th>
-                                <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('joining_date')} className="px-3 py-2.5 text-left cursor-pointer">Joining Date {getSortIcon('joining_date')}</th>
-                                <th className="px-3 py-2.5 text-left">Role</th>
-                                <th className="px-3 py-2.5 text-left">Farm</th>
-                                <th className="px-3 py-2.5 text-left">Shed</th>
-                                <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Email {getSortIcon('email')}</th>
+                                <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Phone {getSortIcon('phone_number')}</th>
+                                <th onClick={() => requestSort('joining_date')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Joining Date {getSortIcon('joining_date')}</th>
+                                <th className="px-3 py-2.5 text-left bg-gray-50">Role</th>
+                                <th className="px-3 py-2.5 text-left bg-gray-50">Farm</th>
+                                <th className="px-3 py-2.5 text-left bg-gray-50">Shed</th>
+                                <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Status {getSortIcon('active_status')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -510,7 +513,7 @@ const Employees: React.FC = () => {
                             )}
                         </tbody>
                     </table>
-                </div >
+                </div>
             </div >
 
             <AddEmployeeModal
@@ -534,7 +537,7 @@ const Employees: React.FC = () => {
             />
             {
                 totalPages > 1 && (
-                    <div className="mt-4">
+                    <div className="flex-none mt-4">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

@@ -315,34 +315,38 @@ export const farmvestService = {
     },
     getPaidOrders: async (mobile: string) => {
         try {
-            console.log('[FarmVest] [MOCK] Fetching paid orders for mobile:', mobile);
+            console.log('[FarmVest] Fetching paid orders for mobile:', mobile);
 
-            // Artificial delay to simulate network request
-            await new Promise(resolve => setTimeout(resolve, 800));
-
-            // Return mock data that matches the expected Order structure in AnimalOnboarding.tsx
-            // This unblocks the UI since the backend endpoint is currently 404
-            const mockData = [
-                {
-                    id: "OD" + Date.now(),
-                    order_id: "OD" + Date.now(),
-                    buffalo_count: 4,
-                    calf_count: 4,
-                    total_amount: 1400000,
-                    created_at: new Date().toISOString(),
-                    status: "paid",
-                    payment_status: "paid",
-                    user_name: "Investor",
-                    user_mobile: mobile,
-                    user_email: "investor@example.com"
+            // Get admin mobile from session
+            const sessionStr = localStorage.getItem('ak_dashboard_session');
+            let adminMobile = '';
+            if (sessionStr) {
+                try {
+                    const session = JSON.parse(sessionStr);
+                    adminMobile = session.mobile;
+                } catch (e) {
+                    console.error("Error parsing session for admin mobile", e);
                 }
-            ];
+            }
 
-            console.log('[FarmVest] [MOCK] Returning mock orders:', mockData);
-            return mockData;
+            const url = API_ENDPOINTS.getInTransitOrders();
+            const response = await axios.post(url, {
+                mobile: mobile || ""
+            }, {
+                headers: {
+                    'x-admin-mobile': adminMobile,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 200 || response.status === 201) {
+                console.log('[FarmVest] API Response Data:', response.data);
+                return response.data; // Return the full { user, orders, status, statuscode }
+            }
+            return { user: null, orders: [] };
         } catch (error: any) {
             console.error(`Error fetching paid orders for ${mobile}:`, error);
-            throw error;
+            return { user: null, orders: [] };
         }
     },
     onboardAnimal: async (onboardingData: any) => {

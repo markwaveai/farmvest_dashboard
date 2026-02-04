@@ -47,6 +47,7 @@ export const API_ENDPOINTS = {
   requestReactivationOtp: () => `${API_CONFIG.getBaseUrl()}/users/reactivate/request-otp`,
   confirmReactivation: () => `${API_CONFIG.getBaseUrl()}/users/reactivate/confirm`,
   markInTransit: () => `${API_CONFIG.getBaseUrl()}/order-tracking/intransit`,
+  getInTransitOrders: () => `${API_CONFIG.getBaseUrl()}/order-tracking/intransit`,
 
   // FarmVest Endpoints
   // Auth

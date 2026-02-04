@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import './AnimalOnboarding.css';
 import { useNavigate } from 'react-router-dom';
 import { farmvestService } from '../../services/farmvest_api';
-import { uploadToFirebase } from '../../config/firebaseAppConfig';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
 import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X } from 'lucide-react';
 
@@ -17,9 +16,14 @@ const CustomStrollerIcon = ({ size = 24, color = "currentColor" }: { size?: numb
 );
 
 interface UserProfile {
+    id: string;
     name: string;
     mobile: string;
     email: string;
+    aadhar_number: string;
+    aadhar_front_image_url: string;
+    aadhar_back_image_url: string;
+    panCardUrl: string;
 }
 
 interface Order {
@@ -27,16 +31,22 @@ interface Order {
     buffaloCount: number;
     calfCount: number;
     totalCost: number;
+    unitCost: number;
+    numUnits: number;
     placedAt: string;
     status: string;
     paymentStatus: string;
+    paymentType: string;
+    buffaloIds: string[];
 }
 
 interface AnimalDetail {
     id: number;
+    uid: string; // Internal unique ID for backend animal_id
     type: 'Buffalo' | 'Calf';
     rfidTag: string;
     earTag: string;
+    neckbandId?: string;
     age: string;
     parentBuffaloId?: number;
     photos: string[];
@@ -190,6 +200,9 @@ const AnimalOnboarding: React.FC = () => {
 
         try {
             console.log(`Uploading ${selectedFiles.length} images for animal ID ${animalId}...`);
+            // Dynamic import to solve initialization order issues
+            const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+
             // Upload all files concurrently
             const uploadedUrls = await Promise.all(selectedFiles.map(file => uploadToFirebase(file)));
 
@@ -230,27 +243,41 @@ const AnimalOnboarding: React.FC = () => {
     useEffect(() => {
         if (selectedOrder) {
             const newAnimals: AnimalDetail[] = [];
-            let currentIndex = 1;
 
-            const bCount = selectedOrder.buffaloCount > 0 ? selectedOrder.buffaloCount : 1;
-            const cCount = selectedOrder.calfCount > 0 ? selectedOrder.calfCount : 0; // Fixed: default to 0 if not specified
-
-            // Add Buffaloes
-            for (let i = 0; i < bCount; i++) {
-                newAnimals.push({
-                    id: Date.now() + i,
-                    type: 'Buffalo',
-                    rfidTag: '',
-                    earTag: '',
-                    age: '',
-                    photos: [],
-                    index: currentIndex++,
-                    status: 'Pending'
+            // If the order has specific buffalo UUIDs from Animalkart, use them
+            if (selectedOrder.buffaloIds && selectedOrder.buffaloIds.length > 0) {
+                // Use a Set to avoid duplicates if any (though we should respect the count)
+                const uniqueUids = Array.from(new Set(selectedOrder.buffaloIds));
+                uniqueUids.forEach((uuid, idx) => {
+                    newAnimals.push({
+                        id: Date.now() + idx,
+                        uid: uuid,
+                        type: 'Buffalo',
+                        rfidTag: '',
+                        earTag: '',
+                        age: '',
+                        photos: [],
+                        index: idx + 1,
+                        status: 'Pending'
+                    });
                 });
+            } else {
+                // Fallback to traditional count-based initialization
+                const bCount = selectedOrder.buffaloCount > 0 ? selectedOrder.buffaloCount : 1;
+                for (let i = 0; i < bCount; i++) {
+                    newAnimals.push({
+                        id: Date.now() + i,
+                        uid: crypto.randomUUID(),
+                        type: 'Buffalo',
+                        rfidTag: '',
+                        earTag: '',
+                        age: '',
+                        photos: [],
+                        index: i + 1,
+                        status: 'Pending'
+                    });
+                }
             }
-
-            // Exclude Calves from main list initialization request
-            // Calves will be added manually via the "Calf Details" button on Buffalo #1
 
             setAnimals(newAnimals);
         } else {
@@ -261,17 +288,21 @@ const AnimalOnboarding: React.FC = () => {
     const normalizeOrder = (o: any): Order => {
         const parseNum = (val: any) => {
             if (val === undefined || val === null) return 0;
-            const n = parseInt(val, 10);
+            const n = parseFloat(val);
             return isNaN(n) ? 0 : n;
         };
         return {
             id: o.id || o.order_id || 'N/A',
-            buffaloCount: parseNum(o.buffaloCount || o.buffalo_count || o.buffaloes_count || o.buffaloesCount || o.quantity || 0) || 1,
-            calfCount: parseNum(o.calfCount || o.calf_count || o.calves_count || o.calvesCount),
-            totalCost: parseNum(o.totalCost || o.total_amount || o.totalCost || o.amount),
-            placedAt: o.placedAt || o.created_at || o.date || new Date().toISOString(),
+            buffaloCount: parseNum(o.buffaloCount || o.buffalo_count || 0),
+            calfCount: parseNum(o.calfCount || o.calf_count || 0),
+            totalCost: parseNum(o.totalCost || o.total_amount || 0),
+            unitCost: parseNum(o.unitCost || o.baseUnitCost || 0),
+            numUnits: parseNum(o.numUnits || o.num_units || 0),
+            placedAt: o.placedAt || o.created_at || new Date().toISOString(),
             status: o.status || 'pending',
-            paymentStatus: o.paymentStatus || o.payment_status || 'paid'
+            paymentStatus: o.paymentStatus || 'paid',
+            paymentType: o.paymentType || o.payment_type || 'BANK_TRANSFER',
+            buffaloIds: Array.isArray(o.buffaloIds || o.buffalo_ids) ? (o.buffaloIds || o.buffalo_ids) : []
         };
     };
 
@@ -284,230 +315,37 @@ const AnimalOnboarding: React.FC = () => {
         setSearchNotFound(false);
 
         try {
-            let userData: UserProfile | null = null;
-            let isValidUser = false;
+            console.log(`Fetching intransit orders for mobile: ${mobile}`);
+            const result = await farmvestService.getPaidOrders(mobile);
 
-            // 0. Pre-validation: Check if user exists locally or in API
-            // Check local cache first
-            const localMatch = allMembers.find(m => (m.mobile || m.mobile_number) === mobile);
-            if (localMatch) {
-                isValidUser = true;
-                userData = {
-                    name: localMatch.displayName,
-                    mobile: localMatch.mobile,
-                    email: localMatch.email || ''
+            if (result && result.user && Array.isArray(result.orders) && result.orders.length > 0) {
+                const u = result.user;
+                const userData: UserProfile = {
+                    id: u.id || u.mobile || '',
+                    name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Investor',
+                    mobile: u.mobile || mobile,
+                    email: u.email || '',
+                    aadhar_number: u.aadhar_number || '',
+                    aadhar_front_image_url: u.aadhar_front_image_url || '',
+                    aadhar_back_image_url: u.aadhar_back_image_url || '',
+                    panCardUrl: u.panCardUrl || ''
                 };
-            } else {
-                // Check API if not found locally
-                try {
-                    const employeeResults = await farmvestService.searchEmployee(mobile);
-                    if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
-                        isValidUser = true;
-                        const match = employeeResults.find((e: any) =>
-                            (e.mobile || e.mobile_number) === mobile
-                        ) || employeeResults[0];
-                        userData = {
-                            name: match.full_name || `${match.first_name || ''} ${match.last_name || ''}`.trim(),
-                            mobile: match.mobile || match.mobile_number,
-                            email: match.email || ''
-                        };
-                    }
-                } catch (err) {
-                    console.warn('User validation failed:', err);
-                }
-            }
 
-            if (!isValidUser) {
-                setSearchNotFound(true);
-                setLoading(false);
-                return;
-            }
-
-            // proceed to get orders (mock) only if user is valid
-            let ordersList: Order[] = [];
-
-            if (isValidUser && localMatch) {
-                const investorId = localMatch.id || localMatch.user_id || localMatch.investor_id || localMatch.uid;
-                if (investorId) {
-                    try {
-                        console.log(`Fetching animals for investor ID: ${investorId}`);
-                        const animalData = await farmvestService.getAnimalsByInvestor(investorId);
-                        console.log("Fetched Animals:", animalData);
-
-                        let bCount = 0;
-                        let cCount = 0;
-                        // Handle potential response structures (array or object with data/animals property)
-                        const list = Array.isArray(animalData) ? animalData : (animalData.data || animalData.animals || []);
-                        let totalInvestment = 0;
-
-                        // 1. Initialize with manual calculation (which is 0 initially)
-                        // Then override if API provides summaries
-
-                        // 1. Initialize with manual calculation (which is 0 initially)
-                        // Then override if API provides summaries
-
-                        // Check if the API response itself has summary stats
-                        // We must check the ROOT object (animalData) for stats, not the array
-                        const statsSource = animalData;
-                        const statsSourceData = (animalData.data && !Array.isArray(animalData.data)) ? animalData.data : {};
-
-                        // Function to try getting value from multiple sources
-                        const getVal = (keys: string[]) => {
-                            for (const k of keys) {
-                                if (statsSource[k] !== undefined) return statsSource[k];
-                                if (statsSourceData[k] !== undefined) return statsSourceData[k];
-                            }
-                            return undefined;
-                        };
-
-                        const apiBuffaloCount = getVal(['buffalo_count', 'buffaloes_count', 'buffalo_counts', 'buffaloes']);
-                        const apiCalfCount = getVal(['calf_count', 'calves_count', 'calf_counts', 'calves']);
-                        const apiTotalInvestment = getVal(['total_investment', 'total_amount', 'investment_amount', 'total_cost', 'total_value']);
-
-                        // Also check the investor object (localMatch) as user suggested
-                        const invBuffaloCount = localMatch.buffalo_count || localMatch.buffaloes_count || localMatch.buffaloes;
-                        const invCalfCount = localMatch.calf_count || localMatch.calves_count || localMatch.calves;
-                        const invTotalInvestment = localMatch.total_investment || localMatch.total_amount || localMatch.investment_amount;
-
-                        // Calculation Loop (Robust) as fallback or verification
-                        let manualB = 0;
-                        let manualC = 0;
-                        let manualInvestment = 0;
-
-                        if (Array.isArray(list)) {
-                            list.forEach((a: any) => {
-                                // Count Logic - Enhanced for Nested/Linked Calves
-                                const typeStr = (a.animal_type || a.type || a.sps_animal_type || a.category || a.species || '').toLowerCase();
-
-                                // Direct type check
-                                if (typeStr.includes('buffalo')) {
-                                    manualB++;
-                                } else if (typeStr.includes('calf')) {
-                                    manualC++;
-                                }
-
-                                // Nested/Attribute Check (e.g. if calf is a property of the buffalo)
-                                if (Array.isArray(a.calves)) {
-                                    manualC += a.calves.length;
-                                } else if (a.calf_details && Array.isArray(a.calf_details)) {
-                                    manualC += a.calf_details.length;
-                                } else {
-                                    // Check numeric fields if not an array
-                                    const nestedCount = Number(a.no_of_calves || a.calf_count || a.calves_count || 0);
-                                    if (nestedCount > 0) manualC += nestedCount;
-                                }
-
-                                // Cost Logic
-                                const rawAmount = a.investment_amount || a.amount || a.cost || a.price || a.total_amount || a.value || a.final_amount || a.buying_price || 0;
-                                let amount = 0;
-                                if (typeof rawAmount === 'number') {
-                                    amount = rawAmount;
-                                } else if (typeof rawAmount === 'string') {
-                                    const sanitized = rawAmount.replace(/,/g, '').replace(/[^0-9.]/g, '');
-                                    amount = parseFloat(sanitized);
-                                }
-                                if (!isNaN(amount)) manualInvestment += amount;
-                            });
-                        }
-
-                        // Robust helper to extract a number from any junk
-                        const parseAnyNum = (val: any) => {
-                            if (val === undefined || val === null) return 0;
-                            const str = String(val).replace(/,/g, '').replace(/[^0-9.]/g, '');
-                            const n = parseFloat(str);
-                            return isNaN(n) ? 0 : n;
-                        };
-
-                        // MAX Strategy: Trust the source that has data (highest value)
-                        // This handles cases where API returns 0/null but List implies data, or vice versa.
-                        bCount = Math.max(
-                            parseAnyNum(apiBuffaloCount),
-                            parseAnyNum(invBuffaloCount),
-                            manualB
-                        );
-
-                        cCount = Math.max(
-                            parseAnyNum(apiCalfCount),
-                            parseAnyNum(invCalfCount),
-                            manualC
-                        );
-
-                        totalInvestment = Math.max(
-                            parseAnyNum(apiTotalInvestment),
-                            parseAnyNum(invTotalInvestment),
-                            manualInvestment
-                        );
-
-                        console.log("Final Resolved Stats:", {
-                            bCount, cCount, totalInvestment,
-                            sources: {
-                                api: { b: apiBuffaloCount, c: apiCalfCount, inv: apiTotalInvestment },
-                                local: { b: invBuffaloCount, c: invCalfCount, inv: invTotalInvestment },
-                                manual: { b: manualB, c: manualC, inv: manualInvestment }
-                            }
-                        });
-
-                        // Create a synthetic order to display the portfolio
-                        ordersList.push({
-                            id: `PORTFOLIO-${investorId}`,
-                            buffaloCount: bCount,
-                            calfCount: cCount,
-                            totalCost: totalInvestment,
-                            placedAt: new Date().toISOString(),
-                            status: 'active',
-                            paymentStatus: 'paid'
-                        });
-
-                    } catch (e) {
-                        console.error("Error fetching investor animals", e);
-                    }
-                }
-            }
-
-            if (ordersList.length > 0) {
-                setOrders(ordersList);
-                if (!userData) {
-                    userData = {
-                        name: selectedMember?.displayName || 'Investor',
-                        mobile: mobile,
-                        email: selectedMember?.email || ''
-                    };
-                }
-
-                // Check for generic or mock names and try to fetch real details
-                if (userData.name === 'Mock Investor' || userData.name === 'N/A' || userData.name === 'Investor') {
-                    // 1. Try selected member first
-                    if (selectedMember) {
-                        userData.name = selectedMember.displayName;
-                    } else {
-                        // 2. Try fetching from API as per user request
-                        try {
-                            const employeeResults = await farmvestService.searchEmployee(mobile);
-                            if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
-                                // Find exact match if multiple
-                                const match = employeeResults.find((e: any) =>
-                                    (e.mobile || e.mobile_number) === mobile
-                                ) || employeeResults[0];
-
-                                if (match) {
-                                    userData.name = match.full_name || `${match.first_name || ''} ${match.last_name || ''}`.trim();
-                                    userData.email = match.email || userData.email;
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('Failed to fetch employee details:', err);
-                        }
-                    }
-                }
                 setUser(userData);
+                setOrders(result.orders.map(normalizeOrder));
                 setSearchedMobile(mobile);
             } else {
-                setOrders([]);
-                setSearchedMobile(mobile);
-                console.warn('No paid orders found for this mobile number.');
+                setSearchNotFound(true);
             }
         } catch (error) {
             console.error('Error fetching orders:', error);
+            setSearchNotFound(true);
+            try {
+                const employeeResults = await farmvestService.searchEmployee(mobile);
+                if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
+                    console.log("User exists but has no in-transit orders");
+                }
+            } catch (e) { }
         } finally {
             setLoading(false);
         }
@@ -558,7 +396,6 @@ const AnimalOnboarding: React.FC = () => {
     const handleConfirmOnboarding = async () => {
         if (!selectedOrder || !user) {
             alert('Missing order or user details. Please try searching again.');
-            console.warn('Missing order or user details.');
             return;
         }
 
@@ -569,87 +406,93 @@ const AnimalOnboarding: React.FC = () => {
         });
 
         if (incompleteAnimals.length > 0) {
-            alert(`Please complete RFID, Ear Tag, and Age for all animals.\n${incompleteAnimals.length} animal(s) are incomplete.`);
-            console.warn(`Please complete details for all animals. (Incomplete: ${incompleteAnimals.length})`);
+            alert(`Please complete RFID, Ear Tag, and Age for all animals.`);
             return;
         }
 
         if (!selectedFarmId || selectedFarmId === 'Show all farms') {
             alert('Please select a Farm Location from the dropdown.');
-            console.warn('Please select a Farm Location.');
             return;
         }
 
+        const formatRfid = (tag: string) => {
+            if (!tag) return '';
+            const clean = tag.trim();
+            if (clean.toUpperCase().startsWith('RFID-')) {
+                return 'RFID-' + clean.substring(5);
+            }
+            return `RFID-${clean}`;
+        };
 
-        const getParentRfid = (parentId: number | undefined) => {
+        const getParentUid = (parentId: number | undefined) => {
             if (!parentId) return '';
             const parent = animals.find(a => a.id === parentId);
-            return parent ? parent.rfidTag : '';
+            return parent ? parent.uid : '';
         };
 
         setLoading(true);
         try {
             const payload = {
+                investor_details: {
+                    investor_id: user.id,
+                    full_name: user.name,
+                    mobile: user.mobile,
+                    email: user.email || "no-email@example.com",
+                    kyc_details: {
+                        aadhar_number: user.aadhar_number || "",
+                        aadhar_front_url: user.aadhar_front_image_url || "",
+                        aadhar_back_url: user.aadhar_back_image_url || "",
+                        pan_card_url: user.panCardUrl || ""
+                    }
+                },
+                investment_details: {
+                    animalkart_order_id: selectedOrder.id,
+                    order_date: selectedOrder.placedAt,
+                    total_investment_amount: selectedOrder.totalCost,
+                    unit_cost: selectedOrder.unitCost,
+                    number_of_units: selectedOrder.numUnits,
+                    payment_method: selectedOrder.paymentType || "BANK_TRANSFER",
+                    bank_name: "HDFC Bank - PARK STREET",
+                    utr_number: "",
+                    payment_verification_screenshot: "https://firebasestorage.googleapis.com/v0/b/markwave-481315.firebasestorage.app/o/placeholders%2Fpy.jpg?alt=media"
+                },
                 animals: animals.map(a => {
                     const isBuffalo = a.type === 'Buffalo';
-                    const baseAnimal = {
-                        age_months: parseInt(a.age) || 0,
-                        animal_id: isBuffalo ? `BUFF-V-${a.index.toString().padStart(3, '0')}` : `CALF-${a.index.toString().padStart(3, '0')}`,
-                        animal_type: isBuffalo ? "BUFFALO" : "CALF",
-                        breed_id: "MURRAH-001",
-                        breed_name: "Murrah Buffalo",
-                        ear_tag: a.earTag,
-                        health_status: "HEALTHY",
-                        images: a.photos.length > 0 ? a.photos : [],
-                        neckband_id: `NB-${a.rfidTag.split('-').pop() || '0000'}`,
-                        rfid_tag: a.rfidTag,
-                        status: "high_yield"
-                    };
+                    const formattedRfid = formatRfid(a.rfidTag);
 
                     if (isBuffalo) {
-                        return baseAnimal;
+                        return {
+                            animal_id: a.uid,
+                            animal_type: "BUFFALO",
+                            rfid_tag: formattedRfid,
+                            ear_tag: a.earTag,
+                            neckband_id: a.neckbandId || "",
+                            age_months: parseInt(a.age) || 0,
+                            health_status: "HEALTHY",
+                            images: a.photos.length > 0 ? a.photos : [],
+                            status: "high_yield",
+                            breed_id: "MURRAH-001",
+                            breed_name: "Murrah Buffalo"
+                        };
                     } else {
                         return {
-                            age_months: parseInt(a.age) || 0,
-                            animal_id: `CALF-${a.index.toString().padStart(3, '0')}`,
+                            animal_id: a.uid,
                             animal_type: "CALF",
+                            rfid_tag: formattedRfid,
+                            ear_tag: a.earTag,
+                            neckband_id: a.neckbandId || "",
+                            age_months: parseInt(a.age) || 0,
                             health_status: "HEALTHY",
-                            parent_animal_id: getParentRfid(a.parentBuffaloId),
-                            rfid_tag: a.rfidTag,
-                            images: a.photos.length > 0 ? a.photos : []
+                            images: a.photos.length > 0 ? a.photos : [],
+                            parent_animal_id: getParentUid(a.parentBuffaloId)
                         };
                     }
                 }),
-                farm_id: Number(selectedFarmId),
-                // employee_id removed as per request format
-                investment_details: {
-                    animalkart_order_id: selectedOrder.id,
-                    bank_name: "HDFC Bank - PARK STREET", // Hardcoded default as per request example or could be from order if available
-                    number_of_units: (selectedOrder.buffaloCount || 0) + (selectedOrder.calfCount || 0),
-                    order_date: selectedOrder.placedAt,
-                    payment_method: "BANK_TRANSFER", // Forced as per request example
-                    payment_verification_screenshot: "https://firebasestorage.googleapis.com/v0/b/app/o/payment_receipt.jpg",
-                    total_investment_amount: selectedOrder.totalCost,
-                    unit_cost: Math.round(selectedOrder.totalCost / (Math.max((selectedOrder.buffaloCount || 1), 1))),
-                    utr_number: "HDFC123456ABCD" // Hardcoded default
-                },
-                investor_details: {
-                    email: user.email || "no-email@example.com",
-                    full_name: user.name,
-                    investor_id: String((user as any).id || user.mobile),
-                    kyc_details: {
-                        aadhar_back_url: "https://firebasestorage.googleapis.com/v0/b/app/o/aadhar_back.jpg",
-                        aadhar_front_url: "https://firebasestorage.googleapis.com/v0/b/app/o/aadhar_front.jpg",
-                        aadhar_number: "412867484526",
-                        pan_card_url: "https://firebasestorage.googleapis.com/v0/b/app/o/pan_card.pdf"
-                    },
-                    mobile: user.mobile
-                }
+                farm_id: Number(selectedFarmId)
             };
 
             await farmvestService.onboardAnimal(payload);
             setToastVisible(true);
-
             setTimeout(() => {
                 navigate('/farmvest/unallocated-animals');
             }, 1500);
@@ -925,24 +768,18 @@ const AnimalOnboarding: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="form-group">
-                                        <label>Parent Buffalo</label>
-                                        {animal.type === 'Calf' ? (
-                                            <select
-                                                className="parent-select"
-                                                value={animal.parentBuffaloId || ''}
-                                                onChange={(e) => handleAnimalChange(animal.id, 'parentBuffaloId', parseInt(e.target.value))}
-                                            >
-                                                <option value="">Select Parent Buffalo</option>
-                                                {animals.filter(a => a.type === 'Buffalo').map(b => (
-                                                    <option key={b.id} value={b.id}>Buffalo #{b.index}</option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <div className="input-with-icon disabled">
-                                                <input type="text" value="N/A" disabled style={{ backgroundColor: '#F3F4F6' }} />
-                                            </div>
-                                        )}
+                                        <label>Neckband ID (Optional)</label>
+                                        <div className="input-with-icon">
+                                            <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
+                                            <input
+                                                type="text"
+                                                placeholder="NB-XXXX"
+                                                value={animal.neckbandId || ''}
+                                                onChange={(e) => handleAnimalChange(animal.id, 'neckbandId', e.target.value)}
+                                            />
+                                        </div>
                                     </div>
+                                    {/* Parent Buffalo field removed as requested */}
                                 </div>
 
                                 <div className="photos-section">
@@ -950,10 +787,19 @@ const AnimalOnboarding: React.FC = () => {
                                     <div className="photos-grid">
                                         {animal.photos.map((photo, idx) => (
                                             <div key={idx} className="photo-preview">
-                                                <img src={photo} alt={`Animal ${idx + 1}`} />
+                                                <img
+                                                    src={photo}
+                                                    alt={`Animal ${idx + 1}`}
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => window.open(photo, '_blank')}
+                                                    title="Click to view full image"
+                                                />
                                                 <button
                                                     className="remove-photo-btn"
-                                                    onClick={() => handleRemovePhoto(animal.id, idx)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRemovePhoto(animal.id, idx);
+                                                    }}
                                                 >
                                                     ×
                                                 </button>
@@ -995,13 +841,27 @@ const AnimalOnboarding: React.FC = () => {
                                         style={{ marginTop: '20px', padding: '16px', background: '#F0F9FF', borderRadius: '12px', border: '1px solid #BAE6FD', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                         onClick={() => {
                                             setActiveParentId(animal.id);
-                                            // Auto-fill Calf details from Parent
-                                            setTempCalf({
-                                                rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
-                                                earTag: animal.earTag ? `${animal.earTag}-C` : '',
-                                                age: '6',
-                                                photos: []
-                                            });
+                                            // Check if a calf already exists for this buffalo
+                                            const existingCalf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
+
+                                            if (existingCalf) {
+                                                setTempCalf({
+                                                    rfidTag: existingCalf.rfidTag || '',
+                                                    earTag: existingCalf.earTag || '',
+                                                    neckbandId: existingCalf.neckbandId || '',
+                                                    age: existingCalf.age || '6',
+                                                    photos: existingCalf.photos || []
+                                                });
+                                            } else {
+                                                // Auto-fill Calf details from Parent (New Calf)
+                                                setTempCalf({
+                                                    rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
+                                                    earTag: animal.earTag ? `${animal.earTag}-C` : '',
+                                                    neckbandId: animal.neckbandId ? `${animal.neckbandId}-C` : '',
+                                                    age: '6',
+                                                    photos: []
+                                                });
+                                            }
                                         }}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1010,7 +870,12 @@ const AnimalOnboarding: React.FC = () => {
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0F172A' }}>Calf Details</span>
-                                                <span style={{ fontSize: '12px', color: '#64748B' }}>Tap to enter calf details</span>
+                                                <span style={{ fontSize: '12px', color: '#64748B' }}>
+                                                    {(() => {
+                                                        const calf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
+                                                        return calf ? `Tag: ${calf.earTag || calf.rfidTag || 'Saved'}` : 'Tap to enter calf details';
+                                                    })()}
+                                                </span>
                                             </div>
                                         </div>
                                         <ChevronRight size={20} color="#0EA5E9" />
@@ -1122,21 +987,18 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Parent Buffalo</label>
-                                <div className="input-with-icon disabled">
+                                <label>Neckband ID (Optional)</label>
+                                <div className="input-with-icon">
+                                    <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
                                     <input
                                         type="text"
-                                        value={(() => {
-                                            const parent = animals.find(a => a.id === activeParentId);
-                                            if (!parent) return 'Unknown Parent';
-                                            const details = parent.rfidTag || parent.earTag || `Index #${parent.index}`;
-                                            return `Mother: ${details} (Locked)`;
-                                        })()}
-                                        disabled
-                                        style={{ backgroundColor: '#F3F4F6' }}
+                                        placeholder="NB-XXXX"
+                                        value={tempCalf.neckbandId || ''}
+                                        onChange={(e) => setTempCalf(prev => ({ ...prev, neckbandId: e.target.value }))}
                                     />
                                 </div>
                             </div>
+                            {/* Parent Buffalo field removed as requested */}
                         </div>
 
                         <div className="photos-section" style={{ marginTop: '20px' }}>
@@ -1144,10 +1006,19 @@ const AnimalOnboarding: React.FC = () => {
                             <div className="photos-grid">
                                 {tempCalf.photos?.map((photo, idx) => (
                                     <div key={idx} className="photo-preview">
-                                        <img src={photo} alt={`Calf ${idx + 1}`} />
+                                        <img
+                                            src={photo}
+                                            alt={`Calf ${idx + 1}`}
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => window.open(photo, '_blank')}
+                                            title="Click to view full image"
+                                        />
                                         <button
                                             className="remove-photo-btn"
-                                            onClick={() => setTempCalf(prev => ({ ...prev, photos: (prev.photos || []).filter((_, i) => i !== idx) }))}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTempCalf(prev => ({ ...prev, photos: (prev.photos || []).filter((_, i) => i !== idx) }));
+                                            }}
                                         >
                                             ×
                                         </button>
@@ -1170,6 +1041,7 @@ const AnimalOnboarding: React.FC = () => {
                                         if (e.target.files && e.target.files.length > 0) {
                                             const files = Array.from(e.target.files);
                                             try {
+                                                const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
                                                 const urls = await Promise.all(files.map(uploadToFirebase));
                                                 setTempCalf(prev => ({ ...prev, photos: [...(prev.photos || []), ...urls] }));
                                             } catch (err) { console.error('Calf photo upload failed', err); }
@@ -1185,20 +1057,41 @@ const AnimalOnboarding: React.FC = () => {
                                 const parentBuffalo = animals.find(a => a.id === activeParentId);
                                 if (!parentBuffalo) return;
 
-                                const newCalf: AnimalDetail = {
-                                    id: Date.now() + 999,
-                                    type: 'Calf',
-                                    rfidTag: tempCalf.rfidTag || '',
-                                    earTag: tempCalf.earTag || '',
-                                    age: tempCalf.age || '6',
-                                    photos: tempCalf.photos || [],
-                                    parentBuffaloId: parentBuffalo.id,
-                                    index: 1, // Start indexing calves from 1? Or unique?
-                                    status: 'Completed'
-                                };
+                                setAnimals(prev => {
+                                    const existingCalfIndex = prev.findIndex(a => a.type === 'Calf' && a.parentBuffaloId === parentBuffalo.id);
 
-                                // Add to animals list (will be hidden from view due to filter)
-                                setAnimals(prev => [...prev, newCalf]);
+                                    if (existingCalfIndex !== -1) {
+                                        // Update existing calf
+                                        const updatedAnimals = [...prev];
+                                        updatedAnimals[existingCalfIndex] = {
+                                            ...updatedAnimals[existingCalfIndex],
+                                            rfidTag: tempCalf.rfidTag || '',
+                                            earTag: tempCalf.earTag || '',
+                                            neckbandId: tempCalf.neckbandId || '',
+                                            age: tempCalf.age || '6',
+                                            photos: tempCalf.photos || [],
+                                            status: 'Completed'
+                                        };
+                                        return updatedAnimals;
+                                    } else {
+                                        // Add new calf
+                                        const newCalf: AnimalDetail = {
+                                            id: Date.now() + 999,
+                                            uid: crypto.randomUUID(),
+                                            type: 'Calf',
+                                            rfidTag: tempCalf.rfidTag || '',
+                                            earTag: tempCalf.earTag || '',
+                                            neckbandId: tempCalf.neckbandId || '',
+                                            age: tempCalf.age || '6',
+                                            photos: tempCalf.photos || [],
+                                            parentBuffaloId: parentBuffalo.id,
+                                            index: 1,
+                                            status: 'Completed'
+                                        };
+                                        return [...prev, newCalf];
+                                    }
+                                });
+
                                 setActiveParentId(null);
                                 setTempCalf({ rfidTag: '', earTag: '', age: '6', photos: [] }); // Reset form
                             }}
