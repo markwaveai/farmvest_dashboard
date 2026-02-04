@@ -72,12 +72,13 @@ export const farmvestService = {
             throw error;
         }
     },
-    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number }) => {
+    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number; farm_id?: number }) => {
         try {
-            const { role, active_status, sort_by = 1, page = 1, size = 20 } = params || {};
+            const { role, active_status, sort_by = 1, page = 1, size = 20, farm_id } = params || {};
             let query = `?sort_by=${sort_by}&page=${page}&size=${size}`;
             if (role) query += `&role=${role}`;
             if (active_status !== undefined && active_status !== null && active_status.toString() !== '') query += `&is_active=${active_status}`;
+            if (farm_id) query += `&farm_id=${farm_id}`;
 
             const url = `/api/employee/get_all_employees${query}`;
             console.log('[FarmVest] Fetching employees with URL:', url);

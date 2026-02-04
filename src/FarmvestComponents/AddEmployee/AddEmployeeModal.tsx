@@ -24,6 +24,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         location: 'KURNOOL',
         farm_id: '',
         shed_id: '',
+        senior_doctor_id: '',
         is_test: false
     };
 
@@ -39,6 +40,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     const [farmsLoading, setFarmsLoading] = useState(false);
     const [sheds, setSheds] = useState<any[]>([]);
     const [shedsLoading, setShedsLoading] = useState(false);
+    const [doctors, setDoctors] = useState<any[]>([]);
+    const [doctorsLoading, setDoctorsLoading] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -143,6 +146,45 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         fetchShedsByFarm();
     }, [formData.farm_id, isOpen]);
 
+    // Fetch doctors if role is ASSISTANT_DOCTOR
+    useEffect(() => {
+        if (!isOpen || formData.role !== 'ASSISTANT_DOCTOR' || !formData.farm_id) {
+            setDoctors([]);
+            return;
+        }
+
+        const fetchDoctors = async () => {
+            setDoctorsLoading(true);
+            try {
+                // Fetch doctors for the selected farm
+                const response = await farmvestService.getEmployees({
+                    role: 'DOCTOR',
+                    farm_id: Number(formData.farm_id)
+                });
+
+                let docList: any[] = [];
+                if (Array.isArray(response)) {
+                    docList = response;
+                } else if (response && Array.isArray(response.data)) {
+                    docList = response.data;
+                } else if (response && response.users) {
+                    docList = response.users;
+                } else if (response && response.data && Array.isArray(response.data.employees)) {
+                    docList = response.data.employees;
+                }
+
+                setDoctors(docList);
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                setDoctors([]);
+            } finally {
+                setDoctorsLoading(false);
+            }
+        };
+
+        fetchDoctors();
+    }, [formData.role, formData.farm_id, isOpen]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         if (type === 'checkbox') {
@@ -186,6 +228,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         } else if (farmLevelRoles.includes(formData.role)) {
             // "Total farm will be allocated" -> Use ID 0 to represent Farm Level (no specific shed)
             payload.shed_id = 0;
+        }
+
+        // 3. Add senior_doctor_id for Assistant Doctors
+        if (formData.role === 'ASSISTANT_DOCTOR') {
+            if (!formData.senior_doctor_id) {
+                alert('Please select a Senior Doctor for the Assistant Doctor.');
+                return;
+            }
+            payload.senior_doctor_id = Number(formData.senior_doctor_id);
         }
 
         // 3. Dispatch the creation action
@@ -349,16 +400,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             </select>
                         </div>
 
-                        {/* Conditional Shed ID for Supervisor */}
-                        {formData.role === 'SUPERVISOR' && (
+                        {/* Conditional Shed ID for Supervisor and Assistant Doctor */}
+                        {(formData.role === 'SUPERVISOR' || formData.role === 'ASSISTANT_DOCTOR') && (
                             <div className="form-group animate-fadeIn">
-                                <label><Hash size={14} /> Select Shed *</label>
+                                <label><Hash size={14} /> Select Shed {formData.role === 'ASSISTANT_DOCTOR' ? '(Optional)' : '*'}</label>
                                 <div className="relative">
                                     <select
                                         name="shed_id"
                                         value={formData.shed_id}
                                         onChange={handleInputChange}
-                                        required
+                                        required={formData.role === 'SUPERVISOR'}
                                         className="form-select"
                                         disabled={shedsLoading || !formData.farm_id}
                                     >
@@ -370,6 +421,35 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         ))}
                                     </select>
                                     {shedsLoading && (
+                                        <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                                            <Loader2 size={16} className="animate-spin text-blue-500" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Conditional Senior Doctor for Assistant Doctor */}
+                        {formData.role === 'ASSISTANT_DOCTOR' && (
+                            <div className="form-group animate-fadeIn">
+                                <label><User size={14} /> Select Senior Doctor *</label>
+                                <div className="relative">
+                                    <select
+                                        name="senior_doctor_id"
+                                        value={formData.senior_doctor_id}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="form-select"
+                                        disabled={doctorsLoading || !formData.farm_id}
+                                    >
+                                        <option value="">{doctorsLoading ? 'Loading doctors...' : 'Choose a doctor...'}</option>
+                                        {doctors.map(doc => (
+                                            <option key={doc.id} value={doc.id}>
+                                                {doc.first_name} {doc.last_name} ({doc.mobile})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {doctorsLoading && (
                                         <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
                                             <Loader2 size={16} className="animate-spin text-blue-500" />
                                         </div>
