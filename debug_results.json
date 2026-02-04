@@ -1,0 +1,50 @@
+[
+  {
+    "endpoint": "/api/farm/create_farm",
+    "status": 404,
+    "success": false,
+    "detail": {
+      "detail": "Not Found"
+    }
+  },
+  {
+    "endpoint": "/api/farm/farm",
+    "status": 401,
+    "success": false,
+    "detail": {
+      "detail": "Not authenticated"
+    }
+  },
+  {
+    "endpoint": "/api/farm",
+    "status": 404,
+    "success": false,
+    "detail": {
+      "detail": "Not Found"
+    }
+  },
+  {
+    "endpoint": "/api/farm/add_farm",
+    "status": 404,
+    "success": false,
+    "detail": {
+      "detail": "Not Found"
+    }
+  },
+  {
+    "endpoint": "/api/farms/create",
+    "status": 404,
+    "success": false,
+    "detail": {
+      "detail": "Not Found"
+    }
+  },
+  {
+    "endpoint": "/api/farms",
+    "status": 404,
+    "success": false,
+    "detail": {
+      "detail": "Not Found"
+    }
+  }
+]

@@ -65,7 +65,7 @@ const Farms: React.FC = () => {
 
     // Derived location from URL or default to Kurnool
     const location = useMemo(() => {
-        return searchParams.get('location') || 'Kurnool';
+        return searchParams.get('location') ? searchParams.get('location')!.toUpperCase() : 'KURNOOL';
     }, [searchParams]);
 
     // Defensive parsing of currentPage

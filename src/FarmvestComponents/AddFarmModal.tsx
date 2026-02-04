@@ -11,7 +11,7 @@ interface AddFarmModalProps {
 
 const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess, initialLocation }) => {
     const [farmName, setFarmName] = useState('');
-    const [location, setLocation] = useState(initialLocation);
+    const [location, setLocation] = useState(initialLocation ? initialLocation.toUpperCase() : '');
     // const [totalBuffaloes, setTotalBuffaloes] = useState<number | ''>(0); // Removed as per API schema
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -36,9 +36,9 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                     }
 
                     if (locs.length > 0) {
-                        setLocations(locs.map(String));
+                        setLocations(locs.map(l => String(l).toUpperCase()));
                         // Set default if current location not in list
-                        if (location && !locs.includes(location) && !locs.includes(location.toUpperCase()) && !locs.includes(location.toLowerCase())) {
+                        if (location && !locs.map(l => String(l).toUpperCase()).includes(location.toUpperCase())) {
                             // keep current or default to first
                         }
                     }
@@ -67,7 +67,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
             console.log('Creating farm with:', { farmName, location });
             await farmvestService.createFarm({
                 farm_name: farmName,
-                location: location
+                location: location.toUpperCase()
             });
 
             setFarmName('');
@@ -141,7 +141,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                 id="location"
                                 className="form-select"
                                 value={location}
-                                onChange={(e) => setLocation(e.target.value)}
+                                onChange={(e) => setLocation(e.target.value.toUpperCase())}
                             >
                                 <option value="" disabled>Select Location</option>
                                 {locations.length > 0 ? (
@@ -150,8 +150,8 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                     ))
                                 ) : (
                                     <>
-                                        <option value="Kurnool">Kurnool</option>
-                                        <option value="Hyderabad">Hyderabad</option>
+                                        <option value="KURNOOL">KURNOOL</option>
+                                        <option value="HYDERABAD">HYDERABAD</option>
                                     </>
                                 )}
                             </select>
