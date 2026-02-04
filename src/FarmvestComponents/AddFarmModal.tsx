@@ -16,6 +16,40 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+
+
+    const [locations, setLocations] = useState<string[]>([]);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            const fetchLocations = async () => {
+                try {
+                    const response = await farmvestService.getLocations();
+                    let locs: string[] = [];
+                    // Handle various response structures
+                    if (response && response.data && Array.isArray(response.data.locations)) {
+                        locs = response.data.locations;
+                    } else if (response && Array.isArray(response.locations)) {
+                        locs = response.locations;
+                    } else if (Array.isArray(response)) {
+                        locs = response;
+                    }
+
+                    if (locs.length > 0) {
+                        setLocations(locs.map(String));
+                        // Set default if current location not in list
+                        if (location && !locs.includes(location) && !locs.includes(location.toUpperCase()) && !locs.includes(location.toLowerCase())) {
+                            // keep current or default to first
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch locations:', err);
+                }
+            };
+            fetchLocations();
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -30,18 +64,22 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
         setError(null);
 
         try {
+            console.log('Creating farm with:', { farmName, location });
             await farmvestService.createFarm({
                 farm_name: farmName,
-                location: location.toUpperCase()
+                location: location
             });
 
             setFarmName('');
-            // setTotalBuffaloes('');
-            onSuccess(location.toUpperCase());
+            onSuccess(location);
             onClose();
         } catch (err: any) {
             console.error('Failed to create farm:', err);
-            setError(err.response?.data?.detail || err.message || 'Failed to create farm. Please try again.');
+            // Display detailed error for debugging
+            const errorMessage = err.response?.data?.detail
+                ? (typeof err.response.data.detail === 'object' ? JSON.stringify(err.response.data.detail) : err.response.data.detail)
+                : (err.message || 'Failed to create farm. Please try again.');
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -52,6 +90,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
             if (e.target === e.currentTarget) onClose();
         }}>
             <div className="add-farm-modal-content" onClick={(e) => e.stopPropagation()}>
+                {/* ... header ... */}
                 <div className="modal-header" style={{ position: 'relative' }}>
                     <h2>Add New Farm</h2>
                     <button
@@ -104,12 +143,19 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
                             >
-                                <option value="KURNOOL">KURNOOL</option>
-                                <option value="HYDERABAD">HYDERABAD</option>
+                                <option value="" disabled>Select Location</option>
+                                {locations.length > 0 ? (
+                                    locations.map((loc, index) => (
+                                        <option key={index} value={loc}>{loc}</option>
+                                    ))
+                                ) : (
+                                    <>
+                                        <option value="Kurnool">Kurnool</option>
+                                        <option value="Hyderabad">Hyderabad</option>
+                                    </>
+                                )}
                             </select>
                         </div>
-
-
                     </div>
 
                     <div className="modal-footer">

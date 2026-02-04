@@ -21,16 +21,45 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         email: '',
         mobile: '',
         role: 'SUPERVISOR',
-        location: 'KURNOOL',
+        location: 'Kurnool',
         farm_id: '',
         shed_id: '',
         is_test: false
     });
 
+    const [locations, setLocations] = useState<string[]>([]);
     const [farms, setFarms] = useState<any[]>([]);
     const [farmsLoading, setFarmsLoading] = useState(false);
     const [sheds, setSheds] = useState<any[]>([]);
     const [shedsLoading, setShedsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const fetchLocations = async () => {
+            try {
+                const response = await farmvestService.getLocations();
+                let locs: string[] = [];
+                if (response && response.data && Array.isArray(response.data.locations)) {
+                    locs = response.data.locations;
+                } else if (response && Array.isArray(response.locations)) {
+                    locs = response.locations;
+                } else if (Array.isArray(response)) {
+                    locs = response;
+                }
+
+                if (locs.length > 0) {
+                    setLocations(locs.map(String));
+                    // Check if current default is valid
+                    /* if (!locs.includes(formData.location)) {
+                         setFormData(prev => ({ ...prev, location: locs[0] }));
+                    } */
+                }
+            } catch (err) {
+                console.error('Failed to fetch locations:', err);
+            }
+        };
+        fetchLocations();
+    }, [isOpen]);
 
     // Fetch farms based on location
     useEffect(() => {
@@ -107,13 +136,19 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
             first_name: formData.first_name,
             last_name: formData.last_name,
             mobile: formData.mobile,
-            roles: [formData.role],
+            roles: [formData.role], // Send UPPER_SNAKE_CASE directly
             is_test: formData.is_test
         };
 
-        // 2. Conditional shed_id for SUPERVISOR
-        if (formData.role === 'SUPERVISOR') {
+        // 2. Add shed_id logic
+        // For Farm Level roles (Doctor, Manager), we send explicit 0 to indicate "Whole Farm" (bypassing backend crash if field missing)
+        const farmLevelRoles = ['DOCTOR', 'ASSISTANT_DOCTOR', 'FARM_MANAGER'];
+
+        if (formData.shed_id) {
             payload.shed_id = Number(formData.shed_id);
+        } else if (farmLevelRoles.includes(formData.role)) {
+            // "Total farm will be allocated" -> Use ID 0 to represent Farm Level (no specific shed)
+            payload.shed_id = 0;
         }
 
         // 3. Dispatch the creation action
@@ -136,16 +171,30 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     is_test: false
                 });
             }, 500);
+        } else {
+            // Debug access to error
+            console.error('Create Employee Failed:', result);
+
+            const errorPayload = result.payload as any;
+            let errorMessage = 'Error Creating Employee:\n';
+            if (errorPayload && errorPayload.detail) {
+                errorMessage += JSON.stringify(errorPayload.detail, null, 2);
+            } else {
+                errorMessage += result.error?.message || 'Unknown Error';
+            }
+            alert(errorMessage);
         }
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="add-employee-overlay">
-            <div className="add-employee-modal animate-modalScale">
+        <div className={`modal-overlay ${isOpen ? 'show' : ''}`} onClick={(e) => {
+            if (e.target === e.currentTarget) onClose();
+        }}>
+            <div className="modal-content add-employee-modal">
                 <div className="modal-header">
-                    <div className="header-title">
+                    <div className="flex items-center gap-3">
                         <div className="icon-badge">
                             <User size={20} className="text-blue-600" />
                         </div>
@@ -218,8 +267,17 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 onChange={handleInputChange}
                                 className="form-select"
                             >
-                                <option value="KURNOOL">KURNOOL</option>
-                                <option value="HYDERABAD">HYDERABAD</option>
+                                <option value="" disabled>Select Location</option>
+                                {locations.length > 0 ? (
+                                    locations.map((loc, index) => (
+                                        <option key={index} value={loc}>{loc}</option>
+                                    ))
+                                ) : (
+                                    <>
+                                        <option value="KURNOOL">KURNOOL</option>
+                                        <option value="HYDERABAD">HYDERABAD</option>
+                                    </>
+                                )}
                             </select>
                         </div>
 
@@ -250,7 +308,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             </div>
                         </div>
 
-                        {/* Role Selector */}
+
                         <div className="form-group">
                             <label><Briefcase size={14} /> Primary Role</label>
                             <select
@@ -277,20 +335,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         onChange={handleInputChange}
                                         required
                                         className="form-select"
-                                        disabled={shedsLoading || !formData.farm_id || sheds.length === 0}
+                                        disabled={shedsLoading || !formData.farm_id}
                                     >
-                                        <option value="">
-                                            {!formData.farm_id
-                                                ? 'Select a farm first...'
-                                                : shedsLoading
-                                                    ? 'Loading sheds...'
-                                                    : sheds.length === 0
-                                                        ? 'No sheds available'
-                                                        : 'Choose a shed...'}
-                                        </option>
+                                        <option value="">{shedsLoading ? 'Loading sheds...' : 'Choose a shed...'}</option>
                                         {sheds.map(shed => (
-                                            <option key={shed.id} value={shed.id}>
-                                                {shed.shed_id}
+                                            <option key={shed.shed_id || shed.id} value={shed.id}>
+                                                {shed.shed_name} {shed.shed_id ? `(${shed.shed_id})` : ''}
                                             </option>
                                         ))}
                                     </select>
@@ -302,6 +352,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 </div>
                             </div>
                         )}
+
+
                     </div>
 
                     <div className="form-footer-options mt-6">

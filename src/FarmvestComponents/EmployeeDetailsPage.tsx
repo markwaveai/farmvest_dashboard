@@ -187,6 +187,12 @@ const EmployeeDetailsPage: React.FC = () => {
                                 </h3>
                                 <div className="space-y-4">
                                     <div className="group">
+                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Employee ID</label>
+                                        <div className="text-gray-900 font-medium font-mono">
+                                            #{employee.id}
+                                        </div>
+                                    </div>
+                                    <div className="group">
                                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Joined Date</label>
                                         <div className="text-gray-900 font-medium flex items-center gap-2">
                                             <Calendar className="w-4 h-4 text-gray-300" />

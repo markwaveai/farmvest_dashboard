@@ -63,9 +63,9 @@ const Farms: React.FC = () => {
     // URL Search Params for Pagination and Location
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Derived location from URL or default to KURNOOL
+    // Derived location from URL or default to Kurnool
     const location = useMemo(() => {
-        return (searchParams.get('location') || 'KURNOOL').toUpperCase();
+        return searchParams.get('location') || 'Kurnool';
     }, [searchParams]);
 
     // Defensive parsing of currentPage
@@ -153,9 +153,19 @@ const Farms: React.FC = () => {
     const searchFn = useCallback((item: any, query: string) => {
         if (!item) return false;
         const lowerQuery = query.toLowerCase();
-        const farmName = (item.farm_name || '').toLowerCase();
-        const farmLocation = (item.location || '').toLowerCase();
-        return farmName.includes(lowerQuery) || farmLocation.includes(lowerQuery);
+
+        // Safely access and convert properties to strings for searching
+        const farmName = String(item.farm_name || '').toLowerCase();
+        const farmLocation = String(item.location || '').toLowerCase();
+
+        // Also search by manager name and mobile as they are displayed in the table
+        const managerName = String(item.farm_manager_name || item.manager_name || item.farm_manager?.name || '').toLowerCase();
+        const mobile = String(item.mobile_number || item.manager_mobile || item.manager_phone || item.farm_manager?.mobile || '').toLowerCase();
+
+        return farmName.includes(lowerQuery) ||
+            farmLocation.includes(lowerQuery) ||
+            managerName.includes(lowerQuery) ||
+            mobile.includes(lowerQuery);
     }, []);
 
     const {
@@ -287,19 +297,19 @@ const Farms: React.FC = () => {
 
                 <div className="overflow-hidden bg-white border border-gray-100 rounded-2xl shadow-xl">
                     <table className="farms-table w-full text-xs text-left border-collapse">
-                        <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                        <thead className="bg-gray-50/50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black">
                             <tr>
                                 <th className="px-4 py-3 text-center">S.no</th>
-                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('farm_name')}>
-                                    <div className="flex items-center gap-2">Farm Name <span className="text-blue-500 opacity-60 text-[8px]">{getSortIcon('farm_name')}</span></div>
+                                <th className="px-4 py-3 text-left">
+                                    <div className="flex items-center gap-2">Farm Name</div>
                                 </th>
-                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('location')}>
-                                    <div className="flex items-center gap-2">Location <span className="text-blue-500 opacity-60 text-[8px]">{getSortIcon('location')}</span></div>
+                                <th className="px-4 py-3 text-left">
+                                    <div className="flex items-center gap-2">Location</div>
                                 </th>
-                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group text-center" onClick={() => requestSort('total_buffaloes_count')}>
-                                    <div className="flex items-center justify-center gap-2">Live Count <span className="text-blue-500 opacity-60 text-[8px]">{getSortIcon('total_buffaloes_count')}</span></div>
+                                <th className="px-4 py-3 text-center">
+                                    <div className="flex items-center justify-center gap-2">Live Count</div>
                                 </th>
-                                <th className="px-4 py-3 cursor-pointer hover:bg-gray-100/50 transition-colors group">
+                                <th className="px-4 py-3 text-left">
                                     <div className="flex items-center gap-2">Farm Manager</div>
                                 </th>
                             </tr>

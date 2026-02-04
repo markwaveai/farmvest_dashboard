@@ -77,10 +77,12 @@ export const createEmployee = createAsyncThunk(
             const response = await farmvestService.createEmployee(employeeData);
             // Refresh list after creation
             dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts()); // Refresh allEmployees for search
             return response;
         } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to create employee';
-            return rejectWithValue(message);
+            // Pass the full error data if available for debugging validation errors
+            const errorData = error.response?.data || error.message || 'Failed to create employee';
+            return rejectWithValue(errorData);
         }
     }
 );
@@ -92,6 +94,7 @@ export const deleteEmployee = createAsyncThunk(
             const response = await farmvestService.deleteEmployee(id);
             // Refresh list after deletion
             dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts()); // Refresh allEmployees for search
             return response;
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to delete employee';
@@ -113,6 +116,7 @@ export const updateEmployeeStatus = createAsyncThunk(
                 await farmvestService.deactivateUser(mobile);
             }
             dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts()); // Refresh allEmployees for search and counts
             return { mobile, status };
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to update employee status';
@@ -278,7 +282,12 @@ const employeesSlice = createSlice({
             })
             .addCase(createEmployee.rejected, (state, action) => {
                 state.createLoading = false;
-                state.error = action.payload as string;
+                // Handle object payloads (validation errors) to prevent React rendering crash
+                if (typeof action.payload === 'object' && action.payload !== null) {
+                    state.error = JSON.stringify(action.payload);
+                } else {
+                    state.error = action.payload as string || 'An error occurred';
+                }
             })
             // Delete Employee
             .addCase(deleteEmployee.pending, (state) => {
