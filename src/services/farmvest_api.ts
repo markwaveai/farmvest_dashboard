@@ -363,10 +363,12 @@ export const farmvestService = {
     },
     allocateAnimal: async (shedId: string, allocations: { rfid_tag_number: string; row_number: string; parking_id: string }[]) => {
         try {
+            // Reverting to path parameter as per Swagger docs (404 was likely due to 'Animal Not Found' not 'Endpoint Not Found')
             const url = `/api/animal/shed_allocation/${shedId}`;
             console.log(`[FarmVest] POST Request to: ${url}`);
-            console.log(`[FarmVest] Payload:`, JSON.stringify({ allocations }, null, 2));
-            const response = await farmvestApi.post(url, { allocations });
+            const payload = { allocations };
+            console.log(`[FarmVest] Payload:`, JSON.stringify(payload, null, 2));
+            const response = await farmvestApi.post(url, payload);
             return response.data;
         } catch (error: any) {
             console.error('Error allocating animal:', error);

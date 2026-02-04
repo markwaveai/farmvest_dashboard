@@ -203,6 +203,10 @@ const AnimalOnboarding: React.FC = () => {
         }));
     };
 
+    const handleDeleteAnimal = (animalId: number) => {
+        setAnimals(prev => prev.filter(a => a.id !== animalId));
+    };
+
     // Initialize animals when order is selected
     useEffect(() => {
         if (selectedOrder) {
@@ -311,26 +315,143 @@ const AnimalOnboarding: React.FC = () => {
             }
 
             // proceed to get orders (mock) only if user is valid
-            const data: any = await farmvestService.getPaidOrders(mobile);
-
             let ordersList: Order[] = [];
 
-            if (data && Array.isArray(data)) {
-                ordersList = data.map(normalizeOrder);
-                if (data.length > 0) {
-                    const first = data[0];
-                    userData = {
-                        name: first.user_name || first.username || first.name || 'N/A',
-                        mobile: first.user_mobile || first.mobile || mobile,
-                        email: first.user_email || first.email || 'N/A'
-                    };
-                }
-            } else if (data && data.orders) {
-                if (Array.isArray(data.orders)) {
-                    ordersList = data.orders.map(normalizeOrder);
-                }
-                if ((data as any).user) {
-                    userData = (data as any).user;
+            if (isValidUser && localMatch) {
+                const investorId = localMatch.id || localMatch.user_id || localMatch.investor_id || localMatch.uid;
+                if (investorId) {
+                    try {
+                        console.log(`Fetching animals for investor ID: ${investorId}`);
+                        const animalData = await farmvestService.getAnimalsByInvestor(investorId);
+                        console.log("Fetched Animals:", animalData);
+
+                        let bCount = 0;
+                        let cCount = 0;
+                        // Handle potential response structures (array or object with data/animals property)
+                        const list = Array.isArray(animalData) ? animalData : (animalData.data || animalData.animals || []);
+                        let totalInvestment = 0;
+
+                        // 1. Initialize with manual calculation (which is 0 initially)
+                        // Then override if API provides summaries
+
+                        // 1. Initialize with manual calculation (which is 0 initially)
+                        // Then override if API provides summaries
+
+                        // Check if the API response itself has summary stats
+                        // We must check the ROOT object (animalData) for stats, not the array
+                        const statsSource = animalData;
+                        const statsSourceData = (animalData.data && !Array.isArray(animalData.data)) ? animalData.data : {};
+
+                        // Function to try getting value from multiple sources
+                        const getVal = (keys: string[]) => {
+                            for (const k of keys) {
+                                if (statsSource[k] !== undefined) return statsSource[k];
+                                if (statsSourceData[k] !== undefined) return statsSourceData[k];
+                            }
+                            return undefined;
+                        };
+
+                        const apiBuffaloCount = getVal(['buffalo_count', 'buffaloes_count', 'buffalo_counts', 'buffaloes']);
+                        const apiCalfCount = getVal(['calf_count', 'calves_count', 'calf_counts', 'calves']);
+                        const apiTotalInvestment = getVal(['total_investment', 'total_amount', 'investment_amount', 'total_cost', 'total_value']);
+
+                        // Also check the investor object (localMatch) as user suggested
+                        const invBuffaloCount = localMatch.buffalo_count || localMatch.buffaloes_count || localMatch.buffaloes;
+                        const invCalfCount = localMatch.calf_count || localMatch.calves_count || localMatch.calves;
+                        const invTotalInvestment = localMatch.total_investment || localMatch.total_amount || localMatch.investment_amount;
+
+                        // Calculation Loop (Robust) as fallback or verification
+                        let manualB = 0;
+                        let manualC = 0;
+                        let manualInvestment = 0;
+
+                        if (Array.isArray(list)) {
+                            list.forEach((a: any) => {
+                                // Count Logic - Enhanced for Nested/Linked Calves
+                                const typeStr = (a.animal_type || a.type || a.sps_animal_type || a.category || a.species || '').toLowerCase();
+
+                                // Direct type check
+                                if (typeStr.includes('buffalo')) {
+                                    manualB++;
+                                } else if (typeStr.includes('calf')) {
+                                    manualC++;
+                                }
+
+                                // Nested/Attribute Check (e.g. if calf is a property of the buffalo)
+                                if (Array.isArray(a.calves)) {
+                                    manualC += a.calves.length;
+                                } else if (a.calf_details && Array.isArray(a.calf_details)) {
+                                    manualC += a.calf_details.length;
+                                } else {
+                                    // Check numeric fields if not an array
+                                    const nestedCount = Number(a.no_of_calves || a.calf_count || a.calves_count || 0);
+                                    if (nestedCount > 0) manualC += nestedCount;
+                                }
+
+                                // Cost Logic
+                                const rawAmount = a.investment_amount || a.amount || a.cost || a.price || a.total_amount || a.value || a.final_amount || a.buying_price || 0;
+                                let amount = 0;
+                                if (typeof rawAmount === 'number') {
+                                    amount = rawAmount;
+                                } else if (typeof rawAmount === 'string') {
+                                    const sanitized = rawAmount.replace(/,/g, '').replace(/[^0-9.]/g, '');
+                                    amount = parseFloat(sanitized);
+                                }
+                                if (!isNaN(amount)) manualInvestment += amount;
+                            });
+                        }
+
+                        // Robust helper to extract a number from any junk
+                        const parseAnyNum = (val: any) => {
+                            if (val === undefined || val === null) return 0;
+                            const str = String(val).replace(/,/g, '').replace(/[^0-9.]/g, '');
+                            const n = parseFloat(str);
+                            return isNaN(n) ? 0 : n;
+                        };
+
+                        // MAX Strategy: Trust the source that has data (highest value)
+                        // This handles cases where API returns 0/null but List implies data, or vice versa.
+                        bCount = Math.max(
+                            parseAnyNum(apiBuffaloCount),
+                            parseAnyNum(invBuffaloCount),
+                            manualB
+                        );
+
+                        cCount = Math.max(
+                            parseAnyNum(apiCalfCount),
+                            parseAnyNum(invCalfCount),
+                            manualC
+                        );
+
+                        totalInvestment = Math.max(
+                            parseAnyNum(apiTotalInvestment),
+                            parseAnyNum(invTotalInvestment),
+                            manualInvestment
+                        );
+
+                        console.log("Final Resolved Stats:", {
+                            bCount, cCount, totalInvestment,
+                            sources: {
+                                api: { b: apiBuffaloCount, c: apiCalfCount, inv: apiTotalInvestment },
+                                local: { b: invBuffaloCount, c: invCalfCount, inv: invTotalInvestment },
+                                manual: { b: manualB, c: manualC, inv: manualInvestment }
+                            }
+                        });
+
+                        // Create a synthetic order to display the portfolio
+                        ordersList.push({
+                            id: `PORTFOLIO-${investorId}`,
+                            buffaloCount: bCount,
+                            calfCount: cCount,
+                            totalCost: totalInvestment,
+                            placedAt: new Date().toISOString(),
+                            status: 'active',
+                            paymentStatus: 'paid'
+                        });
+
+                    } catch (e) {
+                        console.error("Error fetching investor animals", e);
+                    }
                 }
             }
 
@@ -751,7 +872,7 @@ const AnimalOnboarding: React.FC = () => {
                                             <Pencil size={12} color="#F97316" />
                                             <span>Pending</span>
                                         </div>
-                                        <button className="delete-btn">
+                                        <button className="delete-btn" onClick={() => handleDeleteAnimal(animal.id)}>
                                             <Trash2 size={18} color="#EF4444" />
                                         </button>
                                     </div>

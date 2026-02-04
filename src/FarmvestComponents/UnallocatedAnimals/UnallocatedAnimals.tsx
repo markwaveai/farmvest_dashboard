@@ -167,16 +167,17 @@ const UnallocatedAnimals: React.FC = () => {
                     display_text: a.display_text,
                     investor_name: a.investor_name,
                     // Extensive fallbacks to find the onboarding date
-                    uuid: a.animal_id || a.id, // Store raw UUID for API calls
+                    // Fix: User requested "RFID-1540-002" format, checking all possible fields
+                    uuid: a.rfid_tag || a.rfid_tag_number || a.rfid || a.uuid || a._id || a.id || a.animal_id,
                     onboarding_time: a.investment_details?.order_date || a.order_date || a.created_at || a.onboarded_time || a.onboarded_at || a.onboarding_date || a.placedAt
                 };
             });
 
             // DEBUG LOG: Help identify the correct field if still missing
-            if (mapped.length > 0) {
+            if (animalList.length > 0) {
                 const first = animalList[0];
-                log(`>>> DEBUG Mapping Sample (ID: ${first.animal_id}): Found Time: ${mapped[0].onboarding_time || 'NOT FOUND'}`);
-                log(`Available Keys: ${Object.keys(first).join(', ')}`);
+                log(`>>> DEBUG Mapping Sample (Raw Keys): ${Object.keys(first).join(', ')}`);
+                log(`>>> DEBUG Mapping Sample (Raw Object): ${JSON.stringify(first, null, 2)}`);
             }
             setAnimals(mapped);
             log(`<<< END FETCH FARM: Successfully loaded ${mapped.length} animals`);
@@ -194,23 +195,15 @@ const UnallocatedAnimals: React.FC = () => {
         try {
             setLoadingGrid(true);
 
-            // DYNAMIC SHED ID CALCULATION RESTORED
-            // Formula: ((FarmIndex - 1) * 12) + ShedIndex
-            let numericId = Number(sId);
-            if (selectedFarmId) {
-                const farmIndex = farms.findIndex((f: any) => String(f.farm_id || f.id) === String(selectedFarmId)) + 1;
-                const shedIndex = sheds.findIndex((s: any) => String(s.shed_id || s.id) === String(sId)) + 1;
-                if (farmIndex > 0 && shedIndex > 0) {
-                    numericId = ((farmIndex - 1) * 12) + shedIndex;
-                }
-            }
-            if (isNaN(numericId)) numericId = Number(sId);
+            // Fix: Use raw ID directly. Removed manual index-based calculation.
+            const numericId = Number(sId);
 
             log(`Fetching Shed: ${sId} (Numeric: ${numericId})`);
 
             const [animalsResponse, gridData] = await Promise.all([
-                farmvestService.getTotalAnimals(Number(selectedFarmId), Number(sId)).catch(e => {
-                    log(`Note: Animal fetch failed (possibly empty): ${sId}`);
+                // Fix: Use numericId (Global ID) to fetch animals from the same shed ID we saved to
+                farmvestService.getTotalAnimals(Number(selectedFarmId), numericId).catch(e => {
+                    log(`Note: Animal fetch failed (possibly empty): ${numericId} (Raw: ${sId})`);
                     return { data: [] };
                 }),
                 // Use available_positions as requested by USER
@@ -466,9 +459,9 @@ const UnallocatedAnimals: React.FC = () => {
             return;
         }
 
-        if (!selectedFarmId) { console.warn('Please select a farm first.'); return; }
-        if (!selectedShedId) { console.warn('Please select a shed first.'); return; }
-        if (!selectedAnimalId) { console.warn('Please select an animal first.'); return; }
+        if (!selectedFarmId) { alert('Please select a farm first.'); return; }
+        if (!selectedShedId) { alert('Please select a shed first.'); return; }
+        if (!selectedAnimalId) { alert('Please select an animal from the list below first.'); return; }
 
         // BATCH MODE: Toggle pending state
         const slotLabel = position.label;
@@ -548,7 +541,25 @@ const UnallocatedAnimals: React.FC = () => {
 
         try {
             setIsSaving(true);
-            await farmvestService.allocateAnimal(selectedShedId, validAllocations);
+
+            // CRITICAL FIX: The API requires the uniquely identified GLOBAL Shed ID (e.g., 1-12, 13-24)
+            // The UI dropdown might provide a Local ID (1-12 per farm).
+            // DEBUG: Log available sheds to verify ID logic
+            console.log(`[UnallocatedAnimals] Available Sheds:`, sheds.map((s: any) => ({ id: s.id, shed_id: s.shed_id, name: s.shed_name })));
+
+            // Fix: Trust the ID from the dropdown (API provided), do not manually calculate 'numeric' ID based on index.
+            // This avoids mapping errors if IDs are not perfectly sequential/dense.
+
+            // Try to use the STRING ID ("KUR_F1_S1") if available, as that is likely the unique identifier for allocation
+            const selectedShedObj = sheds.find((s: any) => String(s.id) === String(selectedShedId));
+            const targetShedId = selectedShedObj?.shed_id || selectedShedId;
+
+            console.log(`[UnallocatedAnimals] Allocation Request - Shed: ${targetShedId} (Obj ID: ${selectedShedObj?.shed_id})`);
+            console.log(`[UnallocatedAnimals] Payload:`, JSON.stringify(validAllocations, null, 2));
+
+            // Use the raw ID or String ID
+            const saveResponse = await farmvestService.allocateAnimal(String(targetShedId), validAllocations);
+            console.log(`[UnallocatedAnimals] Save Response:`, saveResponse);
 
             console.log(`Successfully allocated ${validAllocations.length} animals!`);
 
@@ -560,6 +571,8 @@ const UnallocatedAnimals: React.FC = () => {
             lastFarmIdRef.current = null;
             lastShedIdRef.current = null;
             fetchFarmData(Number(selectedFarmId));
+
+            // Force refresh of shed details to show new allocations
             fetchShedDetails(selectedShedId);
 
         } catch (error: any) {
