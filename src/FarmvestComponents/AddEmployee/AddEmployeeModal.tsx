@@ -15,17 +15,24 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     const dispatch = useAppDispatch();
     const { createLoading } = useAppSelector((state: RootState) => state.farmvestEmployees);
 
-    const [formData, setFormData] = useState({
+    const initialFormData = {
         first_name: '',
         last_name: '',
         email: '',
         mobile: '',
         role: 'SUPERVISOR',
-        location: 'Kurnool',
+        location: 'KURNOOL',
         farm_id: '',
         shed_id: '',
         is_test: false
-    });
+    };
+
+    const [formData, setFormData] = useState(initialFormData);
+
+    const handleClose = () => {
+        setFormData(initialFormData);
+        onClose();
+    };
 
     const [locations, setLocations] = useState<string[]>([]);
     const [farms, setFarms] = useState<any[]>([]);
@@ -49,10 +56,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
 
                 if (locs.length > 0) {
                     setLocations(locs.map(String));
-                    // Check if current default is valid
-                    /* if (!locs.includes(formData.location)) {
-                         setFormData(prev => ({ ...prev, location: locs[0] }));
-                    } */
                 }
             } catch (err) {
                 console.error('Failed to fetch locations:', err);
@@ -66,14 +69,38 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         if (!isOpen) return;
 
         const fetchFarmsByLocation = async () => {
+            console.log('[AddEmployee] Fetching farms (client-side filter) for location:', formData.location);
             setFarmsLoading(true);
             try {
-                const response = await farmvestService.getFarms(formData.location);
-                // API might return { status: 200, data: [...] } or just [...]
-                const farmList = Array.isArray(response) ? response : (response.data || []);
-                setFarms(farmList);
+                if (!formData.location) {
+                    setFarms([]);
+                    setFarmsLoading(false);
+                    return;
+                }
+                // Use getAllFarms without params to get everything, then filter locally like the Farms slice does
+                const response = await farmvestService.getAllFarms();
+                console.log('[AddEmployee] Raw getAllFarms response:', response);
+
+                let allFarms: any[] = [];
+                if (response && (response.status === 200 || response.status === "200")) {
+                    allFarms = Array.isArray(response.data) ? response.data : [];
+                } else if (Array.isArray(response)) {
+                    allFarms = response;
+                } else if (response && Array.isArray(response.data)) {
+                    allFarms = response.data;
+                }
+
+                // Client-side filter (case-insensitive)
+                const targetLoc = formData.location.toUpperCase();
+                const filteredFarms = allFarms.filter((farm: any) =>
+                    farm.location && String(farm.location).toUpperCase() === targetLoc
+                );
+
+                console.log('[AddEmployee] Filtered farm list:', filteredFarms);
+                setFarms(filteredFarms);
 
                 // Reset farm_id when location changes
+                // Only reset if the current farm_id is not valid for the new location (prevent loop if needed, but simple reset is safer for UX)
                 setFormData(prev => ({ ...prev, farm_id: '', shed_id: '' }));
                 setSheds([]);
             } catch (error) {
@@ -121,6 +148,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setFormData(prev => ({ ...prev, [name]: checked }));
+        } else if (name === 'mobile') {
+            // Numeric only and max 10 digits
+            const numericValue = value.replace(/[^0-9]/g, '').slice(0, 10);
+            setFormData(prev => ({ ...prev, [name]: numericValue }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -128,6 +159,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Mobile Validation
+        if (formData.mobile.length !== 10) {
+            alert('Mobile number must be exactly 10 digits.');
+            return;
+        }
 
         // 1. Mandatory base payload
         const payload: any = {
@@ -157,19 +194,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         if (createEmployee.fulfilled.match(result)) {
             // Success handshake
             setTimeout(() => {
-                onClose();
-                // Reset form to defaults
-                setFormData({
-                    first_name: '',
-                    last_name: '',
-                    email: '',
-                    mobile: '',
-                    role: 'SUPERVISOR',
-                    location: 'KURNOOL',
-                    farm_id: '',
-                    shed_id: '',
-                    is_test: false
-                });
+                handleClose();
             }, 500);
         } else {
             // Debug access to error
@@ -189,9 +214,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     if (!isOpen) return null;
 
     return (
-        <div className={`modal-overlay ${isOpen ? 'show' : ''}`} onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-        }}>
+        <div className={`modal-overlay ${isOpen ? 'show' : ''}`}>
             <div className="modal-content add-employee-modal">
                 <div className="modal-header">
                     <div className="flex items-center gap-3">
@@ -203,7 +226,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             <p>Register a new member to the FarmVest team</p>
                         </div>
                     </div>
-                    <button className="close-btn" onClick={onClose} disabled={createLoading}>
+                    <button className="close-btn" onClick={handleClose} disabled={createLoading}>
                         <X size={20} />
                     </button>
                 </div>
@@ -247,7 +270,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             />
                         </div>
                         <div className="form-group">
-                            <label><Phone size={14} /> Mobile Number</label>
+                            <label><Phone size={14} /> Mobile Number *</label>
                             <input
                                 type="tel"
                                 name="mobile"
@@ -255,6 +278,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 onChange={handleInputChange}
                                 placeholder="Enter mobile number"
                                 className="form-input"
+                                required
+                                maxLength={10}
                             />
                         </div>
 
@@ -372,7 +397,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                         <button
                             type="button"
                             className="btn-secondary"
-                            onClick={onClose}
+                            onClick={handleClose}
                             disabled={createLoading}
                         >
                             Cancel

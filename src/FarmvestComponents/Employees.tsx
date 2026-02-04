@@ -89,25 +89,55 @@ const Employees: React.FC = () => {
         const lowerQuery = query.toLowerCase();
         const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase();
         const email = (item.email || '').toLowerCase();
-        const phone = item.phone_number || '';
+        const phone = (item.phone_number || '').toString();
+        const mobile = (item.mobile || '').toString();
 
         return (
             fullName.includes(lowerQuery) ||
             email.includes(lowerQuery) ||
-            phone.includes(lowerQuery)
+            phone.includes(lowerQuery) ||
+            mobile.includes(lowerQuery)
         );
     }, []);
 
     // Unified Client-Side Filtering
     // We use allEmployees (limit 1000) as the source of truth for robust filtering.
     const roleStatusFilteredData = useMemo(() => {
-        return allEmployees.filter(emp => {
+        // Debug logs for filtering issues
+        if (allEmployees.length > 0) {
+            console.log('[Employees] Filtering with:', { selectedRole, selectedStatus, totalDocs: allEmployees.length });
+            const sample = allEmployees[0];
+            console.log('[Employees] Sample Doc:', {
+                id: sample.id,
+                roles: sample.roles,
+                role: (sample as any).role,
+                active_types: [typeof sample.active_status, typeof sample.is_active],
+                active_vals: [sample.active_status, sample.is_active]
+            });
+        }
+
+        return allEmployees.filter((emp: any) => {
             // Filter by Status
-            if (selectedStatus && String(emp.active_status) !== selectedStatus) return false;
+            if (selectedStatus) {
+                // Normalize employee status to string '1' (active) or '0' (inactive)
+                const isActive = emp.active_status === 1 || emp.active_status === true || emp.active_status === '1';
+                const empStatusStr = isActive ? '1' : '0';
+
+                if (empStatusStr !== selectedStatus) return false;
+            }
 
             // Filter by Role
             if (selectedRole) {
-                const empRole = emp.roles?.[0] || 'Investor';
+                // Handle various role structures (array or string)
+                let empRole = '';
+                if (Array.isArray(emp.roles) && emp.roles.length > 0) {
+                    empRole = emp.roles[0];
+                } else if (typeof emp.role === 'string') {
+                    empRole = emp.role;
+                } else {
+                    empRole = 'INVESTOR';
+                }
+
                 const normalizedEmpRole = String(empRole).trim().toUpperCase().replace(/\s+/g, '_');
                 if (normalizedEmpRole !== selectedRole) return false;
             }
@@ -140,6 +170,11 @@ const Employees: React.FC = () => {
             clearTimeout(handler);
         };
     }, [searchTerm, debouncedSearchTerm, currentPage, setCurrentPage, setSearchQuery]);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedRole, selectedStatus, setCurrentPage]);
 
     // Clear search and refresh when success message appears (e.g., after add/delete)
     useEffect(() => {
@@ -361,15 +396,12 @@ const Employees: React.FC = () => {
                 {/* Table Content */}
                 <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100">
                     <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700">
                             <tr>
                                 <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left cursor-pointer">S.No {getSortIcon('id')}</th>
-                                <th className="px-3 py-2.5 text-left text-gray-400 font-bold">ID</th>
+
                                 <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left cursor-pointer">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 shrink-0"></div>
-                                        <span>Name {getSortIcon('first_name')}</span>
-                                    </div>
+                                    <span>Name {getSortIcon('first_name')}</span>
                                 </th>
                                 <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left cursor-pointer">Email {getSortIcon('email')}</th>
                                 <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left cursor-pointer">Phone {getSortIcon('phone_number')}</th>
@@ -387,15 +419,10 @@ const Employees: React.FC = () => {
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs font-mono text-gray-500">#{employee.id}</td>
+
                                         <td className="px-3 py-2 whitespace-nowrap">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-700 border border-orange-100 flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                                                    {getInitials(employee.first_name, employee.last_name)}
-                                                </div>
-                                                <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm" onClick={() => handleNameClick(employee)}>
-                                                    {`${employee.first_name || ''} ${employee.last_name || ''}`}
-                                                </div>
+                                            <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm" onClick={() => handleNameClick(employee)}>
+                                                {`${employee.first_name || ''} ${employee.last_name || ''}`}
                                             </div>
                                         </td>
                                         <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">{employee.email || '-'}</td>

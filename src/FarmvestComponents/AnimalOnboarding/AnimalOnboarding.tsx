@@ -4,7 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { farmvestService } from '../../services/farmvest_api';
 import { uploadToFirebase } from '../../config/firebaseAppConfig';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
-import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone } from 'lucide-react';
+import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X } from 'lucide-react';
+
+const CustomStrollerIcon = ({ size = 24, color = "currentColor" }: { size?: number, color?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+        <path d="M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+        <path d="M13.34 16h-5.08"></path>
+        <path d="M3 5h2l.6 3h13.15a1 1 0 0 1 .95 1.34l-2.43 8.1a1 1 0 0 1-.95.72H7.7"></path>
+        <path d="M21 5h-7"></path>
+    </svg>
+);
 
 interface UserProfile {
     name: string;
@@ -62,6 +72,15 @@ const AnimalOnboarding: React.FC = () => {
 
     const [animals, setAnimals] = useState<AnimalDetail[]>([]);
     const [toastVisible, setToastVisible] = useState(false);
+
+    // Calf Modal State
+    const [activeParentId, setActiveParentId] = useState<number | null>(null);
+    const [tempCalf, setTempCalf] = useState<Partial<AnimalDetail>>({
+        rfidTag: '',
+        earTag: '',
+        age: '6',
+        photos: []
+    });
 
     const [allMembers, setAllMembers] = useState<any[]>([]);
     const [filteredMembers, setFilteredMembers] = useState<any[]>([]);
@@ -230,19 +249,9 @@ const AnimalOnboarding: React.FC = () => {
                 });
             }
 
-            // Add Calves
-            for (let i = 0; i < cCount; i++) {
-                newAnimals.push({
-                    id: Date.now() + 100 + i,
-                    type: 'Calf',
-                    rfidTag: '',
-                    earTag: '',
-                    age: '',
-                    photos: [],
-                    index: currentIndex++,
-                    status: 'Pending'
-                });
-            }
+            // Exclude Calves from main list initialization request
+            // Calves will be added manually via the "Calf Details" button on Buffalo #1
+
             setAnimals(newAnimals);
         } else {
             setAnimals([]);
@@ -621,7 +630,7 @@ const AnimalOnboarding: React.FC = () => {
                     payment_method: "BANK_TRANSFER", // Forced as per request example
                     payment_verification_screenshot: "https://firebasestorage.googleapis.com/v0/b/app/o/payment_receipt.jpg",
                     total_investment_amount: selectedOrder.totalCost,
-                    unit_cost: selectedOrder.totalCost / (Math.max((selectedOrder.buffaloCount || 1), 1)),
+                    unit_cost: Math.round(selectedOrder.totalCost / (Math.max((selectedOrder.buffaloCount || 1), 1))),
                     utr_number: "HDFC123456ABCD" // Hardcoded default
                 },
                 investor_details: {
@@ -719,7 +728,7 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        <button className="find-btn" onClick={handleFind} disabled={loading}>
+                        <button className="find-btn" onClick={handleFind} disabled={loading || !mobile.trim()}>
                             {loading ? 'Finding...' : 'Find'}
                         </button>
                     </div>
@@ -857,7 +866,7 @@ const AnimalOnboarding: React.FC = () => {
                     </div>
 
                     <div className="animals-list-container">
-                        {animals.map((animal) => (
+                        {animals.filter(a => a.type === 'Buffalo').map((animal, filteredIdx) => (
                             <div key={animal.id} className="animal-card">
                                 <div className="animal-card-header">
                                     <div className="header-left">
@@ -979,6 +988,34 @@ const AnimalOnboarding: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
+                                {
+                                    // SHOW CALF BUTTON FOR ALL BUFFALO CARDS
+                                    <div
+                                        className="calf-details-trigger-wrapper"
+                                        style={{ marginTop: '20px', padding: '16px', background: '#F0F9FF', borderRadius: '12px', border: '1px solid #BAE6FD', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                                        onClick={() => {
+                                            setActiveParentId(animal.id);
+                                            // Auto-fill Calf details from Parent
+                                            setTempCalf({
+                                                rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
+                                                earTag: animal.earTag ? `${animal.earTag}-C` : '',
+                                                age: '6',
+                                                photos: []
+                                            });
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                                <CustomStrollerIcon size={20} color="#0EA5E9" />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0F172A' }}>Calf Details</span>
+                                                <span style={{ fontSize: '12px', color: '#64748B' }}>Tap to enter calf details</span>
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={20} color="#0EA5E9" />
+                                    </div>
+                                }
                             </div>
                         ))}
                     </div>
@@ -1019,6 +1056,171 @@ const AnimalOnboarding: React.FC = () => {
                 isVisible={toastVisible}
                 onClose={() => setToastVisible(false)}
             />
+
+            {/* Calf Details Modal Overlay */}
+            {activeParentId !== null && (
+                <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: 'white', width: '90%', maxWidth: '500px', borderRadius: '20px', padding: '24px', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A', fontWeight: 'bold' }}>
+                                    #{animals.find(a => a.id === activeParentId)?.index || '?'}
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1F2937', margin: 0 }}>Calf</h3>
+                                    <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, fontStyle: 'italic' }}>Enter details below</p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ padding: '6px 12px', background: '#FFF7ED', color: '#F97316', borderRadius: '100px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Pencil size={12} /> Pending
+                                </div>
+                                <button onClick={() => setActiveParentId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444' }}>
+                                    <Trash2 size={20} />
+                                </button>
+                                <button onClick={() => setActiveParentId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="animal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div className="form-group">
+                                <label>RFID Tag</label>
+                                <div className="input-with-icon">
+                                    <QrCode size={18} className="input-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="RFID-X..."
+                                        value={tempCalf.rfidTag}
+                                        onChange={(e) => setTempCalf(prev => ({ ...prev, rfidTag: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Ear Tag</label>
+                                <div className="input-with-icon">
+                                    <Tag size={18} className="input-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="ET-XXXX"
+                                        value={tempCalf.earTag}
+                                        onChange={(e) => setTempCalf(prev => ({ ...prev, earTag: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Age (Months)</label>
+                                <div className="input-with-icon">
+                                    <Cake size={18} className="input-icon" />
+                                    <input
+                                        type="number"
+                                        placeholder="6"
+                                        value={tempCalf.age}
+                                        onChange={(e) => setTempCalf(prev => ({ ...prev, age: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Parent Buffalo</label>
+                                <div className="input-with-icon disabled">
+                                    <input
+                                        type="text"
+                                        value={(() => {
+                                            const parent = animals.find(a => a.id === activeParentId);
+                                            if (!parent) return 'Unknown Parent';
+                                            const details = parent.rfidTag || parent.earTag || `Index #${parent.index}`;
+                                            return `Mother: ${details} (Locked)`;
+                                        })()}
+                                        disabled
+                                        style={{ backgroundColor: '#F3F4F6' }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="photos-section" style={{ marginTop: '20px' }}>
+                            <label>Photos ({tempCalf.photos?.length || 0})</label>
+                            <div className="photos-grid">
+                                {tempCalf.photos?.map((photo, idx) => (
+                                    <div key={idx} className="photo-preview">
+                                        <img src={photo} alt={`Calf ${idx + 1}`} />
+                                        <button
+                                            className="remove-photo-btn"
+                                            onClick={() => setTempCalf(prev => ({ ...prev, photos: (prev.photos || []).filter((_, i) => i !== idx) }))}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    className="add-photo-btn"
+                                    onClick={() => document.getElementById('calf-photo-input')?.click()}
+                                >
+                                    <Camera size={24} color="#2E7D32" />
+                                    <span>Add</span>
+                                </button>
+                                <input
+                                    id="calf-photo-input"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={async (e) => {
+                                        if (e.target.files && e.target.files.length > 0) {
+                                            const files = Array.from(e.target.files);
+                                            try {
+                                                const urls = await Promise.all(files.map(uploadToFirebase));
+                                                setTempCalf(prev => ({ ...prev, photos: [...(prev.photos || []), ...urls] }));
+                                            } catch (err) { console.error('Calf photo upload failed', err); }
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                // Save logic
+                                const parentBuffalo = animals.find(a => a.id === activeParentId);
+                                if (!parentBuffalo) return;
+
+                                const newCalf: AnimalDetail = {
+                                    id: Date.now() + 999,
+                                    type: 'Calf',
+                                    rfidTag: tempCalf.rfidTag || '',
+                                    earTag: tempCalf.earTag || '',
+                                    age: tempCalf.age || '6',
+                                    photos: tempCalf.photos || [],
+                                    parentBuffaloId: parentBuffalo.id,
+                                    index: 1, // Start indexing calves from 1? Or unique?
+                                    status: 'Completed'
+                                };
+
+                                // Add to animals list (will be hidden from view due to filter)
+                                setAnimals(prev => [...prev, newCalf]);
+                                setActiveParentId(null);
+                                setTempCalf({ rfidTag: '', earTag: '', age: '6', photos: [] }); // Reset form
+                            }}
+                            style={{
+                                width: '100%',
+                                marginTop: '24px',
+                                padding: '14px',
+                                backgroundColor: '#2E7D32',
+                                color: 'white',
+                                borderRadius: '12px',
+                                border: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '16px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Save Calf Details
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

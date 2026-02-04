@@ -161,6 +161,16 @@ export const farmvestService = {
             throw error;
         }
     },
+    getEmployeeDetailsById: async (id: string) => {
+        try {
+            // Updated parameter name to 'user_id' as per Swagger documentation
+            const response = await farmvestApi.get(`/api/employee/get_employee_details_by_id?user_id=${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching details for employee ${id}:`, error);
+            throw error;
+        }
+    },
     deleteEmployee: async (id: number) => {
         try {
             const response = await farmvestApi.delete(`/api/admin/delete_employee/${id}`);

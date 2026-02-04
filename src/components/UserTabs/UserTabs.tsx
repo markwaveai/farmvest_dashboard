@@ -227,14 +227,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 </div>
               </button>
             </li>
-            <li>
+            {/* <li>
               <button className={`nav-item ${activeTab === 'farmvest-inventory' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/inventory'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <Package size={18} />
                   <span className="nav-text">Inventory</span>
                 </div>
               </button>
-            </li>
+            </li> */}
             <li>
               <button className={`nav-item ${activeTab === 'farmvest-buffalo' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/buffalo'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
