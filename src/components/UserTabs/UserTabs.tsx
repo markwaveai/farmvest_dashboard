@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './UserTabs.css';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
-import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package } from 'lucide-react';
+import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package, Trash2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -73,6 +73,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   else if (currentPath.includes('/support-tickets')) activeTab = 'support-tickets';
   else if (currentPath.includes('/privacy-policy')) activeTab = 'privacy';
   else if (currentPath.includes('/support')) activeTab = 'support';
+  else if (currentPath.includes('/farmvest/account-deletion')) activeTab = 'account-deletion';
 
 
 
@@ -141,6 +142,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-activation' && 'User Activation'}
                   {activeTab === 'support' && 'Support Tickets'}
                   {activeTab === 'privacy' && 'Privacy Policy'}
+                  {activeTab === 'account-deletion' && 'Account Deletion'}
                 </h1>
                 <span className="text-[10px] text-gray-300 font-medium leading-none mt-0.5 md:block hidden">
                   {activeTab === 'farmvest-employees' && 'Manage all employees'}
@@ -152,6 +154,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-buffalo' && 'Individual asset tracking and logs'}
                   {activeTab === 'farmvest-activation' && 'Activate or deactivate users'}
                   {activeTab === 'support' && 'View and manage tickets'}
+                  {activeTab === 'account-deletion' && 'Permanently delete user accounts'}
                 </span>
               </div>
             </div>
@@ -248,6 +251,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <UserCheck size={18} />
                   <span className="nav-text">User Activation</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'account-deletion' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/account-deletion'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <Trash2 size={18} />
+                  <span className="nav-text">Account Deletion</span>
                 </div>
               </button>
             </li>
