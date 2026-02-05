@@ -184,9 +184,15 @@ const FarmvestUserActivationPage = () => {
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (name === 'first_name' || name === 'last_name') {
+            // Only allow letters and spaces
+            if (/[0-9]/.test(value)) return;
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value,
+            [name]: value,
         });
     };
 
@@ -426,10 +432,10 @@ const FarmvestUserActivationPage = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || !formData.mobile}
                                     className="w-full font-bold py-3 rounded-full transition mt-6 shadow-lg uppercase tracking-wide mb-4 disabled:opacity-70 disabled:cursor-not-allowed farmvest-btn"
                                     style={{
-                                        backgroundColor: mode === 'deactivate' ? '#ef4444' : '#f59e0b',
+                                        backgroundColor: (loading || !formData.mobile) ? '#9CA3AF' : (mode === 'deactivate' ? '#ef4444' : '#f59e0b'),
                                     }}
                                 >
                                     {loading ? 'Sending OTP...' : 'Send OTP'}

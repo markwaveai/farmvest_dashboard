@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import CustomDropdown from '../../components/common/CustomDropdown';
 import './UnallocatedAnimals.css';
 import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2, Camera } from 'lucide-react';
 import CommonShedGrid from '../../components/common/ShedGrid/CommonShedGrid';
@@ -35,6 +36,9 @@ interface Animal {
     display_text?: string;
     onboarding_time?: string;
 }
+
+// Custom Dropdown Component for Scrollable Selection
+
 
 const UnallocatedAnimals: React.FC = () => {
     // ---------------------------------------------------------
@@ -664,35 +668,31 @@ const UnallocatedAnimals: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                <div className="ua-select-wrapper">
-                    <select className="ua-select" value={selectedFarmId} onChange={(e) => {
-                        const val = e.target.value;
+                <CustomDropdown
+                    placeholder="Select Farm"
+                    value={selectedFarmId}
+                    options={farms.map((f: any) => ({
+                        value: f.farm_id || f.id,
+                        label: `🚜 ${f.farm_name || f.name || 'Unnamed Farm'} - ${f.location || 'Unknown'}`
+                    }))}
+                    onChange={(val: string) => {
                         setSelectedFarmId(val);
                         // Do NOT save to localStorage here. Only Onboarding saves it.
                         setSelectedShedId('');
                         lastShedIdRef.current = null;
-                    }}>
-                        <option value="">Select Farm</option>
-                        {farms.map((f: any) => (
-                            <option key={f.farm_id || f.id} value={f.farm_id || f.id}>
-                                🚜 {f.farm_name || f.name || 'Unnamed Farm'} - {f.location || 'Unknown'}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="ua-select-icon" size={20} color="#9CA3AF" />
-                </div>
+                    }}
+                />
 
-                <div className="ua-select-wrapper">
-                    <select className="ua-select" value={selectedShedId} onChange={(e) => setSelectedShedId(e.target.value)} disabled={!selectedFarmId}>
-                        <option value="">{!selectedFarmId ? "Select Farm First" : (sheds.length === 0 ? "No Sheds Found" : "Select Shed")}</option>
-                        {sheds.map((s: any) => (
-                            <option key={s.id || s.shed_id} value={s.id || s.shed_id}>
-                                🏠 {s.shed_name || s.name || 'Unnamed Shed'}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="ua-select-icon" size={20} color="#9CA3AF" />
-                </div>
+                <CustomDropdown
+                    placeholder={!selectedFarmId ? "Select Farm First" : "Select Shed"}
+                    value={selectedShedId}
+                    disabled={!selectedFarmId}
+                    options={sheds.map((s: any) => ({
+                        value: s.id || s.shed_id,
+                        label: `🏠 ${s.shed_name || s.name || 'Unnamed Shed'}`
+                    }))}
+                    onChange={(val: string) => setSelectedShedId(val)}
+                />
             </div>
 
             {/* Stats Cards - Updated to use Shed Object Data */}

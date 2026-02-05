@@ -82,16 +82,7 @@ const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess,
                     <div className="modal-body">
                         {error && <div className="error-message">{error}</div>}
 
-                        <div className="form-group">
-                            <label htmlFor="farmId">Farm ID</label>
-                            <input
-                                id="farmId"
-                                type="text"
-                                className="form-input"
-                                value={farmId}
-                                disabled
-                            />
-                        </div>
+
 
                         <div className="form-group">
                             <label htmlFor="farmName">Farm Name</label>

@@ -440,6 +440,21 @@
     border: 1px solid #FFEDD5;
 }
 
+.status-badge.completed {
+    background: #F0FDF4;
+    /* Green-50 */
+    color: #16A34A;
+    /* Green-600 */
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: 1px solid #BBF7D0;
+}
+
 .delete-btn {
     background: none;
     border: none;
@@ -755,6 +770,13 @@
 
 .confirm-onboarding-btn:active {
     transform: translateY(0);
+}
+
+.confirm-onboarding-btn:disabled {
+    background-color: #cbd5e1;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 /* Main Onboarding Card (Initial View) */

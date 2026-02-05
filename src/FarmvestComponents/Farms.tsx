@@ -227,6 +227,25 @@ const Farms: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                    {/* Search Input - Swapped with dropdown */}
+                    <div className="w-full sm:w-56 relative group">
+                        <input
+                            type="text"
+                            placeholder="Find farm name..."
+                            className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2 group-focus-within:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                            </button>
+                        )}
+                    </div>
+
                     <div className="relative w-full sm:w-36">
                         <select
                             className="w-full py-2 px-3 pl-4 pr-10 border border-gray-200 rounded-lg bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
@@ -249,25 +268,6 @@ const Farms: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Search Input */}
-                    <div className="w-full sm:w-56 relative group">
-                        <input
-                            type="text"
-                            placeholder="Find farm name..."
-                            className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2 group-focus-within:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
-                            </button>
-                        )}
-                    </div>
-
                     <button
                         onClick={() => setIsAddFarmModalOpen(true)}
                         className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
@@ -277,7 +277,7 @@ const Farms: React.FC = () => {
                 </div>
             </div>
 
-            <div className="farms-content p-6">
+            <div className="farms-content p-6 flex-1 flex flex-col min-h-0">
                 {farmsError && (
                     <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg flex items-center shadow-md animate-shake">
                         <div className="p-2 bg-red-100 rounded-lg mr-4">
@@ -296,50 +296,55 @@ const Farms: React.FC = () => {
                     </div>
                 )}
 
-                <div className="overflow-hidden bg-white border border-gray-100 rounded-2xl shadow-xl">
-                    <table className="farms-table w-full text-xs text-left border-collapse">
-                        <thead className="bg-gray-50/50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black">
-                            <tr>
-                                <th className="px-4 py-3 text-center">S.no</th>
-                                <th className="px-4 py-3 text-left">
-                                    <div className="flex items-center gap-2">Farm Name</div>
-                                </th>
-                                <th className="px-4 py-3 text-left">
-                                    <div className="flex items-center gap-2">Location</div>
-                                </th>
-                                <th className="px-4 py-3 text-center">
-                                    <div className="flex items-center justify-center gap-2">Live Count</div>
-                                </th>
-                                <th className="px-4 py-3 text-left">
-                                    <div className="flex items-center gap-2">Farm Manager</div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {farmsLoading ? (
-                                <TableSkeleton cols={4} rows={10} />
-                            ) : (currentItems.length === 0 && !farmsError) ? (
+                <div className="bg-white border border-gray-100 rounded-2xl shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <div className="overflow-auto flex-1 h-full hide-scrollbar">
+                        <table className="farms-table w-full h-full text-xs text-left border-collapse relative">
+                            <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm h-12">
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-16 text-center">
-                                        <div className="text-5xl mb-4 animate-bounce">🚜</div>
-                                        <p className="text-xl font-extrabold text-gray-800 tracking-tight">No Farm Records Found</p>
-                                        <p className="text-sm text-gray-500 mt-2">We couldn't find any farms matching your filter in <span className="font-bold text-blue-600">{location}</span></p>
-                                    </td>
+                                    <th className="px-4 py-3 text-center">S.no</th>
+                                    <th className="px-4 py-3 text-left">
+                                        <div className="flex items-center gap-2">Farm Name</div>
+                                    </th>
+                                    <th className="px-4 py-3 text-left">
+                                        <div className="flex items-center gap-2">Location</div>
+                                    </th>
+                                    <th className="px-4 py-3 text-center">
+                                        <div className="flex items-center justify-center gap-2">Live Count</div>
+                                    </th>
+                                    <th className="px-4 py-3 text-left">
+                                        <div className="flex items-center gap-2">Farm Manager</div>
+                                    </th>
                                 </tr>
-                            ) : (
-                                currentItems.map((farm: any, index: number) => (
-                                    <FarmRow
-                                        key={`${farm?.id || 'farm'}-${index}`}
-                                        farm={farm}
-                                        index={index}
-                                        currentPage={currentPage}
-                                        itemsPerPage={itemsPerPage}
-                                        onFarmClick={handleFarmNameClick}
-                                    />
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {farmsLoading ? (
+                                    <TableSkeleton cols={5} rows={10} />
+                                ) : (currentItems.length === 0 && !farmsError) ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 text-center h-full align-middle">
+                                            <div className="flex flex-col items-center justify-center h-full pb-12">
+                                                <div className="text-3xl mb-2 animate-bounce">🚜</div>
+                                                <p className="text-sm font-bold text-gray-800 tracking-tight">No Farm Records Found</p>
+                                                <p className="text-xs text-gray-500 mt-1">We couldn't find any farms matching your filter in <span className="font-bold text-blue-600">{location}</span></p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    currentItems.map((farm: any, index: number) => (
+                                        <FarmRow
+                                            key={`${farm?.id || 'farm'}-${index}`}
+                                            farm={farm}
+                                            index={index}
+                                            currentPage={currentPage}
+                                            itemsPerPage={itemsPerPage}
+                                            onFarmClick={handleFarmNameClick}
+                                        />
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
                 </div>
 
                 {totalPages > 1 && (

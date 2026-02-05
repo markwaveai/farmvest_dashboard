@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './AnimalOnboarding.css';
 import { useNavigate } from 'react-router-dom';
 import { farmvestService } from '../../services/farmvest_api';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
-import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X } from 'lucide-react';
+import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X, CheckCircle } from 'lucide-react';
 
 const CalfIcon = ({ size = 24, color = "currentColor" }: { size?: number, color?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 512 512" fill={color}>
@@ -442,6 +442,18 @@ const AnimalOnboarding: React.FC = () => {
         }).format(amount);
     };
 
+    const isFormComplete = useMemo(() => {
+        if (!selectedFarmId || selectedFarmId === 'Show all farms') return false;
+
+        const incompleteAnimals = animals.filter(a => {
+            if (!a.rfidTag || !a.earTag || !a.age) return true;
+            if (a.type === 'Calf' && !a.parentBuffaloId) return true;
+            return false;
+        });
+
+        return incompleteAnimals.length === 0;
+    }, [animals, selectedFarmId]);
+
     const handleConfirmOnboarding = async () => {
         if (!selectedOrder || !user) {
             alert('Missing order or user details. Please try searching again.');
@@ -786,10 +798,13 @@ const AnimalOnboarding: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="header-right">
-                                        <div className="status-badge pending">
-                                            <Pencil size={12} color="#F97316" />
-                                            <span>Pending</span>
-                                        </div>
+
+                                        {animal.rfidTag && animal.earTag && animal.age ? (
+                                            <div className="status-badge completed">
+                                                <CheckCircle size={10} color="#16A34A" />
+                                                <span>Completed</span>
+                                            </div>
+                                        ) : null}
                                         <button className="delete-btn" onClick={() => handleDeleteAnimal(animal.id)}>
                                             <Trash2 size={18} color="#EF4444" />
                                         </button>
@@ -798,7 +813,7 @@ const AnimalOnboarding: React.FC = () => {
 
                                 <div className="animal-form-grid">
                                     <div className="form-group">
-                                        <label>RFID Tag</label>
+                                        <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                         <div className="input-with-icon">
                                             <QrCode size={18} className="input-icon" />
                                             <input
@@ -810,7 +825,7 @@ const AnimalOnboarding: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="form-group">
-                                        <label>Ear Tag</label>
+                                        <label>Ear Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                         <div className="input-with-icon">
                                             <Tag size={18} className="input-icon" />
                                             <input
@@ -822,7 +837,7 @@ const AnimalOnboarding: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="form-group">
-                                        <label>Age (Months)</label>
+                                        <label>Age (Months) <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                         <div className="input-with-icon">
                                             <Cake size={18} className="input-icon" />
                                             <input
@@ -994,6 +1009,7 @@ const AnimalOnboarding: React.FC = () => {
                             className="confirm-onboarding-btn"
                             style={{ width: '100%', maxWidth: '400px' }}
                             onClick={handleConfirmOnboarding}
+                            disabled={!isFormComplete}
                         >
                             Confirm Onboarding
                         </button>
@@ -1021,9 +1037,11 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <div style={{ padding: '6px 12px', background: '#FFF7ED', color: '#F97316', borderRadius: '100px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Pencil size={12} /> Pending
-                                </div>
+                                {tempCalf.rfidTag && tempCalf.earTag && tempCalf.age ? (
+                                    <div className="status-badge completed">
+                                        <CheckCircle size={10} /> Completed
+                                    </div>
+                                ) : null}
                                 <button onClick={() => setActiveParentId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444' }}>
                                     <Trash2 size={20} />
                                 </button>
@@ -1035,7 +1053,7 @@ const AnimalOnboarding: React.FC = () => {
 
                         <div className="animal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div className="form-group">
-                                <label>RFID Tag</label>
+                                <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                 <div className="input-with-icon">
                                     <QrCode size={18} className="input-icon" />
                                     <input
@@ -1047,7 +1065,7 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Ear Tag</label>
+                                <label>Ear Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                 <div className="input-with-icon">
                                     <Tag size={18} className="input-icon" />
                                     <input
@@ -1059,7 +1077,7 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Age (Months)</label>
+                                <label>Age (Months) <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                 <div className="input-with-icon">
                                     <Cake size={18} className="input-icon" />
                                     <input

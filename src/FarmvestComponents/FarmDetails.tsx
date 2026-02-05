@@ -75,14 +75,19 @@ const FarmDetails: React.FC = () => {
     return (
         <div className="farm-details-container animate-fadeIn">
             <div className="farm-details-header">
-                <div className="farm-title-section">
-                    <h1>{farmName}</h1>
-                    {farmLocation && (
-                        <div className="farm-location">
-                            <MapPin size={14} className="text-gray-400" />
-                            {farmLocation}
-                        </div>
-                    )}
+                <div className="flex items-center gap-4">
+                    <button className="back-button" onClick={() => navigate(-1)}>
+                        <ArrowLeft size={14} /> Back to Farms
+                    </button>
+                    <div className="farm-title-section">
+                        <h1>{farmName}</h1>
+                        {farmLocation && (
+                            <div className="farm-location">
+                                <MapPin size={14} className="text-gray-400" />
+                                {farmLocation}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className="farm-header-right-actions">
                     <div className="flex items-center gap-2">
@@ -94,9 +99,6 @@ const FarmDetails: React.FC = () => {
                             }}
                         >
                             <Plus size={14} /> Add Shed
-                        </button>
-                        <button className="back-button" onClick={() => navigate(-1)}>
-                            <ArrowLeft size={14} /> Back to Farms
                         </button>
                     </div>
 
