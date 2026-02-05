@@ -298,7 +298,7 @@ export const farmvestService = {
     },
     deactivateUser: async (mobile: string) => {
         try {
-            const response = await farmvestApi.put(`/api/users/deactivate/${mobile}`);
+            const response = await farmvestApi.put(`/api/users/activate_deactivate_user/${mobile}?is_active=false`);
             return response.data;
         } catch (error) {
             console.error(`Error deactivating user ${mobile}:`, error);
@@ -307,7 +307,7 @@ export const farmvestService = {
     },
     activateUser: async (mobile: string) => {
         try {
-            const response = await farmvestApi.put(`/api/users/activate/${mobile}`);
+            const response = await farmvestApi.put(`/api/users/activate_deactivate_user/${mobile}?is_active=true`);
             return response.data;
         } catch (error) {
             console.error(`Error activating user ${mobile}:`, error);

@@ -285,15 +285,13 @@ const FarmvestUserActivationPage = () => {
                     message: 'Account deactivated successfully',
                 });
             } else {
-                // Keep mock for activation for now unless specified otherwise
-                setTimeout(() => {
-                    setLoading(false);
-                    setModalConfig({
-                        isOpen: true,
-                        type: 'success',
-                        message: 'Account activated successfully (Mock)',
-                    });
-                }, 1500);
+                await farmvestService.activateUser(formData.mobile);
+                setLoading(false);
+                setModalConfig({
+                    isOpen: true,
+                    type: 'success',
+                    message: 'Account activated successfully',
+                });
             }
         } catch (error: any) {
             setLoading(false);
