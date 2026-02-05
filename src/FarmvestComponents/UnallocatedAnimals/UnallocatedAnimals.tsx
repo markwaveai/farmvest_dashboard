@@ -795,7 +795,7 @@ const UnallocatedAnimals: React.FC = () => {
                             return (
                                 <div className="mb-4">
                                     <h4 className="text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
-                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
+                                    <div className="ua-grid-row-scroll scrollbar-hide px-1">
                                         {chunks.map((chunk, groupIndex) => (
                                             <div key={groupIndex} className="flex flex-col items-center">
                                                 {/* Camera Overhead */}

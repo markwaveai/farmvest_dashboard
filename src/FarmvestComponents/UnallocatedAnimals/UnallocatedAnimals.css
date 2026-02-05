@@ -1,13 +1,7 @@
 .unallocated-animals-container {
     padding: 24px;
-    height: 100vh;
-    overflow-y: auto;
     background: #FFFFFF;
     font-family: 'Inter', sans-serif;
-    scrollbar-width: none;
-    /* Firefox */
-    -ms-overflow-style: none;
-    /* IE and Edge */
 }
 
 .unallocated-animals-container::-webkit-scrollbar {
@@ -144,11 +138,22 @@
     margin-bottom: 24px;
     scrollbar-width: none;
     /* Firefox */
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ua-animals-list::-webkit-scrollbar {
     display: none;
     /* Chrome/Safari */
+}
+
+.ua-grid-row-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ua-animal-avatar-card {
@@ -365,6 +370,7 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     max-height: 300px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     z-index: 50;
     padding: 4px;
 }

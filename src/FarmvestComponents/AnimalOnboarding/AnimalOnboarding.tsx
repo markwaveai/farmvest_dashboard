@@ -5,10 +5,8 @@ import { farmvestService } from '../../services/farmvest_api';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
 import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X, CheckCircle } from 'lucide-react';
 
-const CalfIcon = ({ size = 24, color = "currentColor" }: { size?: number, color?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 512 512" fill={color}>
-        <path d="M437.3 112c-4 0-14.7 1.3-27.1 11.2-12.8 10.3-24.1 27.5-27.4 50.8-3.4-2.4-11.8-8.1-24.1-13-17.7-7-35.1-11.3-54.7-11.3v34.7c15.8 0 28.5 3.3 43.1 9.1 12 4.7 18.5 9.4 20.8 11.1-12.7 10.2-18.7 28.1-16.7 49 1.9 19.3 13.5 31.9 31.6 31.9h2c18.5 0 35.8-13.8 38.3-33.5l.8-6.1c1.3-9.5 2.1-18.3 2.1-26.6 0-35.3-7.5-66.2-27.2-94.6-2.5-3.6-5.8-6.6-9.7-8.7-4-2.1-8.5-4-12-4zm-308 0c-3.6 0-8 1.9-12 4-4 2.1-7.2 5.1-9.7 8.7-19.7 28.4-27.2 59.3-27.2 94.6 0 8.2.8 17.1 2 26.6l.8 6.1c2.5 19.8 19.8 33.5 38.3 33.5h2c18.2 0 29.7-12.6 31.6-31.9 2-20.9-4-38.8-16.7-49 2.3-1.7 8.8-6.4 20.8-11.1 14.6-5.8 27.3-9.1 43.1-9.1v-34.7c-19.6 0-37 4.3-54.7 11.3-12.3 4.9-20.7 10.5-24.1 13-3.3-23.3-14.6-40.6-27.4-50.8-12.3-9.9-23-11.2-27.1-11.2zm126.7 54.5c-41.2 0-77.3 36.1-77.3 77.3s36.1 77.3 77.3 77.3 77.3-36.1 77.3-77.3-36.1-77.3-77.3-77.3zm0 34.7c23.5 0 42.7 19.1 42.7 42.7s-19.1 42.7-42.7 42.7-42.7-19.1-42.7-42.7 19.1-42.7 42.7-42.7zm126.3 118.9c-4 0-11.3 2.3-16.7 6.1-28.7 20.3-67.6 32.3-109.6 32.3s-80.9-12-109.6-32.3c-5.3-3.8-12.7-6.1-16.7-6.1-19.2 0-34.7 15.5-34.7 34.7 0 24.3 24.8 55.4 59.3 84.7 11.2 9.5 23.3 18.2 35.7 25.8 20.7 12.6 42.4 21.6 66 21.6s45.3-9 66-21.6c12.4-7.5 24.5-16.2 35.7-25.8 34.5-29.3 59.3-60.4 59.3-84.7 0-19.1-15.5-34.7-34.7-34.7z" />
-    </svg>
+const CalfIcon = ({ size = 24 }: { size?: number }) => (
+    <img src="/buffalo_green_icon.png" alt="Calf" style={{ width: size, height: size, objectFit: 'contain' }} />
 );
 
 interface UserProfile {
@@ -923,7 +921,7 @@ const AnimalOnboarding: React.FC = () => {
                                             }}
                                         >
                                             <div className="calf-btn-icon">
-                                                <CalfIcon size={20} color="#0EA5E9" />
+                                                <CalfIcon size={28} />
                                             </div>
                                             <div className="calf-btn-text">
                                                 <span className="calf-btn-title">Calf Details</span>
@@ -934,7 +932,7 @@ const AnimalOnboarding: React.FC = () => {
                                                     })()}
                                                 </span>
                                             </div>
-                                            <ChevronRight size={16} color="#0EA5E9" />
+                                            <ChevronRight size={16} color="white" />
                                         </button>
                                     </div>
 
@@ -1028,8 +1026,8 @@ const AnimalOnboarding: React.FC = () => {
                     <div style={{ background: 'white', width: '90%', maxWidth: '500px', borderRadius: '20px', padding: '24px', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16A34A', fontWeight: 'bold' }}>
-                                    #{animals.find(a => a.id === activeParentId)?.index || '?'}
+                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                                    <CalfIcon size={24} />
                                 </div>
                                 <div>
                                     <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1F2937', margin: 0 }}>Calf</h3>
