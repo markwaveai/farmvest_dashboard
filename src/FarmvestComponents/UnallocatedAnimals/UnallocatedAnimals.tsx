@@ -614,8 +614,8 @@ const UnallocatedAnimals: React.FC = () => {
 
     const rows = useMemo(() => {
         // Updated layout according to user request:
-        // Drainage, R1, Feed way, R2, Drainage, R3, Feed way, R4, Drainage
-        return ['Drainage', 'R1', 'Feed way', 'R2', 'Drainage', 'R3', 'Feed way', 'R4', 'Drainage'];
+        // Drainage, R1, TMR way, R2, Drainage, R3, TMR way, R4, Drainage
+        return ['Drainage', 'R1', 'TMR way', 'R2', 'Drainage', 'R3', 'TMR way', 'R4', 'Drainage'];
     }, []);
 
     // ---------------------------------------------------------
@@ -876,13 +876,13 @@ const UnallocatedAnimals: React.FC = () => {
                                     <Separator label="DRAINAGE" />
                                     {renderRow('A', 'Row R1')}
 
-                                    <Separator label="FEED WAY" />
+                                    <Separator label="TMR WAY" />
                                     {renderRow('B', 'Row R2')}
 
                                     <Separator label="DRAINAGE" />
                                     {renderRow('C', 'Row R3')}
 
-                                    <Separator label="FEED WAY" />
+                                    <Separator label="TMR WAY" />
                                     {renderRow('D', 'Row R4')}
 
                                     <Separator label="DRAINAGE" />

@@ -5,13 +5,9 @@ import { farmvestService } from '../../services/farmvest_api';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
 import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X } from 'lucide-react';
 
-const CustomStrollerIcon = ({ size = 24, color = "currentColor" }: { size?: number, color?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
-        <path d="M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
-        <path d="M13.34 16h-5.08"></path>
-        <path d="M3 5h2l.6 3h13.15a1 1 0 0 1 .95 1.34l-2.43 8.1a1 1 0 0 1-.95.72H7.7"></path>
-        <path d="M21 5h-7"></path>
+const CalfIcon = ({ size = 24, color = "currentColor" }: { size?: number, color?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 512 512" fill={color}>
+        <path d="M437.3 112c-4 0-14.7 1.3-27.1 11.2-12.8 10.3-24.1 27.5-27.4 50.8-3.4-2.4-11.8-8.1-24.1-13-17.7-7-35.1-11.3-54.7-11.3v34.7c15.8 0 28.5 3.3 43.1 9.1 12 4.7 18.5 9.4 20.8 11.1-12.7 10.2-18.7 28.1-16.7 49 1.9 19.3 13.5 31.9 31.6 31.9h2c18.5 0 35.8-13.8 38.3-33.5l.8-6.1c1.3-9.5 2.1-18.3 2.1-26.6 0-35.3-7.5-66.2-27.2-94.6-2.5-3.6-5.8-6.6-9.7-8.7-4-2.1-8.5-4-12-4zm-308 0c-3.6 0-8 1.9-12 4-4 2.1-7.2 5.1-9.7 8.7-19.7 28.4-27.2 59.3-27.2 94.6 0 8.2.8 17.1 2 26.6l.8 6.1c2.5 19.8 19.8 33.5 38.3 33.5h2c18.2 0 29.7-12.6 31.6-31.9 2-20.9-4-38.8-16.7-49 2.3-1.7 8.8-6.4 20.8-11.1 14.6-5.8 27.3-9.1 43.1-9.1v-34.7c-19.6 0-37 4.3-54.7 11.3-12.3 4.9-20.7 10.5-24.1 13-3.3-23.3-14.6-40.6-27.4-50.8-12.3-9.9-23-11.2-27.1-11.2zm126.7 54.5c-41.2 0-77.3 36.1-77.3 77.3s36.1 77.3 77.3 77.3 77.3-36.1 77.3-77.3-36.1-77.3-77.3-77.3zm0 34.7c23.5 0 42.7 19.1 42.7 42.7s-19.1 42.7-42.7 42.7-42.7-19.1-42.7-42.7 19.1-42.7 42.7-42.7zm126.3 118.9c-4 0-11.3 2.3-16.7 6.1-28.7 20.3-67.6 32.3-109.6 32.3s-80.9-12-109.6-32.3c-5.3-3.8-12.7-6.1-16.7-6.1-19.2 0-34.7 15.5-34.7 34.7 0 24.3 24.8 55.4 59.3 84.7 11.2 9.5 23.3 18.2 35.7 25.8 20.7 12.6 42.4 21.6 66 21.6s45.3-9 66-21.6c12.4-7.5 24.5-16.2 35.7-25.8 34.5-29.3 59.3-60.4 59.3-84.7 0-19.1-15.5-34.7-34.7-34.7z" />
     </svg>
 );
 
@@ -50,6 +46,7 @@ interface AnimalDetail {
     age: string;
     parentBuffaloId?: number;
     photos: string[];
+    videos: string[]; // New field for videos
     index: number;
     status: 'Pending' | 'Completed';
     isUploading?: boolean;
@@ -74,6 +71,7 @@ const AnimalOnboarding: React.FC = () => {
     const [searchedMobile, setSearchedMobile] = useState('');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [searchNotFound, setSearchNotFound] = useState(false);
+    const [noOrdersFound, setNoOrdersFound] = useState(false);
 
     // API Data States
     const [farms, setFarms] = useState<Farm[]>([]);
@@ -89,8 +87,11 @@ const AnimalOnboarding: React.FC = () => {
         rfidTag: '',
         earTag: '',
         age: '6',
-        photos: []
+        photos: [],
+        videos: []
     });
+
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
 
     const [allMembers, setAllMembers] = useState<any[]>([]);
     const [filteredMembers, setFilteredMembers] = useState<any[]>([]);
@@ -190,39 +191,58 @@ const AnimalOnboarding: React.FC = () => {
         fetchInitialData();
     }, []);
 
-    // handlePhotoSelect now uploads IMMEDIATELY
+    // handlePhotoSelect now uploads IMMEDIATELY with limits
     const handlePhotoSelect = async (animalId: number, fileList: FileList) => {
         if (!fileList || fileList.length === 0) return;
         const selectedFiles = Array.from(fileList);
 
-        // Set uploading state for this animal (optional UX improvement)
-        setAnimals(prev => prev.map(a => a.id === animalId ? { ...a, isUploading: true } : a));
+        const animal = animals.find(a => a.id === animalId);
+        if (!animal) return;
 
-        try {
-            console.log(`Uploading ${selectedFiles.length} images for animal ID ${animalId}...`);
-            // Dynamic import to solve initialization order issues
-            const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+        const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
 
-            // Upload all files concurrently
-            const uploadedUrls = await Promise.all(selectedFiles.map(file => uploadToFirebase(file)));
+        const newPhotoUrls: string[] = [];
+        const newVideoUrls: string[] = [];
 
-            console.log("Uploads complete. URLs:", uploadedUrls);
+        for (const file of selectedFiles) {
+            const isVideo = file.type.startsWith('video/');
+            const isImage = file.type.startsWith('image/');
 
-            // Update state with new REAL Firebase URLs
-            setAnimals(prev => prev.map(a => {
-                if (a.id === animalId) {
-                    return {
-                        ...a,
-                        photos: [...a.photos, ...uploadedUrls],
-                        isUploading: false
-                    };
+            if (isImage) {
+                if (animal.photos.length + newPhotoUrls.length >= 3) {
+                    alert('Maximum 3 photos allowed per animal.');
+                    continue;
                 }
-                return a;
-            }));
-        } catch (error) {
-            console.error("Upload failed:", error);
-            setAnimals(prev => prev.map(a => a.id === animalId ? { ...a, isUploading: false } : a));
+            } else if (isVideo) {
+                if (animal.videos.length + newVideoUrls.length >= 1) {
+                    alert('Maximum 1 video allowed per animal.');
+                    continue;
+                }
+            } else {
+                continue; // Skip unsupported types
+            }
+
+            setAnimals(prev => prev.map(a => a.id === animalId ? { ...a, isUploading: true } : a));
+            try {
+                const url = await uploadToFirebase(file);
+                if (isImage) newPhotoUrls.push(url);
+                else newVideoUrls.push(url);
+            } catch (err) {
+                console.error("Upload failed", err);
+            }
         }
+
+        setAnimals(prev => prev.map(a => {
+            if (a.id === animalId) {
+                return {
+                    ...a,
+                    photos: [...a.photos, ...newPhotoUrls],
+                    videos: [...a.videos, ...newVideoUrls],
+                    isUploading: false
+                };
+            }
+            return a;
+        }));
     };
 
     const handleRemovePhoto = (animalId: number, indexToRemove: number) => {
@@ -230,6 +250,16 @@ const AnimalOnboarding: React.FC = () => {
             if (a.id === animalId) {
                 const newPhotos = a.photos.filter((_, i) => i !== indexToRemove);
                 return { ...a, photos: newPhotos };
+            }
+            return a;
+        }));
+    };
+
+    const handleRemoveVideo = (animalId: number, indexToRemove: number) => {
+        setAnimals(prev => prev.map(a => {
+            if (a.id === animalId) {
+                const newVideos = a.videos.filter((_, i) => i !== indexToRemove);
+                return { ...a, videos: newVideos };
             }
             return a;
         }));
@@ -243,43 +273,50 @@ const AnimalOnboarding: React.FC = () => {
     useEffect(() => {
         if (selectedOrder) {
             const newAnimals: AnimalDetail[] = [];
+            const bCount = selectedOrder.buffaloCount || 0;
+            const cCount = selectedOrder.calfCount || 0;
+            const bIds = selectedOrder.buffaloIds || [];
 
-            // If the order has specific buffalo UUIDs from Animalkart, use them
-            if (selectedOrder.buffaloIds && selectedOrder.buffaloIds.length > 0) {
-                // Use a Set to avoid duplicates if any (though we should respect the count)
-                const uniqueUids = Array.from(new Set(selectedOrder.buffaloIds));
-                uniqueUids.forEach((uuid, idx) => {
-                    newAnimals.push({
-                        id: Date.now() + idx,
-                        uid: uuid,
-                        type: 'Buffalo',
-                        rfidTag: '',
-                        earTag: '',
-                        age: '',
-                        photos: [],
-                        index: idx + 1,
-                        status: 'Pending'
-                    });
+            // 1. Initialize Buffaloes
+            for (let i = 0; i < bCount; i++) {
+                const buffaloId = Date.now() + i;
+                newAnimals.push({
+                    id: buffaloId,
+                    uid: bIds[i] || crypto.randomUUID(), // Use ID from list if available
+                    type: 'Buffalo',
+                    rfidTag: '',
+                    earTag: '',
+                    age: '',
+                    photos: [],
+                    videos: [],
+                    index: i + 1,
+                    status: 'Pending'
                 });
-            } else {
-                // Fallback to traditional count-based initialization
-                const bCount = selectedOrder.buffaloCount > 0 ? selectedOrder.buffaloCount : 1;
-                for (let i = 0; i < bCount; i++) {
-                    newAnimals.push({
-                        id: Date.now() + i,
-                        uid: crypto.randomUUID(),
-                        type: 'Buffalo',
-                        rfidTag: '',
-                        earTag: '',
-                        age: '',
-                        photos: [],
-                        index: i + 1,
-                        status: 'Pending'
-                    });
-                }
+            }
+
+            // 2. Initialize Calves and link them to Buffaloes
+            for (let i = 0; i < cCount; i++) {
+                // Distribute calves among buffaloes (e.g., if 2 B and 2 C, each B gets 1 C)
+                // If more calves than buffaloes, some buffaloes get multiple
+                const parentBuffalo = newAnimals[i % bCount];
+
+                newAnimals.push({
+                    id: Date.now() + 1000 + i,
+                    uid: crypto.randomUUID(),
+                    type: 'Calf',
+                    rfidTag: '',
+                    earTag: '',
+                    age: '6',
+                    photos: [],
+                    videos: [],
+                    parentBuffaloId: parentBuffalo?.id,
+                    index: (parentBuffalo?.index || 0), // Use same index as parent for sorting if needed, or just 1
+                    status: 'Pending'
+                });
             }
 
             setAnimals(newAnimals);
+            console.log(`Initialized ${bCount} Buffaloes and ${cCount} Calves for Order ${selectedOrder.id}`);
         } else {
             setAnimals([]);
         }
@@ -313,6 +350,8 @@ const AnimalOnboarding: React.FC = () => {
         setOrders(null);
         setUser(null);
         setSearchNotFound(false);
+        setNoOrdersFound(false);
+        setSearchedMobile(mobile);
 
         try {
             console.log(`Fetching intransit orders for mobile: ${mobile}`);
@@ -333,13 +372,23 @@ const AnimalOnboarding: React.FC = () => {
 
                 setUser(userData);
                 setOrders(result.orders.map(normalizeOrder));
-                setSearchedMobile(mobile);
             } else {
-                setSearchNotFound(true);
+                // If result.user is null or orders are empty, check if they exist in our local investor cache
+                const investorExists = allMembers.some(m => m.mobile === mobile);
+                if (investorExists) {
+                    setNoOrdersFound(true);
+                } else {
+                    setSearchNotFound(true);
+                }
             }
         } catch (error) {
             console.error('Error fetching orders:', error);
-            setSearchNotFound(true);
+            const investorExists = allMembers.some(m => m.mobile === mobile);
+            if (investorExists) {
+                setNoOrdersFound(true);
+            } else {
+                setSearchNotFound(true);
+            }
             try {
                 const employeeResults = await farmvestService.searchEmployee(mobile);
                 if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
@@ -470,6 +519,7 @@ const AnimalOnboarding: React.FC = () => {
                             age_months: parseInt(a.age) || 0,
                             health_status: "HEALTHY",
                             images: a.photos.length > 0 ? a.photos : [],
+                            videos: a.videos.length > 0 ? a.videos : [],
                             status: "high_yield",
                             breed_id: "MURRAH-001",
                             breed_name: "Murrah Buffalo"
@@ -484,6 +534,7 @@ const AnimalOnboarding: React.FC = () => {
                             age_months: parseInt(a.age) || 0,
                             health_status: "HEALTHY",
                             images: a.photos.length > 0 ? a.photos : [],
+                            videos: a.videos.length > 0 ? a.videos : [],
                             parent_animal_id: getParentUid(a.parentBuffaloId)
                         };
                     }
@@ -578,15 +629,30 @@ const AnimalOnboarding: React.FC = () => {
                     {searchNotFound && (
                         <div className="search-not-found-message" style={{
                             textAlign: 'center',
-                            marginTop: '20px',
-                            padding: '20px',
-                            backgroundColor: '#FEF2F2',
-                            color: '#DC2626',
-                            borderRadius: '8px',
-                            border: '1px solid #FECACA'
+                            marginTop: '8px',
+                            color: '#EF4444',
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            gap: '4px'
                         }}>
-                            <h3>Search not found</h3>
-                            <p>No member found with mobile number: {searchedMobile || mobile}</p>
+                            <span>Search not found.</span>
+                            <span style={{ opacity: 0.8 }}>No investor found with mobile number: {searchedMobile}</span>
+                        </div>
+                    )}
+                    {noOrdersFound && !searchNotFound && (
+                        <div className="search-not-found-message" style={{
+                            textAlign: 'center',
+                            marginTop: '8px',
+                            color: '#F59E0B', // Amber-500
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            gap: '4px'
+                        }}>
+                            <span style={{ opacity: 0.8 }}> no pending in-transit orders for mobile: {searchedMobile}</span>
                         </div>
                     )}
                     {orders && orders.length > 0 && !searchNotFound && (
@@ -782,20 +848,92 @@ const AnimalOnboarding: React.FC = () => {
                                     {/* Parent Buffalo field removed as requested */}
                                 </div>
 
-                                <div className="photos-section">
-                                    <label>Photos ({animal.photos.length})</label>
-                                    <div className="photos-grid">
+                                <div className="media-section">
+                                    <div className="media-actions-row">
+                                        {animal.isUploading ? (
+                                            <div className="upload-indicator-box">
+                                                <Loader2 size={18} className="animate-spin" color="#2E7D32" />
+                                            </div>
+                                        ) : (
+                                            (animal.photos.length < 3 || animal.videos.length < 1) && (
+                                                <>
+                                                    <button
+                                                        className="media-add-btn"
+                                                        onClick={() => document.getElementById(`media-input-${animal.id}`)?.click()}
+                                                    >
+                                                        <Camera size={20} color="#2E7D32" />
+                                                        <span>Add</span>
+                                                    </button>
+                                                    <input
+                                                        id={`media-input-${animal.id}`}
+                                                        type="file"
+                                                        accept="image/*,video/*"
+                                                        multiple
+                                                        style={{ display: 'none' }}
+                                                        onChange={(e) => {
+                                                            if (e.target.files && e.target.files.length > 0) {
+                                                                handlePhotoSelect(animal.id, e.target.files);
+                                                            }
+                                                        }}
+                                                    />
+                                                </>
+                                            )
+                                        )}
+
+                                        {/* Calf Details Trigger - Beside Add button */}
+                                        <button
+                                            className="calf-action-btn"
+                                            onClick={() => {
+                                                setActiveParentId(animal.id);
+                                                const existingCalf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
+                                                if (existingCalf) {
+                                                    setTempCalf({
+                                                        rfidTag: existingCalf.rfidTag || '',
+                                                        earTag: existingCalf.earTag || '',
+                                                        neckbandId: existingCalf.neckbandId || '',
+                                                        age: existingCalf.age || '6',
+                                                        photos: existingCalf.photos || [],
+                                                        videos: existingCalf.videos || []
+                                                    });
+                                                } else {
+                                                    setTempCalf({
+                                                        rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
+                                                        earTag: animal.earTag ? `${animal.earTag}-C` : '',
+                                                        neckbandId: animal.neckbandId ? `${animal.neckbandId}-C` : '',
+                                                        age: '6',
+                                                        photos: [],
+                                                        videos: []
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            <div className="calf-btn-icon">
+                                                <CalfIcon size={20} color="#0EA5E9" />
+                                            </div>
+                                            <div className="calf-btn-text">
+                                                <span className="calf-btn-title">Calf Details</span>
+                                                <span className="calf-btn-subtitle">
+                                                    {(() => {
+                                                        const calf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
+                                                        return calf ? `Tag: ${calf.earTag || calf.rfidTag || 'Saved'}` : 'Tap to enter';
+                                                    })()}
+                                                </span>
+                                            </div>
+                                            <ChevronRight size={16} color="#0EA5E9" />
+                                        </button>
+                                    </div>
+
+                                    <div className="media-grid previews-only">
+                                        {/* Photos */}
                                         {animal.photos.map((photo, idx) => (
-                                            <div key={idx} className="photo-preview">
+                                            <div key={`photo-${idx}`} className="media-preview-item">
                                                 <img
                                                     src={photo}
                                                     alt={`Animal ${idx + 1}`}
-                                                    style={{ cursor: 'pointer' }}
-                                                    onClick={() => window.open(photo, '_blank')}
-                                                    title="Click to view full image"
+                                                    onClick={() => setViewingImage(photo)}
                                                 />
                                                 <button
-                                                    className="remove-photo-btn"
+                                                    className="remove-media-btn"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleRemovePhoto(animal.id, idx);
@@ -805,82 +943,28 @@ const AnimalOnboarding: React.FC = () => {
                                                 </button>
                                             </div>
                                         ))}
-                                        {animal.isUploading ? (
-                                            <div className="uploading-indicator">
-                                                <Loader2 size={24} className="animate-spin" color="#2E7D32" />
-                                            </div>
-                                        ) : (
-                                            <>
+
+                                        {/* Videos */}
+                                        {animal.videos.map((video, idx) => (
+                                            <div key={`video-${idx}`} className="media-preview-item video-item">
+                                                <video src={video} />
+                                                <div className="video-overlay" onClick={() => window.open(video, '_blank')}>
+                                                    <div className="play-icon">▶</div>
+                                                </div>
                                                 <button
-                                                    className="add-photo-btn"
-                                                    onClick={() => document.getElementById(`file-input-${animal.id}`)?.click()}
-                                                >
-                                                    <Camera size={24} color="#2E7D32" />
-                                                    <span>Add</span>
-                                                </button>
-                                                <input
-                                                    id={`file-input-${animal.id}`}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    style={{ display: 'none' }}
-                                                    onChange={(e) => {
-                                                        if (e.target.files && e.target.files.length > 0) {
-                                                            handlePhotoSelect(animal.id, e.target.files);
-                                                        }
+                                                    className="remove-media-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRemoveVideo(animal.id, idx);
                                                     }}
-                                                />
-                                            </>
-                                        )}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                {
-                                    // SHOW CALF BUTTON FOR ALL BUFFALO CARDS
-                                    <div
-                                        className="calf-details-trigger-wrapper"
-                                        style={{ marginTop: '20px', padding: '16px', background: '#F0F9FF', borderRadius: '12px', border: '1px solid #BAE6FD', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                                        onClick={() => {
-                                            setActiveParentId(animal.id);
-                                            // Check if a calf already exists for this buffalo
-                                            const existingCalf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
 
-                                            if (existingCalf) {
-                                                setTempCalf({
-                                                    rfidTag: existingCalf.rfidTag || '',
-                                                    earTag: existingCalf.earTag || '',
-                                                    neckbandId: existingCalf.neckbandId || '',
-                                                    age: existingCalf.age || '6',
-                                                    photos: existingCalf.photos || []
-                                                });
-                                            } else {
-                                                // Auto-fill Calf details from Parent (New Calf)
-                                                setTempCalf({
-                                                    rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
-                                                    earTag: animal.earTag ? `${animal.earTag}-C` : '',
-                                                    neckbandId: animal.neckbandId ? `${animal.neckbandId}-C` : '',
-                                                    age: '6',
-                                                    photos: []
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                                <CustomStrollerIcon size={20} color="#0EA5E9" />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0F172A' }}>Calf Details</span>
-                                                <span style={{ fontSize: '12px', color: '#64748B' }}>
-                                                    {(() => {
-                                                        const calf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
-                                                        return calf ? `Tag: ${calf.earTag || calf.rfidTag || 'Saved'}` : 'Tap to enter calf details';
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <ChevronRight size={20} color="#0EA5E9" />
-                                    </div>
-                                }
                             </div>
                         ))}
                     </div>
@@ -987,7 +1071,7 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Neckband ID (Optional)</label>
+                                <label>Neckband ID </label>
                                 <div className="input-with-icon">
                                     <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
                                     <input
@@ -1001,20 +1085,17 @@ const AnimalOnboarding: React.FC = () => {
                             {/* Parent Buffalo field removed as requested */}
                         </div>
 
-                        <div className="photos-section" style={{ marginTop: '20px' }}>
-                            <label>Photos ({tempCalf.photos?.length || 0})</label>
-                            <div className="photos-grid">
+                        <div className="media-section" style={{ marginTop: '20px' }}>
+                            <div className="media-grid">
                                 {tempCalf.photos?.map((photo, idx) => (
-                                    <div key={idx} className="photo-preview">
+                                    <div key={`photo-${idx}`} className="media-preview-item">
                                         <img
                                             src={photo}
                                             alt={`Calf ${idx + 1}`}
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={() => window.open(photo, '_blank')}
-                                            title="Click to view full image"
+                                            onClick={() => setViewingImage(photo)}
                                         />
                                         <button
-                                            className="remove-photo-btn"
+                                            className="remove-media-btn"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setTempCalf(prev => ({ ...prev, photos: (prev.photos || []).filter((_, i) => i !== idx) }));
@@ -1024,30 +1105,71 @@ const AnimalOnboarding: React.FC = () => {
                                         </button>
                                     </div>
                                 ))}
-                                <button
-                                    className="add-photo-btn"
-                                    onClick={() => document.getElementById('calf-photo-input')?.click()}
-                                >
-                                    <Camera size={24} color="#2E7D32" />
-                                    <span>Add</span>
-                                </button>
-                                <input
-                                    id="calf-photo-input"
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    style={{ display: 'none' }}
-                                    onChange={async (e) => {
-                                        if (e.target.files && e.target.files.length > 0) {
-                                            const files = Array.from(e.target.files);
-                                            try {
-                                                const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
-                                                const urls = await Promise.all(files.map(uploadToFirebase));
-                                                setTempCalf(prev => ({ ...prev, photos: [...(prev.photos || []), ...urls] }));
-                                            } catch (err) { console.error('Calf photo upload failed', err); }
-                                        }
-                                    }}
-                                />
+                                {tempCalf.videos?.map((video, idx) => (
+                                    <div key={`video-${idx}`} className="media-preview-item video-item">
+                                        <video src={video} />
+                                        <div className="video-overlay" onClick={() => window.open(video, '_blank')}>
+                                            <div className="play-icon">▶</div>
+                                        </div>
+                                        <button
+                                            className="remove-media-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTempCalf(prev => ({ ...prev, videos: (prev.videos || []).filter((_, i) => i !== idx) }));
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {((tempCalf.photos?.length || 0) < 3 || (tempCalf.videos?.length || 0) < 1) && (
+                                    <>
+                                        <button
+                                            className="media-add-btn"
+                                            onClick={() => document.getElementById('calf-media-input')?.click()}
+                                        >
+                                            <Camera size={20} color="#2E7D32" />
+                                            <span>Add</span>
+                                        </button>
+                                        <input
+                                            id="calf-media-input"
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            multiple
+                                            style={{ display: 'none' }}
+                                            onChange={async (e) => {
+                                                if (e.target.files && e.target.files.length > 0) {
+                                                    const files = Array.from(e.target.files);
+                                                    const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+
+                                                    const pUrls: string[] = [];
+                                                    const vUrls: string[] = [];
+
+                                                    for (const file of files) {
+                                                        const isImg = file.type.startsWith('image/');
+                                                        const isVid = file.type.startsWith('video/');
+
+                                                        if (isImg && (tempCalf.photos?.length || 0) + pUrls.length < 3) {
+                                                            const url = await uploadToFirebase(file);
+                                                            pUrls.push(url);
+                                                        } else if (isVid && (tempCalf.videos?.length || 0) + vUrls.length < 1) {
+                                                            const url = await uploadToFirebase(file);
+                                                            vUrls.push(url);
+                                                        } else if (isImg || isVid) {
+                                                            alert(`Limit exceeded for ${isImg ? 'photos' : 'videos'}`);
+                                                        }
+                                                    }
+                                                    setTempCalf(prev => ({
+                                                        ...prev,
+                                                        photos: [...(prev.photos || []), ...pUrls],
+                                                        videos: [...(prev.videos || []), ...vUrls]
+                                                    }));
+                                                }
+                                            }}
+                                        />
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -1070,6 +1192,7 @@ const AnimalOnboarding: React.FC = () => {
                                             neckbandId: tempCalf.neckbandId || '',
                                             age: tempCalf.age || '6',
                                             photos: tempCalf.photos || [],
+                                            videos: tempCalf.videos || [],
                                             status: 'Completed'
                                         };
                                         return updatedAnimals;
@@ -1084,6 +1207,7 @@ const AnimalOnboarding: React.FC = () => {
                                             neckbandId: tempCalf.neckbandId || '',
                                             age: tempCalf.age || '6',
                                             photos: tempCalf.photos || [],
+                                            videos: tempCalf.videos || [],
                                             parentBuffaloId: parentBuffalo.id,
                                             index: 1,
                                             status: 'Completed'
@@ -1093,7 +1217,7 @@ const AnimalOnboarding: React.FC = () => {
                                 });
 
                                 setActiveParentId(null);
-                                setTempCalf({ rfidTag: '', earTag: '', age: '6', photos: [] }); // Reset form
+                                setTempCalf({ rfidTag: '', earTag: '', age: '6', photos: [], videos: [] }); // Reset form
                             }}
                             style={{
                                 width: '100%',

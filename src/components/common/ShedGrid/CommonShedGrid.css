@@ -54,7 +54,8 @@
     /* Gray-600 */
 }
 
-.common-shed-group.section-feed-way {
+.common-shed-group.section-feed-way,
+.common-shed-group.section-tmr-way {
     background-color: transparent;
     color: #4B5563;
     /* Gray-600 */

@@ -220,19 +220,13 @@ const Farms: React.FC = () => {
         <div className="farms-container animate-fadeIn">
             <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
-                    <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">FarmVest Management</h2>
+                    <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
                     <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
                         <span>{location} Operations • {filteredFarms.length} Farms Loaded</span>
                     </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                    <button
-                        onClick={() => setIsAddFarmModalOpen(true)}
-                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
-                    >
-                        <span className="text-base">+</span> Add Farm
-                    </button>
                     <div className="relative w-full sm:w-36">
                         <select
                             className="w-full py-2 px-3 pl-4 pr-10 border border-gray-200 rounded-lg bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
@@ -273,6 +267,13 @@ const Farms: React.FC = () => {
                             </button>
                         )}
                     </div>
+
+                    <button
+                        onClick={() => setIsAddFarmModalOpen(true)}
+                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
+                    >
+                        <span className="text-base">+</span> Add Farm
+                    </button>
                 </div>
             </div>
 

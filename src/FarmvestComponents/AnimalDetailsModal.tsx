@@ -8,7 +8,6 @@ import {
     Calendar,
     Hash,
     MapPin,
-    Heart,
     Image as ImageIcon,
     Loader2,
     Shield,
@@ -144,7 +143,6 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
             <div className="animal-details-content" onClick={e => e.stopPropagation()}>
                 <div className="animal-details-header">
                     <h2>
-                        <Heart className="text-emerald-500" size={24} />
                         Buffalo Details
                     </h2>
                     <button className="close-details-btn" onClick={onClose}><X size={24} /></button>

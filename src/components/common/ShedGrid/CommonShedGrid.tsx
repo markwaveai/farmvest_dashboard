@@ -28,7 +28,7 @@ const CommonShedGrid: React.FC<CommonShedGridProps> = ({
 
     // Helper to get positions for a specific group
     const getPositionsForGroup = (groupLabel: string) => {
-        const isSpecialSection = ['Drainage', 'Feed way'].includes(groupLabel);
+        const isSpecialSection = ['Drainage', 'TMR way', 'Feed way'].includes(groupLabel);
         if (isSpecialSection) return [];
 
         if (layout === 'row') {
@@ -60,7 +60,7 @@ const CommonShedGrid: React.FC<CommonShedGridProps> = ({
         <div className={`common-shed-grid layout-${layout}`}>
             {groups.map((groupLabel, index) => {
                 const groupPositions = getPositionsForGroup(groupLabel);
-                const isSpecial = groupPositions.length === 0 && ['Drainage', 'Feed way'].includes(groupLabel);
+                const isSpecial = groupPositions.length === 0 && ['Drainage', 'TMR way', 'Feed way'].includes(groupLabel);
 
                 return (
                     <div key={`${groupLabel}-${index}`} className={`common-shed-group layout-${layout} ${isSpecial ? 'special-section' : ''} section-${groupLabel.toLowerCase().replace(/\s+/g, '-')}`}>

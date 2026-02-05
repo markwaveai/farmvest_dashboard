@@ -224,6 +224,7 @@ const FarmDetails: React.FC = () => {
                     fetchSheds();
                 }}
                 farmId={parseInt(id || '0')}
+                farmName={farmName}
             />
         </div>
     );

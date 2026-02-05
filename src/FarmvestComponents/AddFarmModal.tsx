@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { farmvestService } from '../services/farmvest_api';
 import './AddFarmModal.css';
 
@@ -15,6 +15,13 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
     // const [totalBuffaloes, setTotalBuffaloes] = useState<number | ''>(0); // Removed as per API schema
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const isFormValid = useMemo(() => {
+        return (
+            farmName.trim().length > 0 &&
+            location.trim().length > 0
+        );
+    }, [farmName, location]);
 
 
 
@@ -86,9 +93,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
     };
 
     return (
-        <div className="add-farm-modal-overlay" onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-        }}>
+        <div className="add-farm-modal-overlay">
             <div className="add-farm-modal-content" onClick={(e) => e.stopPropagation()}>
                 {/* ... header ... */}
                 <div className="modal-header" style={{ position: 'relative' }}>
@@ -162,7 +167,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                         <button type="button" className="cancel-button" onClick={onClose} disabled={loading}>
                             Cancel
                         </button>
-                        <button type="submit" className="submit-button" disabled={loading}>
+                        <button type="submit" className="submit-button" disabled={loading || !isFormValid}>
                             {loading ? 'Creating...' : 'Create Farm'}
                         </button>
                     </div>
