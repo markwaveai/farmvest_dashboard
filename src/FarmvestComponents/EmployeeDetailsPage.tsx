@@ -32,7 +32,14 @@ const EmployeeDetailsPage: React.FC = () => {
                 }
 
                 if (result) {
-                    setEmployee(result);
+                    // Normalize data structure
+                    const normalized = {
+                        ...result,
+                        id: result.id || result.user_id || result.employee_id || result.emp_id || result.employee_code || result.investor_id || result.user?.id || result.data?.id,
+                        farm_name: result.farm_name || result.farm?.farm_name || result.farm?.name || (result.farm_details ? result.farm_details.farm_name : '') || result.farm_id || result.farm?.id || '',
+                        shed_name: result.shed_name || result.shed?.shed_name || result.shed?.name || (result.shed_details ? result.shed_details.shed_name : '') || result.shed_id || result.shed?.id || '',
+                    };
+                    setEmployee(normalized);
                     setError(null);
                 } else {
                     throw new Error('Empty response from details API');
@@ -41,16 +48,27 @@ const EmployeeDetailsPage: React.FC = () => {
                 console.warn('[EmployeeDetails] Direct fetch failed, trying fallback to list...');
                 try {
                     // Fallback: Fetch all employees and search locally
-                    // Using a large size to ensure we find it. Ideally search API should be used but list is reliable.
                     const listResponse = await farmvestService.getEmployees({ size: 1000 });
                     const list = Array.isArray(listResponse) ? listResponse : (listResponse.data || []);
 
-                    // Loose comparison (string vs number)
-                    const found = list.find((e: any) => String(e.id) === String(id));
+                    // Find in list
+                    const found = list.find((e: any) =>
+                        String(e.id) === String(id) ||
+                        String(e.user_id) === String(id) ||
+                        String(e.employee_id) === String(id) ||
+                        String(e.investor_id) === String(id)
+                    );
 
                     if (found) {
                         console.log('[EmployeeDetails] Found in list fallback:', found);
-                        setEmployee(found);
+                        // Normalize fallback data too
+                        const normalized = {
+                            ...found,
+                            id: found.id || found.user_id || found.employee_id || found.emp_id || found.employee_code || found.investor_id || found.user?.id || found.data?.id,
+                            farm_name: found.farm_name || found.farm?.farm_name || found.farm?.name || (found.farm_details ? found.farm_details.farm_name : '') || found.farm_id || found.farm?.id || '',
+                            shed_name: found.shed_name || found.shed?.shed_name || found.shed?.name || (found.shed_details ? found.shed_details.shed_name : '') || found.shed_id || found.shed?.id || '',
+                        };
+                        setEmployee(normalized);
                         setError(null);
                     } else {
                         throw err; // Throw original error if not found in list either

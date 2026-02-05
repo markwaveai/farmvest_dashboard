@@ -36,7 +36,7 @@ export const fetchEmployees = createAsyncThunk(
 
                     return {
                         ...item,
-                        id: item.id || item.investor_id || index, // Fallback to index if no ID
+                        id: item.id || item.user_id || item.employee_id || item.emp_id || item.employee_code || item.investor_id || item.user?.id || item.data?.id || index, // Robust fallback for ID including nested objects
                         first_name: item.first_name || '',
                         last_name: item.last_name || '',
                         email: item.email || '',
@@ -45,7 +45,9 @@ export const fetchEmployees = createAsyncThunk(
                         roles: item.roles || ['Investor'], // Default role
                         is_active: isActive,
                         active_status: isActive, // Sync both fields
-                        joining_date: item.created_at || item.joining_date || ''
+                        joining_date: item.created_at || item.joining_date || '',
+                        farm_name: item.farm_name || item.farm?.farm_name || item.farm?.name || (item.farm_details ? item.farm_details.farm_name : '') || item.farm_id || item.farm?.id || '',
+                        shed_name: item.shed_name || item.shed?.shed_name || item.shed?.name || (item.shed_details ? item.shed_details.shed_name : '') || item.shed_id || item.shed?.id || ''
                     };
                 });
 
@@ -179,7 +181,7 @@ export const fetchRoleCounts = createAsyncThunk(
                 const isActive = Number(rawStatus) ? 1 : 0;
                 return {
                     ...item,
-                    id: item.id || item.investor_id || index,
+                    id: item.id || item.user_id || item.employee_id || item.emp_id || item.employee_code || item.investor_id || item.user?.id || item.data?.id || index,
                     first_name: item.first_name || '',
                     last_name: item.last_name || '',
                     email: item.email || '',
@@ -188,7 +190,9 @@ export const fetchRoleCounts = createAsyncThunk(
                     roles: item.roles || ['Investor'],
                     is_active: isActive,
                     active_status: isActive,
-                    joining_date: (item.created_at || item.joining_date || '').split('T')[0]
+                    joining_date: (item.created_at || item.joining_date || '').split('T')[0],
+                    farm_name: item.farm_name || item.farm?.farm_name || item.farm?.name || (item.farm_details ? item.farm_details.farm_name : '') || item.farm_id || item.farm?.id || '',
+                    shed_name: item.shed_name || item.shed?.shed_name || item.shed?.name || (item.shed_details ? item.shed_details.shed_name : '') || item.shed_id || item.shed?.id || ''
                 };
             });
 

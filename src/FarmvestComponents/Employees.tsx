@@ -313,17 +313,25 @@ const Employees: React.FC = () => {
                             />
                         </div>
 
-                        <div className="relative z-20">
+                        <div
+                            className="relative z-20"
+                            onMouseEnter={() => { setIsDropdownOpen(true); setIsStatusDropdownOpen(false); }}
+                            onMouseLeave={() => setIsDropdownOpen(false)}
+                        >
                             <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-between min-w-[120px] bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
+                                className={`flex items-center justify-between min-w-[120px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
-                                <span className="truncate">{formatRoleName(selectedRole)}</span>
-                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                <span className="truncate">
+                                    {formatRoleName(selectedRole)}
+                                    <span className="ml-1 text-gray-500 font-normal">
+                                        ({selectedRole === '' ? totalMatchingStatus : (dynamicRoleCounts[selectedRole] || 0)})
+                                    </span>
+                                </span>
+                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isDropdownOpen && (
-                                <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full right-0 -mt-1 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {roles.map((option) => (
                                         <button
                                             key={option.value}
@@ -331,7 +339,7 @@ const Employees: React.FC = () => {
                                                 setSelectedRole(option.value);
                                                 setIsDropdownOpen(false);
                                             }}
-                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
                                         >
                                             <span className="flex items-center">
                                                 {option.label}
@@ -346,19 +354,25 @@ const Employees: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="relative z-20">
+                        <div
+                            className="relative z-20"
+                            onMouseEnter={() => { setIsStatusDropdownOpen(true); setIsDropdownOpen(false); }}
+                            onMouseLeave={() => setIsStatusDropdownOpen(false)}
+                        >
                             <button
-                                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                                className="flex items-center justify-between min-w-[100px] bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#f59e0b] hover:border-gray-300 transition-colors"
+                                className={`flex items-center justify-between min-w-[100px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
                                 <span className="truncate">
                                     {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
+                                    <span className="ml-1 text-gray-500 font-normal">
+                                        ({selectedStatus === '' ? dynamicStatusCounts.total : (selectedStatus === '1' ? dynamicStatusCounts.active : dynamicStatusCounts.inactive)})
+                                    </span>
                                 </span>
-                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isStatusDropdownOpen && (
-                                <div className="absolute top-full right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full right-0 -mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {[
                                         { value: '', label: 'All Status', count: dynamicStatusCounts.total },
                                         { value: '1', label: 'Active', count: dynamicStatusCounts.active },
@@ -370,7 +384,7 @@ const Employees: React.FC = () => {
                                                 setSelectedStatus(option.value);
                                                 setIsStatusDropdownOpen(false);
                                             }}
-                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-gray-50 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-[#f59e0b] font-semibold' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
                                         >
                                             <span className="flex items-center">
                                                 {option.label}
@@ -401,7 +415,7 @@ const Employees: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-100 relative">
                         <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th onClick={() => requestSort('id')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">S.No {getSortIcon('id')}</th>
+                                <th className="px-3 py-2.5 text-left bg-gray-50">S.No</th>
 
                                 <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">
                                     <span>Name {getSortIcon('first_name')}</span>
@@ -421,7 +435,9 @@ const Employees: React.FC = () => {
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500 font-medium">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </td>
 
                                         <td className="px-3 py-2 whitespace-nowrap">
                                             <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm" onClick={() => handleNameClick(employee)}>
