@@ -210,11 +210,11 @@ function App() {
         } />
 
         <Route path="/farmvest/account-deletion" element={
-          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+          <ConditionalLayoutWrapper session={session} handleLogout={handleLogout}>
             <React.Suspense fallback={<UsersPageSkeleton />}>
               <FarmVestAccountDeletion />
             </React.Suspense>
-          </ProtectedRoute>
+          </ConditionalLayoutWrapper>
         } />
 
         <Route path="/farmvest/user-activation" element={
@@ -282,6 +282,7 @@ const ConditionalLayoutWrapper = ({ children, session, handleLogout }: { childre
   // Dashboard paths that should show layout if logged in
   const dashboardPaths = [
     '/farmvest/user-activation',
+    '/farmvest/account-deletion',
     '/privacy-policy',
     '/support'
   ];
