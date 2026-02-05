@@ -184,22 +184,22 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
             <button className="sidebar-close-btn-mobile" onClick={(e) => { e.stopPropagation(); dispatch(setSidebarOpen(false)); }}>
               <X size={20} />
             </button>
-            <img src="/farmvest-logo.png" alt="Markwave Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
+            <img src="/farmvest-logo.png" alt="farmvest Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
           </div>
           <ul className="sidebar-menu" style={{ marginTop: '10px' }}>
-            <li>
-              <button className={`nav-item ${activeTab === 'farmvest-employees' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/employees'); }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                  <Users size={18} />
-                  <span className="nav-text">Employees</span>
-                </div>
-              </button>
-            </li>
             <li>
               <button className={`nav-item ${activeTab === 'farmvest-farms' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/farms'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <TreePine size={18} />
                   <span className="nav-text">Farms</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-employees' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/employees'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <Users size={18} />
+                  <span className="nav-text">Employees</span>
                 </div>
               </button>
             </li>

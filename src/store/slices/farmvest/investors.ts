@@ -34,6 +34,7 @@ export const fetchInvestors = createAsyncThunk(
                     phone_number: item.mobile || item.phone_number || '',
                     active_status: item.active_status !== undefined ? item.active_status : (item.is_active ? 1 : 0),
                     created_at: item.created_at || '',
+                    address: [item.address, item.location, item.city, item.street_address, item.landmark].filter(Boolean).join(', ') || '-',
                 };
             });
 

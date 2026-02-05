@@ -199,6 +199,26 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         }
     };
 
+    const isFormValid = React.useMemo(() => {
+        const { first_name, last_name, email, mobile, role, farm_id, shed_id, senior_doctor_id } = formData;
+
+        // Basic fields
+        if (!first_name || !last_name || !email || !mobile || mobile.length !== 10 || !farm_id) {
+            return false;
+        }
+
+        // Role specific
+        if (role === 'SUPERVISOR') {
+            if (!shed_id) return false;
+        }
+
+        if (role === 'ASSISTANT_DOCTOR') {
+            if (!senior_doctor_id) return false;
+        }
+
+        return true;
+    }, [formData]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -274,7 +294,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                         </div>
                         <div>
                             <h3>Add New Employee</h3>
-                            <p>Register a new member to the FarmVest team</p>
                         </div>
                     </div>
                     <button className="close-btn" onClick={handleClose} disabled={createLoading}>
@@ -485,7 +504,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                         <button
                             type="submit"
                             className="btn-primary"
-                            disabled={createLoading || !formData.farm_id}
+                            disabled={createLoading || !isFormValid}
                         >
                             {createLoading ? (
                                 <>

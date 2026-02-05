@@ -296,7 +296,7 @@ const Employees: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0} | {filteredEmployees.length} Filtered)</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0})</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">

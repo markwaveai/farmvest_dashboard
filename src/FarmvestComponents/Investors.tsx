@@ -4,7 +4,8 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
 import { fetchInvestors, clearInvestorErrors } from '../store/slices/farmvest/investors';
 import Snackbar from '../components/common/Snackbar';
-import { Search, Users, Briefcase } from 'lucide-react';
+import { Search, Users, Briefcase, X } from 'lucide-react';
+import { farmvestService } from '../services/farmvest_api';
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
@@ -27,6 +28,9 @@ const Investors: React.FC = () => {
 
     // Search State
     const [searchTerm, setSearchTerm] = React.useState('');
+
+    // Animal Stats State
+    const [animalStats, setAnimalStats] = useState<Record<string, { buffaloes: number; calves: number; loading: boolean }>>({});
 
     const setCurrentPage = useCallback((page: number) => {
         setSearchParams(prev => {
@@ -58,6 +62,96 @@ const Investors: React.FC = () => {
         setSearchQuery
     } = useTableSortAndSearch(investors, { key: '', direction: 'asc' }, searchFn);
 
+    const currentItems = filteredInvestors;
+    const totalPages = Math.ceil((totalCount || filteredInvestors.length) / itemsPerPage) || 1;
+
+    // Fetch Animal Stats for current items
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (currentItems.length === 0) return;
+
+            // Identify items that need stats (not already loaded or loading)
+            const itemsToFetch = currentItems.filter(item => {
+                const id = String(item.id || item.investor_id);
+                return !animalStats[id];
+            });
+
+            if (itemsToFetch.length === 0) return;
+
+            // Mark as loading clearly
+            setAnimalStats(prev => {
+                const next = { ...prev };
+                itemsToFetch.forEach(item => {
+                    const id = String(item.id || item.investor_id);
+                    next[id] = { buffaloes: 0, calves: 0, loading: true };
+                });
+                return next;
+            });
+
+            // Fetch in parallel
+            await Promise.allSettled(itemsToFetch.map(async (investor) => {
+                const investorId = investor.id || investor.investor_id;
+                const idStr = String(investorId);
+
+                try {
+                    // 1. Get all animals for investor
+                    const animalsResponse = await farmvestService.getAnimalsByInvestor(Number(investorId));
+                    const allAnimals = Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse.data || []);
+
+                    if (!allAnimals || allAnimals.length === 0) {
+                        setAnimalStats(prev => ({
+                            ...prev,
+                            [idStr]: { buffaloes: 0, calves: 0, loading: false }
+                        }));
+                        return;
+                    }
+
+                    // 2. Filter Buffaloes
+                    const buffaloes = allAnimals.filter((a: any) =>
+                        (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
+                    );
+
+                    // 3. Get Calves for each Buffalo (as per Details Page logic)
+                    let totalCalves = 0;
+                    await Promise.all(buffaloes.map(async (buffalo: any) => {
+                        const buffaloFetchId = String(buffalo.animal_id || buffalo.id || buffalo.rfid_tag_number);
+                        if (buffaloFetchId) {
+                            try {
+                                const calvesResponse = await farmvestService.getCalves(buffaloFetchId);
+                                let myCalves = [];
+                                if (Array.isArray(calvesResponse)) {
+                                    myCalves = calvesResponse;
+                                } else if (calvesResponse && Array.isArray(calvesResponse.data)) {
+                                    myCalves = calvesResponse.data;
+                                } else if (calvesResponse && Array.isArray(calvesResponse.calves)) {
+                                    myCalves = calvesResponse.calves;
+                                }
+                                totalCalves += myCalves.length;
+                            } catch (e) {
+                                // ignore individual calf fetch error
+                            }
+                        }
+                    }));
+
+                    setAnimalStats(prev => ({
+                        ...prev,
+                        [idStr]: { buffaloes: buffaloes.length, calves: totalCalves, loading: false }
+                    }));
+
+                } catch (error) {
+                    console.error(`Failed to fetch stats for investor ${investorId}`, error);
+                    setAnimalStats(prev => ({
+                        ...prev,
+                        [idStr]: { buffaloes: 0, calves: 0, loading: false }
+                    }));
+                }
+            }));
+        };
+
+        fetchStats();
+    }, [currentItems]); // Only fetch when items change (e.g. pagination/search)
+
+
     // Debounce Search
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -81,9 +175,6 @@ const Investors: React.FC = () => {
         }));
     }, [dispatch, currentPage]);
 
-    const currentItems = filteredInvestors;
-    const totalPages = Math.ceil((totalCount || filteredInvestors.length) / itemsPerPage) || 1;
-
     const getSortIcon = (key: string) => {
         if (sortConfig.key !== key) return '';
         return sortConfig.direction === 'asc' ? '↑' : '↓';
@@ -100,7 +191,7 @@ const Investors: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-lg font-bold text-gray-900">FarmVest Investors</h1>
-                        <p className="text-xs text-gray-500 mt-1">Manage all investors (Total: {totalCount || 0} | {investors.length} visible)</p>
+                        <p className="text-xs text-gray-500 mt-1">Manage all investors (Total: {totalCount || 0})</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -111,10 +202,18 @@ const Investors: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Search by Name, Email, Phone..."
-                                className="pl-10 pr-4 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                className="pl-10 pr-10 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -128,40 +227,61 @@ const Investors: React.FC = () => {
                                 <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
                                 <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
                                 <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Address</th>
+                                <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Buffaloes</th>
+                                <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Calves</th>
                                 <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Joined Date</th>
+                                <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {investorsLoading ? (
-                                <tr><td colSpan={6} className="p-4"><TableSkeleton cols={6} rows={5} /></td></tr>
+                                <tr><td colSpan={8} className="p-4"><TableSkeleton cols={8} rows={5} /></td></tr>
                             ) : currentItems.length > 0 ? (
-                                currentItems.map((investor: any, index: number) => (
-                                    <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div
-                                                className="font-semibold text-blue-600 cursor-pointer hover:underline"
-                                                onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
-                                            >
-                                                {`${investor.first_name || ''} ${investor.last_name || ''}`}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.email || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.phone_number || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${investor.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {investor.active_status ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                            {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
-                                        </td>
-                                    </tr>
-                                ))
+                                currentItems.map((investor: any, index: number) => {
+                                    const idStr = String(investor.id || investor.investor_id);
+                                    const stats = animalStats[idStr] || { buffaloes: 0, calves: 0, loading: true };
+
+                                    return (
+                                        <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div
+                                                    className="font-semibold text-blue-600 cursor-pointer hover:underline"
+                                                    onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
+                                                >
+                                                    {`${investor.first_name || ''} ${investor.last_name || ''}`}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.email || '-'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.phone_number || '-'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600 truncate max-w-[200px]" title={investor.address || ''}>{investor.address || '-'}</td>
+
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
+                                                {stats.loading ? (
+                                                    <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
+                                                ) : stats.buffaloes}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
+                                                {stats.loading ? (
+                                                    <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
+                                                ) : stats.calves}
+                                            </td>
+
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                                {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${investor.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                    {investor.active_status ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan={6}>
+                                    <td colSpan={8}>
                                         <div className="flex flex-col items-center justify-center py-16 px-4">
                                             <div className="bg-gray-50 rounded-full p-6 mb-4">
                                                 <Users size={48} className="text-gray-300" />
