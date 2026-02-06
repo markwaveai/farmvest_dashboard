@@ -330,7 +330,7 @@ const FarmvestUserActivationPage = () => {
                 {/* Left */}
                 <div className="farmvest-hero-content">
                     <div className="farmvest-image-container" style={{ marginTop: 0 }}>
-                        <img src="/buffalo-family.png" alt="Farmvest Family" className="farmvest-hero-image" />
+                        <img src="/farmvest family.png" alt="Farmvest Family" className="farmvest-hero-image" />
                     </div>
                 </div>
 
