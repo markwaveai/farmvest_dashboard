@@ -51,7 +51,7 @@ const AccountDeletion: React.FC = () => {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Account Deletion</h1>
-                        <p className="text-sm text-gray-500">Deactivate user accounts by mobile number</p>
+                        <p className="text-sm text-gray-500">Delete user accounts by mobile number</p>
                     </div>
                 </div>
 
@@ -83,17 +83,13 @@ const AccountDeletion: React.FC = () => {
                                 ? 'bg-gray-300 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 shadow-red-100'}`}
                     >
-                        {loading ? 'Processing...' : 'Deactivate Account'}
+                        {loading ? 'Processing...' : 'Delete Account'}
                     </button>
                 </div>
 
-                <div className="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-100 flex gap-3">
+                {/* <div className="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-100 flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                    <div className="text-sm text-orange-800">
-                        <p className="font-semibold mb-1">Warning</p>
-                        <p>Deactivating an account will prevent the user from logging in. This action can be reversed by reactivating the user later.</p>
-                    </div>
-                </div>
+                </div> */}
             </div>
 
             {/* Confirmation Modal */}
