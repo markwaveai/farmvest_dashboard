@@ -20,7 +20,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         last_name: '',
         email: '',
         mobile: '',
-        role: 'SUPERVISOR',
+        role: 'FARM_MANAGER',
         location: 'KURNOOL',
         farm_id: '',
         shed_id: '',
@@ -285,7 +285,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     if (!isOpen) return null;
 
     return (
-        <div className={`modal-overlay ${isOpen ? 'show' : ''}`}>
+        <div className={`add-employee-overlay ${isOpen ? 'show' : ''}`}>
             <div className="modal-content add-employee-modal">
                 <div className="modal-header">
                     <div className="flex items-center gap-3">
@@ -412,10 +412,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 onChange={handleInputChange}
                                 className="form-select"
                             >
+                                <option value="FARM_MANAGER">FARM_MANAGER</option>
                                 <option value="SUPERVISOR">SUPERVISOR</option>
                                 <option value="DOCTOR">DOCTOR</option>
                                 <option value="ASSISTANT_DOCTOR">ASSISTANT_DOCTOR</option>
-                                <option value="FARM_MANAGER">FARM_MANAGER</option>
                             </select>
                         </div>
 
