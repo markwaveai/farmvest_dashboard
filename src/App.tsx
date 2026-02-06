@@ -105,7 +105,7 @@ function App() {
     }));
 
     // Default path for Farmvest
-    const defaultPath = '/farmvest/employees';
+    const defaultPath = '/farmvest/farms';
 
     // Navigate to origin or default
     const from = (location.state as any)?.from?.pathname;
@@ -125,7 +125,7 @@ function App() {
     <div className="App">
       <Routes>
         <Route path="/login" element={
-          session ? <Navigate to="/farmvest/employees" replace /> : <Login onLogin={handleLogin} />
+          session ? <Navigate to="/farmvest/farms" replace /> : <Login onLogin={handleLogin} />
         } />
 
         {/* FarmVest Routes */}
@@ -238,8 +238,8 @@ function App() {
         } />
 
         {/* Default redirect */}
-        <Route path="/" element={<Navigate to={session ? "/farmvest/employees" : "/login"} replace />} />
-        <Route path="*" element={<Navigate to={session ? "/farmvest/employees" : "/login"} replace />} />
+        <Route path="/" element={<Navigate to={session ? "/farmvest/farms" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={session ? "/farmvest/farms" : "/login"} replace />} />
       </Routes>
     </div>
   );

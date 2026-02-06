@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { farmvestService } from '../services/farmvest_api';
 import Snackbar from '../components/common/Snackbar';
-import { Trash2, AlertTriangle, Search } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 
 const AccountDeletion: React.FC = () => {
     const [mobile, setMobile] = useState('');

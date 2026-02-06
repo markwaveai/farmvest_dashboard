@@ -273,7 +273,7 @@ const Employees: React.FC = () => {
     };
 
     return (
-        <div className="p-2 h-full flex flex-col max-w-full mx-auto overflow-hidden">
+        <div className="p-2 h-full flex flex-col max-w-full mx-auto overflow-hidden min-w-full">
             {/* Backdrop for Dropdown */}
             {isDropdownOpen && (
                 <div
@@ -310,7 +310,7 @@ const Employees: React.FC = () => {
                             onMouseLeave={() => setIsDropdownOpen(false)}
                         >
                             <button
-                                className={`flex items-center justify-between min-w-[120px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                                className={`flex items-center justify-between min-w-[120px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors max-w-[100px] ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
                                 <span className="truncate">
                                     {formatRoleName(selectedRole)}

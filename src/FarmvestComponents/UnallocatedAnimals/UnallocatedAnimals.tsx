@@ -613,6 +613,8 @@ const UnallocatedAnimals: React.FC = () => {
     // ---------------------------------------------------------
     // 6. RENDER
     // ---------------------------------------------------------
+    // 6. RENDER
+    // ---------------------------------------------------------
     if (hasError) {
         return (
             <div className="unallocated-animals-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', backgroundColor: '#FEF2F2', borderRadius: '12px' }}>
@@ -630,7 +632,7 @@ const UnallocatedAnimals: React.FC = () => {
 
     return (
         <div className="unallocated-animals-container">
-            <div className="ua-header">
+            <div className="ua-header p-6 pb-0">
                 <h1><span>Shed Allocation</span></h1>
                 <button
                     className="save-allocation-btn"
@@ -655,232 +657,224 @@ const UnallocatedAnimals: React.FC = () => {
                 </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                <CustomDropdown
-                    placeholder="Select Farm"
-                    value={selectedFarmId}
-                    options={farms.map((f: any) => ({
-                        value: f.farm_id || f.id,
-                        label: `🚜 ${f.farm_name || f.name || 'Unnamed Farm'} - ${f.location || 'Unknown'}`
-                    }))}
-                    onChange={(val: string) => {
-                        setSelectedFarmId(val);
-                        // Do NOT save to localStorage here. Only Onboarding saves it.
-                        setSelectedShedId('');
-                        lastShedIdRef.current = null;
-                    }}
-                />
+            <div className="flex-1 overflow-auto p-6 scrollbar-hide">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                    <CustomDropdown
+                        placeholder="Select Farm"
+                        value={selectedFarmId}
+                        options={farms.map((f: any) => ({
+                            value: f.farm_id || f.id,
+                            label: `🚜 ${f.farm_name || f.name || 'Unnamed Farm'} - ${f.location || 'Unknown'}`
+                        }))}
+                        onChange={(val: string) => {
+                            setSelectedFarmId(val);
+                            setSelectedShedId('');
+                            lastShedIdRef.current = null;
+                        }}
+                    />
 
-                <CustomDropdown
-                    placeholder={!selectedFarmId ? "Select Farm First" : "Select Shed"}
-                    value={selectedShedId}
-                    disabled={!selectedFarmId}
-                    options={sheds.map((s: any) => ({
-                        value: s.id || s.shed_id,
-                        label: `🏠 ${s.shed_name || s.name || 'Unnamed Shed'}`
-                    }))}
-                    onChange={(val: string) => setSelectedShedId(val)}
-                />
-            </div>
+                    <CustomDropdown
+                        placeholder={!selectedFarmId ? "Select Farm First" : "Select Shed"}
+                        value={selectedShedId}
+                        disabled={!selectedFarmId}
+                        options={sheds.map((s: any) => ({
+                            value: s.id || s.shed_id,
+                            label: `🏠 ${s.shed_name || s.name || 'Unnamed Shed'}`
+                        }))}
+                        onChange={(val: string) => setSelectedShedId(val)}
+                    />
+                </div>
 
-            {/* Stats Cards - Updated to use Shed Object Data */}
-            {selectedShedId && (() => {
-                // Find the full shed object from the list
-                const shed = sheds.find((s: any) => String(s.id) === selectedShedId || s.shed_id === selectedShedId) || {} as any;
-                // Use API values or fallbacks
-                const capacity = shed.capacity || 300;
-                const allocated = shed.current_buffaloes ?? shed.entry_count ?? 0;
-                // Pending is local state
-                const pendingCount = pendingAllocations.size;
+                {selectedShedId && (() => {
+                    const shed = sheds.find((s: any) => String(s.id) === selectedShedId || s.shed_id === selectedShedId) || {} as any;
+                    const capacity = shed.capacity || 300;
+                    const allocated = shed.current_buffaloes ?? shed.entry_count ?? 0;
+                    const pendingCount = pendingAllocations.size;
 
-                return (
-                    <div className="ua-stats-card">
-                        <div className="ua-stat-item">
-                            <div className="ua-stat-value"><LayoutGrid size={24} color="#3B82F6" />{capacity}</div>
-                            <span className="ua-stat-label">Capacity</span>
-                        </div>
-                        <div className="ua-stat-item">
-                            <div className="ua-stat-value"><PawPrint size={24} color="#15803D" />{allocated}</div>
-                            <span className="ua-stat-label">Allocated</span>
-                        </div>
-                        <div className="ua-stat-item">
-                            <div className="ua-stat-value"><ShoppingBag size={24} color="#F97316" />{pendingCount}</div>
-                            <span className="ua-stat-label">Pending</span>
-                        </div>
-                    </div>
-                );
-            })()}
-            <div className="ua-section-title">Select Animal to Allocate</div>
-            <div className="ua-animals-list">
-                {loadingAnimals ? <div style={{ padding: '20px' }}>Loading animals...</div> : (
-                    animals.length > 0 ? animals.map((animal, idx) => (
-                        <div
-                            key={animal.id}
-                            id={`ua-animal-card-${animal.id}`}
-                            className={`ua-animal-avatar-card card-animate ${selectedAnimalId === animal.id ? 'selected' : ''}`}
-                            style={{ animationDelay: `${idx * 0.05}s` }}
-                            onClick={() => setSelectedAnimalId(prev => prev === animal.id ? null : animal.id)}
-                        >
-                            <img
-                                src={animal.image}
-                                alt={animal.id}
-                                className="ua-animal-img"
-                                onError={(e) => {
-                                    const fallback = 'https://via.placeholder.com/100?text=No+Img';
-                                    if (e.currentTarget.src !== fallback) {
-                                        e.currentTarget.src = fallback;
-                                    }
-                                }}
-                            />
-                            <span className="ua-animal-id" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{animal.display_text || animal.rfid || 'Animal'}</span>
-                            {animal.onboarding_time && (
-                                <span className="ua-animal-time" style={{ fontSize: '0.65rem', color: '#6B7280', marginTop: '2px' }}>
-                                    {formatDate(animal.onboarding_time)}
-                                </span>
-                            )}
-                        </div>
-                    )) : <div style={{ padding: '10px' }}>{selectedFarmId ? "No unallocated animals." : "Select farm first."}</div>
-                )}
-            </div>
-
-            {loadingGrid ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Loader2 size={32} className="animate-spin" color="#2E7D32" /></div>
-            ) : (
-                <div className="space-y-2 p-4">
-                    {(() => {
-                        const Separator = ({ label }: { label: string }) => (
-                            <div className="w-full bg-[#f0fdf4]/80 border border-green-100/50 rounded-lg py-1.5 mb-3 shadow-sm flex items-center justify-center">
-                                <span className="text-[10px] font-bold text-green-700/60 tracking-widest uppercase">{label}</span>
+                    return (
+                        <div className="ua-stats-card">
+                            <div className="ua-stat-item">
+                                <div className="ua-stat-value"><LayoutGrid size={24} color="#3B82F6" />{capacity}</div>
+                                <span className="ua-stat-label">Capacity</span>
                             </div>
-                        );
+                            <div className="ua-stat-item">
+                                <div className="ua-stat-value"><PawPrint size={24} color="#15803D" />{allocated}</div>
+                                <span className="ua-stat-label">Allocated</span>
+                            </div>
+                            <div className="ua-stat-item">
+                                <div className="ua-stat-value"><ShoppingBag size={24} color="#F97316" />{pendingCount}</div>
+                                <span className="ua-stat-label">Pending</span>
+                            </div>
+                        </div>
+                    );
+                })()}
 
-                        // Group positions
-                        const groupedPositions: Record<string, any[]> = { A: [], B: [], C: [], D: [] };
-                        const sortPositions = (a: any, b: any) => {
-                            const numA = parseInt(a.label.slice(1));
-                            const numB = parseInt(b.label.slice(1));
-                            return numA - numB;
-                        };
+                <div className="ua-section-title">Select Animal to Allocate</div>
+                <div className="ua-animals-list">
+                    {loadingAnimals ? <div style={{ padding: '20px' }}>Loading animals...</div> : (
+                        animals.length > 0 ? animals.map((animal, idx) => (
+                            <div
+                                key={animal.id}
+                                id={`ua-animal-card-${animal.id}`}
+                                className={`ua-animal-avatar-card card-animate ${selectedAnimalId === animal.id ? 'selected' : ''}`}
+                                style={{ animationDelay: `${idx * 0.05}s` }}
+                                onClick={() => setSelectedAnimalId(prev => prev === animal.id ? null : animal.id)}
+                            >
+                                <img
+                                    src={animal.image}
+                                    alt={animal.id}
+                                    className="ua-animal-img"
+                                    onError={(e) => {
+                                        const fallback = 'https://via.placeholder.com/100?text=No+Img';
+                                        if (e.currentTarget.src !== fallback) {
+                                            e.currentTarget.src = fallback;
+                                        }
+                                    }}
+                                />
+                                <span className="ua-animal-id" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{animal.display_text || animal.rfid || 'Animal'}</span>
+                                {animal.onboarding_time && (
+                                    <span className="ua-animal-time" style={{ fontSize: '0.65rem', color: '#6B7280', marginTop: '2px' }}>
+                                        {formatDate(animal.onboarding_time)}
+                                    </span>
+                                )}
+                            </div>
+                        )) : <div style={{ padding: '10px' }}>{selectedFarmId ? "No unallocated animals." : "Select farm first."}</div>
+                    )}
+                </div>
 
-                        displayPositions.forEach((pos: any) => {
-                            const letter = pos.label.charAt(0).toUpperCase();
-                            if (groupedPositions[letter]) {
-                                groupedPositions[letter].push(pos);
-                            }
-                        });
+                {loadingGrid ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Loader2 size={32} className="animate-spin" color="#2E7D32" /></div>
+                ) : (
+                    <div className="space-y-2 p-4">
+                        {(() => {
+                            const Separator = ({ label }: { label: string }) => (
+                                <div className="w-full bg-[#f0fdf4]/80 border border-green-100/50 rounded-lg py-1.5 mb-3 shadow-sm flex items-center justify-center">
+                                    <span className="text-[10px] font-bold text-green-700/60 tracking-widest uppercase">{label}</span>
+                                </div>
+                            );
 
-                        Object.keys(groupedPositions).forEach(key => {
-                            groupedPositions[key].sort(sortPositions);
-                        });
+                            const groupedPositions: Record<string, any[]> = { A: [], B: [], C: [], D: [] };
+                            const sortPositions = (a: any, b: any) => {
+                                const numA = parseInt(a.label.slice(1));
+                                const numB = parseInt(b.label.slice(1));
+                                return numA - numB;
+                            };
 
-                        const renderRow = (letter: string, rowLabel: string) => {
-                            const rowPositions = groupedPositions[letter];
-                            const chunks = [];
-                            for (let i = 0; i < rowPositions.length; i += 4) {
-                                chunks.push(rowPositions.slice(i, i + 4));
-                            }
+                            displayPositions.forEach((pos: any) => {
+                                const letter = pos.label.charAt(0).toUpperCase();
+                                if (groupedPositions[letter]) {
+                                    groupedPositions[letter].push(pos);
+                                }
+                            });
+
+                            Object.keys(groupedPositions).forEach(key => {
+                                groupedPositions[key].sort(sortPositions);
+                            });
+
+                            const renderRow = (letter: string, rowLabel: string) => {
+                                const rowPositions = groupedPositions[letter];
+                                const chunks = [];
+                                for (let i = 0; i < rowPositions.length; i += 4) {
+                                    chunks.push(rowPositions.slice(i, i + 4));
+                                }
+
+                                return (
+                                    <div className="mb-4">
+                                        <h4 className="text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
+                                        <div className="ua-grid-row-scroll scrollbar-hide px-1">
+                                            {chunks.map((chunk, groupIndex) => (
+                                                <div key={groupIndex} className="flex flex-col items-center">
+                                                    <div className="mb-0.5 flex flex-col items-center animate-pulse">
+                                                        <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
+                                                            <Camera size={11} className="text-blue-600" />
+                                                        </div>
+                                                        <div className="h-1.5 w-0.5 bg-blue-200 -mt-0.5"></div>
+                                                        <div className="w-full h-0.5 bg-blue-200"></div>
+                                                    </div>
+
+                                                    <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[164px]">
+                                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-blue-200"></div>
+                                                        {chunk.map((pos) => {
+                                                            const rawStatus = String(pos.status || 'Available').trim().toLowerCase();
+                                                            const isOccupied = rawStatus !== 'available' || (pos.animal && pos.animal.length > 0) || pos.isOccupied;
+                                                            const isPending = pendingAllocations.has(pos.label);
+                                                            const displayImg = pos.animal_image || "/buffalo_green_icon.png";
+
+                                                            return (
+                                                                <div
+                                                                    key={pos.label}
+                                                                    className={`flex-shrink-0 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform`}
+                                                                    onClick={(e) => {
+                                                                        handleGridSlotClick(pos, e);
+                                                                    }}
+                                                                >
+                                                                    <div className={`
+                                                                        w-11 h-11 border rounded-md flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
+                                                                        ${isOccupied && !isPending ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}
+                                                                        ${isPending ? 'ring-1 ring-emerald-500 border-emerald-500' : ''}
+                                                                    `}>
+                                                                        {isOccupied && !isPending && (
+                                                                            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
+                                                                                <PawPrint size={18} color="#22C55E" fill="#22C55E" />
+                                                                                <span className="text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {isPending && (
+                                                                            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
+                                                                                <PawPrint
+                                                                                    size={18}
+                                                                                    color={isOccupied ? '#EF4444' : '#22C55E'}
+                                                                                    fill={isOccupied ? '#EF4444' : '#22C55E'}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+
+                                                                        {!isOccupied && !isPending && (
+                                                                            <>
+                                                                                <img
+                                                                                    src={displayImg}
+                                                                                    alt="Buffalo"
+                                                                                    className={`w-4 h-4 object-contain mb-0.5`}
+                                                                                />
+                                                                                <span className="text-[8px] font-bold text-gray-400">{pos.label}</span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            };
 
                             return (
-                                <div className="mb-4">
-                                    <h4 className="text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
-                                    <div className="ua-grid-row-scroll scrollbar-hide px-1">
-                                        {chunks.map((chunk, groupIndex) => (
-                                            <div key={groupIndex} className="flex flex-col items-center">
-                                                {/* Camera Overhead */}
-                                                <div className="mb-0.5 flex flex-col items-center animate-pulse">
-                                                    <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
-                                                        <Camera size={11} className="text-blue-600" />
-                                                    </div>
-                                                    <div className="h-1.5 w-0.5 bg-blue-200 -mt-0.5"></div>
-                                                    <div className="w-full h-0.5 bg-blue-200"></div>
-                                                </div>
+                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mt-4 w-full max-w-full mx-auto">
+                                    <div className="space-y-1">
+                                        <Separator label="DRAINAGE" />
+                                        {renderRow('A', 'Row R1')}
 
-                                                {/* Group of 4 Slots */}
-                                                <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[164px]">
-                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-blue-200"></div>
-                                                    {chunk.map((pos) => {
-                                                        const rawStatus = String(pos.status || 'Available').trim().toLowerCase();
-                                                        const isOccupied = rawStatus !== 'available' || (pos.animal && pos.animal.length > 0) || pos.isOccupied;
-                                                        const isPending = pendingAllocations.has(pos.label);
-                                                        const displayImg = pos.animal_image || "/buffalo_green_icon.png";
+                                        <Separator label="TMR WAY" />
+                                        {renderRow('B', 'Row R2')}
 
-                                                        return (
-                                                            <div
-                                                                key={pos.label}
-                                                                className={`flex-shrink-0 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform`}
-                                                                onClick={(e) => {
-                                                                    handleGridSlotClick(pos, e);
-                                                                }}
-                                                            >
-                                                                <div className={`
-                                                                    w-11 h-11 border rounded-md flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
-                                                                    ${isOccupied && !isPending ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}
-                                                                    ${isPending ? 'ring-1 ring-emerald-500 border-emerald-500' : ''}
-                                                                `}>
-                                                                    {/* Occupied State - Green Paw */}
-                                                                    {isOccupied && !isPending && (
-                                                                        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
-                                                                            <PawPrint size={18} color="#22C55E" fill="#22C55E" />
-                                                                            <span className="text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
-                                                                        </div>
-                                                                    )}
-                                                                    {/* Pending Overlay */}
-                                                                    {isPending && (
-                                                                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
-                                                                            <PawPrint
-                                                                                size={18}
-                                                                                color={isOccupied ? '#EF4444' : '#22C55E'}
-                                                                                fill={isOccupied ? '#EF4444' : '#22C55E'}
-                                                                            />
-                                                                        </div>
-                                                                    )}
+                                        <Separator label="DRAINAGE" />
+                                        {renderRow('C', 'Row R3')}
 
-                                                                    {/* Available State Content (Hidden if Occupied/Pawned) */}
-                                                                    {!isOccupied && !isPending && (
-                                                                        <>
-                                                                            <img
-                                                                                src={displayImg}
-                                                                                alt="Buffalo"
-                                                                                className={`w-4 h-4 object-contain mb-0.5`}
-                                                                            />
-                                                                            <span className="text-[8px] font-bold text-gray-400">{pos.label}</span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
+                                        <Separator label="TMR WAY" />
+                                        {renderRow('D', 'Row R4')}
+
+                                        <Separator label="DRAINAGE" />
                                     </div>
                                 </div>
                             );
-                        };
+                        })()}
+                    </div>
+                )}
+            </div>
 
-                        return (
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mt-4 w-full max-w-full mx-auto">
-                                <div className="space-y-1">
-                                    <Separator label="DRAINAGE" />
-                                    {renderRow('A', 'Row R1')}
-
-                                    <Separator label="TMR WAY" />
-                                    {renderRow('B', 'Row R2')}
-
-                                    <Separator label="DRAINAGE" />
-                                    {renderRow('C', 'Row R3')}
-
-                                    <Separator label="TMR WAY" />
-                                    {renderRow('D', 'Row R4')}
-
-                                    <Separator label="DRAINAGE" />
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </div>
-            )}
-            {/* Occupied Slot Details Modal */}
             <AnimalDetailsModal
                 isOpen={detailsModalOpen}
                 onClose={() => {
@@ -896,5 +890,6 @@ const UnallocatedAnimals: React.FC = () => {
         </div>
     );
 };
+
 
 export default UnallocatedAnimals;
