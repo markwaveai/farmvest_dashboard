@@ -35,11 +35,9 @@ const ShedPositionsModal: React.FC<ShedPositionsModalProps> = ({ isOpen, onClose
         try {
             setLoading(true);
             setError(null);
-            console.log(`[ShedPositionsModal] Fetching positions for shedId: ${shedId}`);
 
             // We fetch the "Occupied" or real status from API
             const data = await farmvestService.getShedPositions(shedId);
-            console.log('[ShedPositionsModal] Raw data:', data);
 
             let apiPositions: Position[] = [];
             if (Array.isArray(data)) {
@@ -51,7 +49,6 @@ const ShedPositionsModal: React.FC<ShedPositionsModalProps> = ({ isOpen, onClose
                 apiPositions = Object.values(data).filter((item: any) => item && item.position_name) as Position[];
             }
 
-            console.log('[ShedPositionsModal] Parsed API positions:', apiPositions);
 
             // Create a Map for easy lookup of API data
             const apiPosMap = new Map();
@@ -87,7 +84,6 @@ const ShedPositionsModal: React.FC<ShedPositionsModalProps> = ({ isOpen, onClose
 
             setPositions(generatedPositions);
         } catch (err: any) {
-            console.error('Failed to load positions', err);
             // Fallback for error state
             if (capacity > 0) {
                 const totalRows = Math.ceil(capacity / 4);

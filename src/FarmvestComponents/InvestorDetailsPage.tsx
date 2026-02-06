@@ -49,9 +49,7 @@ const InvestorDetailsPage: React.FC = () => {
                 // Fetch Animals
                 setAnimalsLoading(true);
                 const animalsResponse = await farmvestService.getAnimalsByInvestor(Number(id));
-                console.log('[DEBUG-ANIMALS] Raw response:', animalsResponse);
                 let allAnimals = Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse.data || []);
-                console.log('[DEBUG-ANIMALS] Parsed list:', allAnimals);
 
                 // Client-side processing: Separating Buffaloes and Calves
                 if (allAnimals.length > 0) {
@@ -72,7 +70,6 @@ const InvestorDetailsPage: React.FC = () => {
                         if (buffaloFetchId) {
                             try {
                                 const calvesResponse = await farmvestService.getCalves(buffaloFetchId);
-                                console.log(`[DEBUG-CALF] Response for ${buffaloFetchId}:`, calvesResponse);
 
                                 if (Array.isArray(calvesResponse)) {
                                     myCalves = calvesResponse;
@@ -82,7 +79,6 @@ const InvestorDetailsPage: React.FC = () => {
                                     myCalves = calvesResponse.calves;
                                 }
                             } catch (e) {
-                                console.warn(`[DEBUG-CALF] Failed to fetch calves for ${buffaloFetchId}`, e);
                             }
                         }
 
@@ -111,7 +107,6 @@ const InvestorDetailsPage: React.FC = () => {
                 }
 
             } catch (error) {
-                console.error("Error loading investor details:", error);
             } finally {
                 setLoading(false);
                 setAnimalsLoading(false);

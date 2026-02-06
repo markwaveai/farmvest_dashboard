@@ -67,16 +67,9 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
             setError(null);
 
             // Log full context for debugging
-            console.log(`[AnimalDetailsModal] Fetching position details:`, {
-                parkingId: pId,
-                farmId: fId,
-                shedId: sId,
-                rowNumber: rNum
-            });
 
             // Prevent API calls with invalid numeric identifiers
             if ((fId !== undefined && isNaN(fId)) || (sId !== undefined && isNaN(sId))) {
-                console.error('[AnimalDetailsModal] Invalid ID types:', { fId, sId });
                 setError('Invalid identifiers provided. Please select farm and shed again.');
                 setLoading(false);
                 return;
@@ -88,10 +81,8 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                 shedId: sId,
                 rowNumber: rNum
             });
-            console.log('[AnimalDetailsModal] API Result:', result);
             setData(result?.data || result); // Handle wrapped response
         } catch (err: any) {
-            console.error('Failed to load details by parking ID', err);
             setError('Failed to load slot details. Please try again.');
         } finally {
             setLoading(false);
@@ -102,12 +93,9 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
         try {
             setLoading(true);
             setError(null);
-            console.log(`[AnimalDetailsModal] Fetching details for RFID: ${id}`);
             const result = await farmvestService.searchAnimal(id);
-            console.log('[AnimalDetailsModal] API Result:', result);
             setData(result);
         } catch (err: any) {
-            console.error('Failed to load animal details', err);
             setError('Failed to load buffalo details. Please try again.');
         } finally {
             setLoading(false);

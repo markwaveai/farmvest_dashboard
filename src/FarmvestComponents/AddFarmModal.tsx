@@ -50,7 +50,6 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                         }
                     }
                 } catch (err) {
-                    console.error('Failed to fetch locations:', err);
                 }
             };
             fetchLocations();
@@ -71,7 +70,6 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
         setError(null);
 
         try {
-            console.log('Creating farm with:', { farmName, location });
             await farmvestService.createFarm({
                 farm_name: farmName,
                 location: location.toUpperCase()
@@ -81,7 +79,6 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
             onSuccess(location);
             onClose();
         } catch (err: any) {
-            console.error('Failed to create farm:', err);
             // Display detailed error for debugging
             const errorMessage = err.response?.data?.detail
                 ? (typeof err.response.data.detail === 'object' ? JSON.stringify(err.response.data.detail) : err.response.data.detail)

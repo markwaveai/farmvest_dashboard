@@ -81,7 +81,6 @@ const Inventory: React.FC = () => {
                     setAllAnimals(animalData);
                 }
             } catch (error) {
-                console.error("Error fetching initial data:", error);
             } finally {
                 setIsStatsLoading(false);
             }
@@ -103,7 +102,6 @@ const Inventory: React.FC = () => {
                     setFarms(farmResponse.data);
                 }
             } catch (error) {
-                console.error("Error fetching farms:", error);
             }
         };
         fetchFarms();
@@ -126,7 +124,6 @@ const Inventory: React.FC = () => {
                     }
                 }
             } catch (error) {
-                console.error("Error fetching sheds:", error);
             }
         };
         fetchSheds();

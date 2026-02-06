@@ -23,7 +23,6 @@ const EmployeeDetailsPage: React.FC = () => {
             setLoading(true);
             try {
                 // First attempt: Direct API call
-                console.log(`[EmployeeDetails] Fetching details for user_id: ${id}`);
                 const data = await farmvestService.getEmployeeDetailsById(id);
 
                 let result = data.data || data;
@@ -45,7 +44,6 @@ const EmployeeDetailsPage: React.FC = () => {
                     throw new Error('Empty response from details API');
                 }
             } catch (err: any) {
-                console.warn('[EmployeeDetails] Direct fetch failed, trying fallback to list...');
                 try {
                     // Fallback: Fetch all employees and search locally
                     const listResponse = await farmvestService.getEmployees({ size: 1000 });
@@ -60,7 +58,6 @@ const EmployeeDetailsPage: React.FC = () => {
                     );
 
                     if (found) {
-                        console.log('[EmployeeDetails] Found in list fallback:', found);
                         // Normalize fallback data too
                         const normalized = {
                             ...found,
@@ -74,7 +71,6 @@ const EmployeeDetailsPage: React.FC = () => {
                         throw err; // Throw original error if not found in list either
                     }
                 } catch (fallbackErr) {
-                    console.error('Failed to fetch employee details (both methods):', err);
                     const apiError = err.response?.data?.detail || err.message || 'Unknown error';
                     setError(typeof apiError === 'string' ? apiError : JSON.stringify(apiError));
                 }

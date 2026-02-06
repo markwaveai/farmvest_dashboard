@@ -117,7 +117,6 @@ const PrivacyPolicy: React.FC = () => {
                     setIsAdmin(true);
                 }
             } catch (e) {
-                console.error('Error parsing session', e);
             }
         }
     }, []);
@@ -131,7 +130,6 @@ const PrivacyPolicy: React.FC = () => {
         setContent(editContent);
         localStorage.setItem('privacy_policy_content_v1', editContent);
         setIsEditing(false);
-        console.log('Privacy Policy updated successfully!');
     };
 
     const handleCancel = () => {

@@ -107,15 +107,6 @@ const Employees: React.FC = () => {
     const roleStatusFilteredData = useMemo(() => {
         // Debug logs for filtering issues
         if (allEmployees.length > 0) {
-            console.log('[Employees] Filtering with:', { selectedRole, selectedStatus, totalDocs: allEmployees.length });
-            const sample = allEmployees[0];
-            console.log('[Employees] Sample Doc:', {
-                id: sample.id,
-                roles: sample.roles,
-                role: (sample as any).role,
-                active_types: [typeof sample.active_status, typeof sample.is_active],
-                active_vals: [sample.active_status, sample.is_active]
-            });
         }
 
         return allEmployees.filter((emp: any) => {
@@ -431,7 +422,7 @@ const Employees: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {employeesLoading ? (
-                                <tr><td colSpan={10} className="p-4"><TableSkeleton cols={10} rows={5} /></td></tr>
+                                <TableSkeleton cols={10} rows={5} />
                             ) : currentItems.length > 0 ? (
                                 currentItems.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">

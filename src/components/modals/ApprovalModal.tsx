@@ -47,7 +47,6 @@ const ApprovalModal: React.FC = () => {
             dispatch(setApprovalModal({ isOpen: false, unitId: null }));
             setComment('');
         } catch (error) {
-            console.error('Error approving order:', error);
             dispatch(setSnackbar({ message: 'Failed to approve order.', type: 'error' }));
         } finally {
             setIsSubmitting(false);

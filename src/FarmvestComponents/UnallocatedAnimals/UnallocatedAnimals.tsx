@@ -85,7 +85,7 @@ const UnallocatedAnimals: React.FC = () => {
     const lastShedIdRef = useRef<string | null>(null);
     const isMounted = useRef(false);
 
-    const log = useCallback((msg: string) => console.log(`[FarmVest Final] ${new Date().toLocaleTimeString()}: ${msg}`), []);
+    const log = useCallback((msg: string) => { }, []);
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return '';
@@ -159,7 +159,6 @@ const UnallocatedAnimals: React.FC = () => {
                 }
 
                 if (imgUrl.includes('unsplash') && (a.rfid || a.rfid_tag_number)) {
-                    console.warn(`[UnallocatedAnimals] Missing image for animal ${a.rfid || a.rfid_tag_number}. Data:`, a);
                 }
 
                 return {
@@ -443,11 +442,9 @@ const UnallocatedAnimals: React.FC = () => {
     };
 
     const handleGridSlotClick = async (position: any, e?: React.MouseEvent) => {
-        console.log(`[UnallocatedAnimals] Grid slot clicked:`, position);
-        if (hasError) { console.error("API Connection is currently blocked. Please refresh."); return; }
+        if (hasError) { return; }
 
         const isOccupied = position.status.toLowerCase() !== 'available';
-        console.log(`[UnallocatedAnimals] Slot isOccupied: ${isOccupied} (Status: ${position.status})`);
 
         if (isOccupied) {
             // New Requirement: Show Details Modal instead of blocking
@@ -455,7 +452,6 @@ const UnallocatedAnimals: React.FC = () => {
             const pId = position.parking_id || position.label || position.id;
             const rContext = position._rowContext;
 
-            console.log(`[UnallocatedAnimals] Opening Details Modal for ParkingID: ${pId}, Context: ${rContext}`);
 
             setSelectedParkingId(pId);
             setSelectedRowContext(rContext);
@@ -494,7 +490,6 @@ const UnallocatedAnimals: React.FC = () => {
 
     const handleSaveAllocation = async () => {
         if (pendingAllocations.size === 0) {
-            console.warn("No changes to save.");
             return;
         }
 
@@ -539,7 +534,6 @@ const UnallocatedAnimals: React.FC = () => {
         });
 
         if (validAllocations.length === 0) {
-            console.warn("No valid allocations to save. Please check for red indicators.");
             return;
         }
 
@@ -549,7 +543,6 @@ const UnallocatedAnimals: React.FC = () => {
             // CRITICAL FIX: The API requires the uniquely identified GLOBAL Shed ID (e.g., 1-12, 13-24)
             // The UI dropdown might provide a Local ID (1-12 per farm).
             // DEBUG: Log available sheds to verify ID logic
-            console.log(`[UnallocatedAnimals] Available Sheds:`, sheds.map((s: any) => ({ id: s.id, shed_id: s.shed_id, name: s.shed_name })));
 
             // Fix: Trust the ID from the dropdown (API provided), do not manually calculate 'numeric' ID based on index.
             // This avoids mapping errors if IDs are not perfectly sequential/dense.
@@ -558,14 +551,10 @@ const UnallocatedAnimals: React.FC = () => {
             const selectedShedObj = sheds.find((s: any) => String(s.id) === String(selectedShedId));
             const targetShedId = selectedShedObj?.shed_id || selectedShedId;
 
-            console.log(`[UnallocatedAnimals] Allocation Request - Shed: ${targetShedId} (Obj ID: ${selectedShedObj?.shed_id})`);
-            console.log(`[UnallocatedAnimals] Payload:`, JSON.stringify(validAllocations, null, 2));
 
             // Use the raw ID or String ID
             const saveResponse = await farmvestService.allocateAnimal(String(targetShedId), validAllocations);
-            console.log(`[UnallocatedAnimals] Save Response:`, saveResponse);
 
-            console.log(`Successfully allocated ${validAllocations.length} animals!`);
 
             // Clear all pending state
             setPendingAllocations(new Map());
@@ -581,7 +570,6 @@ const UnallocatedAnimals: React.FC = () => {
 
         } catch (error: any) {
             const apiError = error.response?.data?.message || error.message || 'Unknown error';
-            console.error(`Save Failed: ${apiError}`);
         } finally {
             if (isMounted.current) setIsSaving(false);
         }

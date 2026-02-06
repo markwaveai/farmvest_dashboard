@@ -7,7 +7,6 @@ export const fetchFarms = createAsyncThunk(
     async (location: string, { rejectWithValue }) => {
         try {
             const normalizedLocation = location ? location.toUpperCase() : 'KURNOOL';
-            console.log(`[FarmVest] Fetching farms via API for location: ${normalizedLocation}`);
 
             // specific parameters - location and large size to get "all" for that location
             const response = await farmvestService.getAllFarms({
@@ -16,7 +15,6 @@ export const fetchFarms = createAsyncThunk(
             });
 
             // Log the raw response for debugging
-            console.log(`[FarmVest] Response for getAllFarms (${normalizedLocation}):`, response);
 
             let allFarms: FarmvestFarm[] = [];
 
@@ -51,7 +49,6 @@ export const fetchFarms = createAsyncThunk(
 
             return allFarms;
         } catch (error: any) {
-            console.error(`[FarmVest] Thunk Error for ${location}:`, error);
             return rejectWithValue(error.message || 'Failed to fetch farms');
         }
     }

@@ -1,11 +1,12 @@
 .animal-onboarding-container {
     background: linear-gradient(180deg, #dcfce7 0%, #ffffff 40%, #ffffff 100%);
-    min-height: 100vh;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     padding: 1.5rem;
     font-family: 'Inter', sans-serif;
     position: relative;
-    background-attachment: fixed;
-    /* Ensures gradient covers full scrollable height if needed */
+    overflow: hidden;
 }
 
 .onboarding-header {

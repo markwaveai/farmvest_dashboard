@@ -61,7 +61,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     setLocations(locs.map(String));
                 }
             } catch (err) {
-                console.error('Failed to fetch locations:', err);
             }
         };
         fetchLocations();
@@ -72,7 +71,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         if (!isOpen) return;
 
         const fetchFarmsByLocation = async () => {
-            console.log('[AddEmployee] Fetching farms (client-side filter) for location:', formData.location);
             setFarmsLoading(true);
             try {
                 if (!formData.location) {
@@ -82,7 +80,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                 }
                 // Use getAllFarms without params to get everything, then filter locally like the Farms slice does
                 const response = await farmvestService.getAllFarms();
-                console.log('[AddEmployee] Raw getAllFarms response:', response);
 
                 let allFarms: any[] = [];
                 if (response && (response.status === 200 || response.status === "200")) {
@@ -99,7 +96,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     farm.location && String(farm.location).toUpperCase() === targetLoc
                 );
 
-                console.log('[AddEmployee] Filtered farm list:', filteredFarms);
                 setFarms(filteredFarms);
 
                 // Reset farm_id when location changes
@@ -107,7 +103,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                 setFormData(prev => ({ ...prev, farm_id: '', shed_id: '' }));
                 setSheds([]);
             } catch (error) {
-                console.error(`Error loading farms for ${formData.location}:`, error);
                 setFarms([]);
             } finally {
                 setFarmsLoading(false);
@@ -136,7 +131,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                 // Reset shed_id when farm changes
                 setFormData(prev => ({ ...prev, shed_id: '' }));
             } catch (error) {
-                console.error(`Error loading sheds for farm ${formData.farm_id}:`, error);
                 setSheds([]);
             } finally {
                 setShedsLoading(false);
@@ -175,7 +169,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
 
                 setDoctors(docList);
             } catch (error) {
-                console.error('Error loading doctors:', error);
                 setDoctors([]);
             } finally {
                 setDoctorsLoading(false);
@@ -269,7 +262,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
             }, 500);
         } else {
             // Debug access to error
-            console.error('Create Employee Failed:', result);
 
             const errorPayload = result.payload as any;
             let errorMessage = 'Error Creating Employee:\n';

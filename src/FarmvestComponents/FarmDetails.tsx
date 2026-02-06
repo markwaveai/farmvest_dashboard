@@ -41,12 +41,9 @@ const FarmDetails: React.FC = () => {
             }
 
             if (shedsList.length > 0) {
-                console.log('[FarmDetails] Shed data structure:', shedsList[0]);
-                console.log('[FarmDetails] All sheds:', shedsList);
             }
             setSheds(shedsList);
         } catch (err: any) {
-            console.error('Failed to load sheds', err);
             // If 404, it means no sheds found - treat as empty list
             if (err.response && err.response.status === 404) {
                 setSheds([]);
@@ -94,7 +91,6 @@ const FarmDetails: React.FC = () => {
                         <button
                             className="add-shed-btn"
                             onClick={() => {
-                                console.log('Add Shed button clicked');
                                 setIsAddShedModalOpen(true);
                             }}
                         >

@@ -34,6 +34,16 @@ const AccountDeletion: React.FC = () => {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
+            <div className="mb-8 pl-1">
+                <h1 className="text-4xl font-extrabold tracking-tight" style={{
+                    background: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontFamily: "'Outfit', 'Inter', sans-serif"
+                }}>
+                    Farmvest
+                </h1>
+            </div>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-red-50 rounded-full">

@@ -55,7 +55,6 @@ const RejectionModal: React.FC = () => {
             dispatch(setSnackbar({ message: 'Order rejected successfully!', type: 'error' }));
             dispatch(setRejectionModal({ isOpen: false, unitId: null }));
         } catch (error) {
-            console.error('Error rejecting order:', error);
             dispatch(setSnackbar({ message: 'Failed to reject order.', type: 'error' }));
         } finally {
             setIsSubmitting(false);

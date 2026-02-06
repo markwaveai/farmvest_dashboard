@@ -74,7 +74,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError('Login failed: Invalid response from server');
       }
     } catch (e: any) {
-      console.error('Farmvest login error:', e);
       setError(e.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);

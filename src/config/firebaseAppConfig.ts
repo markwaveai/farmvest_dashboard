@@ -28,11 +28,8 @@ export async function uploadToFirebase(file: File): Promise<string> {
         // Attempt compression for images
         if (file.type.startsWith('image/')) {
             try {
-                console.log(`Original size: ${file.size / 1024} KB`);
                 fileToUpload = await compressImage(file, 0.7, 1280); // 1280px max width
-                console.log(`Compressed size: ${fileToUpload.size / 1024} KB`);
             } catch (e) {
-                console.warn("Image compression failed, uploading original.", e);
             }
         }
 
@@ -48,13 +45,11 @@ export async function uploadToFirebase(file: File): Promise<string> {
 
         // Upload bytes
         const snapshot = await uploadBytes(storageRef, fileToUpload);
-        console.log('Uploaded a blob or file!', snapshot);
 
         // Get download URL
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (error) {
-        console.error("Error uploading to Firebase:", error);
         throw error;
     }
 }

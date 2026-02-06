@@ -46,7 +46,6 @@ const ReferralsTab: React.FC = () => {
       setError(null);
     } catch (err) {
       setError('Failed to fetch referrals');
-      console.error('Error fetching referrals:', err);
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,6 @@ const ReferralsTab: React.FC = () => {
       await userService.verifyUser(mobile);
       fetchReferrals(); // Refresh the list
     } catch (err) {
-      console.error('Error verifying user:', err);
     }
   };
 

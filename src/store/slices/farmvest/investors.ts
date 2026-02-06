@@ -6,7 +6,6 @@ export const fetchInvestors = createAsyncThunk(
     async (params: { page?: number; size?: number } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getAllInvestors(params);
-            console.log('fetchInvestors thunk response:', response);
 
             let rawData: any[] = [];
             let totalCount = 0;
@@ -24,7 +23,6 @@ export const fetchInvestors = createAsyncThunk(
 
             // Map data if needed, or pass through. Assuming shape is similar to users/employees or specific investor shape
             const mappedData = rawData.map((item: any, index: number) => {
-                if (index === 0) console.log('Sample Investor Item:', item);
                 return {
                     id: item.id || item.investor_id || index,
                     first_name: item.first_name || '',

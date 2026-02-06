@@ -14,7 +14,6 @@ export function usePersistentState<T>(key: string, initialValue: T) {
                 return JSON.parse(saved);
             }
         } catch (e) {
-            console.error('Error parsing local storage key:', key, e);
         }
         return initialValue;
     });

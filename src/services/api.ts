@@ -9,20 +9,18 @@ const api = axios.create({
 export const userService = {
   getUsers: async (): Promise<User[]> => {
     try {
-      const response = await api.get<{status: string, statuscode: number, users: User[]}>(API_ENDPOINTS.getUsers());
+      const response = await api.get<{ status: string, statuscode: number, users: User[] }>(API_ENDPOINTS.getUsers());
       return response.data.users;
     } catch (error) {
-      console.error('Error fetching users:', error);
       throw error;
     }
   },
 
   getReferrals: async (): Promise<User[]> => {
     try {
-      const response = await api.get<{status: string, statuscode: number, users: User[]}>(API_ENDPOINTS.getReferrals());
+      const response = await api.get<{ status: string, statuscode: number, users: User[] }>(API_ENDPOINTS.getReferrals());
       return response.data.users;
     } catch (error) {
-      console.error('Error fetching referrals:', error);
       throw error;
     }
   },
@@ -32,7 +30,6 @@ export const userService = {
       const response = await api.get<User>(API_ENDPOINTS.getUserDetails(mobile));
       return response.data;
     } catch (error) {
-      console.error('Error fetching user details:', error);
       throw error;
     }
   },
@@ -42,7 +39,6 @@ export const userService = {
       const response = await api.post(API_ENDPOINTS.createUser(), userData);
       return { data: response.data, message: 'User created successfully' };
     } catch (error) {
-      console.error('Error creating user:', error);
       return { error: 'Failed to create user' };
     }
   },
@@ -54,7 +50,6 @@ export const userService = {
         throw new Error('Failed to verify user');
       }
     } catch (error) {
-      console.error('Error verifying user:', error);
       throw error;
     }
   },
@@ -66,7 +61,6 @@ export const userService = {
         throw new Error('Failed to update user');
       }
     } catch (error) {
-      console.error('Error updating user:', error);
       throw error;
     }
   },
@@ -76,7 +70,6 @@ export const userService = {
       await api.get(API_ENDPOINTS.health());
       return true;
     } catch (error) {
-      console.error('Health check failed:', error);
       return false;
     }
   }

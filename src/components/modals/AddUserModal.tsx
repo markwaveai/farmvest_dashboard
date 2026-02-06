@@ -49,7 +49,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSuccess 
       }
     } catch (err) {
       setError('Failed to create user');
-      console.error('Error creating user:', err);
     } finally {
       setLoading(false);
     }

@@ -54,7 +54,9 @@ interface Farm {
     farm_id: number;
     farm_name: string;
     location: string;
-}interface Employee {
+}
+
+interface Employee {
     id: number;
     full_name: string;
     role: string;
@@ -133,7 +135,6 @@ const AnimalOnboarding: React.FC = () => {
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                console.log("Fetching initial data in AnimalOnboarding...");
                 const [farmData, investorData] = await Promise.all([
                     farmvestService.getAllFarms(),
                     farmvestService.getAllInvestors({ size: 5000 })
@@ -177,13 +178,7 @@ const AnimalOnboarding: React.FC = () => {
                 const combined = [...normalizedInvestors];
                 setAllMembers(combined);
 
-                console.log("Initial data loaded:", {
-                    farms: normalizedFarms.length,
-                    investors: normalizedInvestors.length,
-                    totalMembers: combined.length
-                });
             } catch (error) {
-                console.error("Failed to load initial data", error);
             }
         };
         fetchInitialData();
@@ -226,7 +221,6 @@ const AnimalOnboarding: React.FC = () => {
                 if (isImage) newPhotoUrls.push(url);
                 else newVideoUrls.push(url);
             } catch (err) {
-                console.error("Upload failed", err);
             }
         }
 
@@ -314,7 +308,6 @@ const AnimalOnboarding: React.FC = () => {
             }
 
             setAnimals(newAnimals);
-            console.log(`Initialized ${bCount} Buffaloes and ${cCount} Calves for Order ${selectedOrder.id}`);
         } else {
             setAnimals([]);
         }
@@ -351,48 +344,57 @@ const AnimalOnboarding: React.FC = () => {
         setNoOrdersFound(false);
         setSearchedMobile(mobile);
 
+        // Pre-resolve from local cache if possible
+        const localMember = allMembers.find(m => m.mobile === mobile);
+        if (localMember) {
+            const cachedUser: UserProfile = {
+                id: String(localMember.id),
+                name: localMember.displayName || 'Investor',
+                mobile: localMember.mobile,
+                email: localMember.email || '',
+                aadhar_number: localMember.aadhar_number || '',
+                aadhar_front_image_url: localMember.aadhar_front_image_url || '',
+                aadhar_back_image_url: localMember.aadhar_back_image_url || '',
+                panCardUrl: localMember.panCardUrl || ''
+            };
+            setUser(cachedUser);
+        }
+
         try {
-            console.log(`Fetching intransit orders for mobile: ${mobile}`);
             const result = await farmvestService.getPaidOrders(mobile);
 
-            if (result && result.user && Array.isArray(result.orders) && result.orders.length > 0) {
-                const u = result.user;
-                const userData: UserProfile = {
-                    id: u.id || u.mobile || '',
-                    name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Investor',
-                    mobile: u.mobile || mobile,
-                    email: u.email || '',
-                    aadhar_number: u.aadhar_number || '',
-                    aadhar_front_image_url: u.aadhar_front_image_url || '',
-                    aadhar_back_image_url: u.aadhar_back_image_url || '',
-                    panCardUrl: u.panCardUrl || ''
-                };
+            if (result && Array.isArray(result.orders) && result.orders.length > 0) {
+                // If API returned a user, prioritize it, otherwise keep the local one
+                if (result.user) {
+                    const u = result.user;
+                    const userData: UserProfile = {
+                        id: String(u.id || u.mobile || localMember?.id || ''),
+                        name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || localMember?.displayName || 'Investor',
+                        mobile: u.mobile || mobile,
+                        email: u.email || localMember?.email || '',
+                        aadhar_number: u.aadhar_number || localMember?.aadhar_number || '',
+                        aadhar_front_image_url: u.aadhar_front_image_url || localMember?.aadhar_front_image_url || '',
+                        aadhar_back_image_url: u.aadhar_back_image_url || localMember?.aadhar_back_image_url || '',
+                        panCardUrl: u.panCardUrl || localMember?.panCardUrl || ''
+                    };
+                    setUser(userData);
+                }
 
-                setUser(userData);
                 setOrders(result.orders.map(normalizeOrder));
             } else {
                 // If result.user is null or orders are empty, check if they exist in our local investor cache
-                const investorExists = allMembers.some(m => m.mobile === mobile);
-                if (investorExists) {
+                if (localMember) {
                     setNoOrdersFound(true);
                 } else {
                     setSearchNotFound(true);
                 }
             }
         } catch (error) {
-            console.error('Error fetching orders:', error);
-            const investorExists = allMembers.some(m => m.mobile === mobile);
-            if (investorExists) {
+            if (localMember) {
                 setNoOrdersFound(true);
             } else {
                 setSearchNotFound(true);
             }
-            try {
-                const employeeResults = await farmvestService.searchEmployee(mobile);
-                if (employeeResults && Array.isArray(employeeResults) && employeeResults.length > 0) {
-                    console.log("User exists but has no in-transit orders");
-                }
-            } catch (e) { }
         } finally {
             setLoading(false);
         }
@@ -562,7 +564,6 @@ const AnimalOnboarding: React.FC = () => {
             setOrders(null);
             setMobile('');
         } catch (error) {
-            console.error('Onboarding failed:', error);
         } finally {
             setLoading(false);
         }
@@ -594,666 +595,650 @@ const AnimalOnboarding: React.FC = () => {
                 <h1>{selectedOrder ? 'Order Details' : 'Admin Animal Onboarding'}</h1>
             </div>
 
-            {!selectedOrder && (
-                <>
-                    <div className="onboarding-search-container">
-                        <div className="search-input-wrapper" ref={dropdownRef}>
-                            <Smartphone size={20} className="phone-icon" color="#6B7280" />
-                            <input
-                                type="text"
-                                placeholder="Search by Investor name or mobile number..."
-                                value={mobile}
-                                onChange={(e) => handleMobileChange(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleFind()}
-                                onFocus={() => mobile.length > 0 && setShowDropdown(true)}
-                            />
-                            {showDropdown && filteredMembers.length > 0 && (
-                                <div className="search-results-dropdown">
-                                    {filteredMembers.map((member, idx) => (
-                                        <div
-                                            key={`${member.type}-${member.id || idx}`}
-                                            className="search-result-item"
-                                            onClick={() => handleSelectMember(member)}
-                                        >
-                                            <div className="member-info-row">
-                                                <span className="member-name">{member.displayName}</span>
-                                                {member.type === 'employee' && (
-                                                    <span className="member-badge employee-badge">Staff</span>
-                                                )}
+            <div className="flex-1 overflow-auto p-6 scrollbar-hide">
+                {!selectedOrder && (
+                    <>
+                        <div className="onboarding-search-container">
+                            <div className="search-input-wrapper" ref={dropdownRef}>
+                                <Smartphone size={20} className="phone-icon" color="#6B7280" />
+                                <input
+                                    type="text"
+                                    placeholder="Search by mobile number..."
+                                    value={mobile}
+                                    onChange={(e) => handleMobileChange(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleFind()}
+                                    onFocus={() => mobile.length > 0 && setShowDropdown(true)}
+                                />
+                                {showDropdown && filteredMembers.length > 0 && (
+                                    <div className="search-results-dropdown">
+                                        {filteredMembers.map((member, idx) => (
+                                            <div
+                                                key={`${member.type}-${member.id || idx}`}
+                                                className="search-result-item"
+                                                onClick={() => handleSelectMember(member)}
+                                            >
+                                                <div className="member-info-row">
+                                                    {member.type === 'employee' && (
+                                                        <span className="member-badge employee-badge">Staff</span>
+                                                    )}
+                                                </div>
+                                                <span className="member-mobile">📱 {member.mobile}</span>
                                             </div>
-                                            <span className="member-mobile">📱 {member.mobile}</span>
+                                        ))}
+                                    </div>
+                                )}
+                                {showDropdown && mobile.length > 0 && filteredMembers.length === 0 && (
+                                    <div className="search-results-dropdown">
+                                        <div className="no-results">No members found</div>
+                                    </div>
+                                )}
+                            </div>
+                            <button className="find-btn" onClick={handleFind} disabled={loading || !mobile.trim()}>
+                                {loading ? 'Finding...' : 'Find'}
+                            </button>
+                        </div>
+                        {searchNotFound && (
+                            <div className="search-not-found-message" style={{
+                                textAlign: 'center',
+                                marginTop: '8px',
+                                color: '#EF4444',
+                                fontSize: '11px',
+                                fontWeight: 500,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: '4px'
+                            }}>
+                                <span>Search not found.</span>
+                                <span style={{ opacity: 0.8 }}>No investor found with mobile number: {searchedMobile}</span>
+                            </div>
+                        )}
+                        {noOrdersFound && !searchNotFound && (
+                            <div className="search-not-found-message" style={{
+                                textAlign: 'center',
+                                marginTop: '8px',
+                                color: '#F59E0B', // Amber-500
+                                fontSize: '11px',
+                                fontWeight: 500,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: '4px'
+                            }}>
+                                <span style={{ opacity: 0.8 }}> no pending in-transit orders for mobile: {searchedMobile}</span>
+                            </div>
+                        )}
+                        {orders && orders.length > 0 && !searchNotFound && (
+                            <div className="orders-overlay">
+                                <div className="orders-header">
+                                    <h2>Paid Orders for {user?.name ? `${user.name} (${searchedMobile})` : searchedMobile}</h2>
+                                </div>
+                                <div className="orders-list">
+                                    {orders.map((order, index) => (
+                                        <div key={order.id || index} className="order-card" onClick={() => setSelectedOrder(order)}>
+                                            <div className="order-card-icon">
+                                                <Receipt size={24} color="#2E7D32" strokeWidth={1.5} />
+                                            </div>
+                                            <div className="order-card-content">
+                                                <div className="order-user-info">
+                                                    <h3 className="order-user-name">{user?.name || 'N/A'}</h3>
+                                                    <div className="order-user-mobile-wrapper">
+                                                        <span className="order-user-mobile-icon">📱</span>
+                                                        <span className="order-user-mobile">{user?.mobile || searchedMobile}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="order-id">Order #{order.id}</div>
+                                                <div className="order-stats-divider"></div>
+                                                <div className="order-stats">
+                                                    <div className="stat-item">
+                                                        <span className="stat-label"><span className="stat-icon">🐃</span> Buffalo</span>
+                                                        <span className="stat-value">{order.buffaloCount}</span>
+                                                    </div>
+                                                    <div className="stat-item">
+                                                        <span className="stat-label"><span className="stat-icon">🐄</span> Calf</span>
+                                                        <span className="stat-value">{order.calfCount}</span>
+                                                    </div>
+                                                    <div className="stat-item total-amount">
+                                                        <span className="stat-label"><span className="stat-icon">💵</span> Total</span>
+                                                        <span className="stat-value">{formatCurrency(order.totalCost)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="order-card-action">
+                                                <ChevronRight size={20} color="#9CA3AF" />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            )}
-                            {showDropdown && mobile.length > 0 && filteredMembers.length === 0 && (
-                                <div className="search-results-dropdown">
-                                    <div className="no-results">No members found</div>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {selectedOrder && (
+                    <div className="order-details-wrapper">
+                        <div className="order-details-container">
+                            <div className="detail-card investor-profile-card">
+                                <div className="detail-card-header">
+                                    <User size={20} className="detail-icon" />
+                                    <h3>Investor Profile</h3>
                                 </div>
-                            )}
-                        </div>
-                        <button className="find-btn" onClick={handleFind} disabled={loading || !mobile.trim()}>
-                            {loading ? 'Finding...' : 'Find'}
-                        </button>
-                    </div>
-                    {searchNotFound && (
-                        <div className="search-not-found-message" style={{
-                            textAlign: 'center',
-                            marginTop: '8px',
-                            color: '#EF4444',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            gap: '4px'
-                        }}>
-                            <span>Search not found.</span>
-                            <span style={{ opacity: 0.8 }}>No investor found with mobile number: {searchedMobile}</span>
-                        </div>
-                    )}
-                    {noOrdersFound && !searchNotFound && (
-                        <div className="search-not-found-message" style={{
-                            textAlign: 'center',
-                            marginTop: '8px',
-                            color: '#F59E0B', // Amber-500
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            gap: '4px'
-                        }}>
-                            <span style={{ opacity: 0.8 }}> no pending in-transit orders for mobile: {searchedMobile}</span>
-                        </div>
-                    )}
-                    {orders && orders.length > 0 && !searchNotFound && (
-                        <div className="orders-overlay">
-                            <div className="orders-header">
-                                <h2>Paid Orders for {searchedMobile}</h2>
-                            </div>
-                            <div className="orders-list">
-                                {orders.map((order, index) => (
-                                    <div key={order.id || index} className="order-card" onClick={() => setSelectedOrder(order)}>
-                                        <div className="order-card-icon">
-                                            <Receipt size={24} color="#2E7D32" strokeWidth={1.5} />
-                                        </div>
-                                        <div className="order-card-content">
-                                            <div className="order-user-info">
-                                                <h3 className="order-user-name">{user?.name || 'N/A'}</h3>
-                                                <div className="order-user-mobile-wrapper">
-                                                    <span className="order-user-mobile-icon">📱</span>
-                                                    <span className="order-user-mobile">{user?.mobile || searchedMobile}</span>
-                                                </div>
-                                            </div>
-                                            <div className="order-id">Order #{order.id}</div>
-                                            <div className="order-stats-divider"></div>
-                                            <div className="order-stats">
-                                                <div className="stat-item">
-                                                    <span className="stat-label"><span className="stat-icon">🐃</span> Buffalo</span>
-                                                    <span className="stat-value">{order.buffaloCount}</span>
-                                                </div>
-                                                <div className="stat-item">
-                                                    <span className="stat-label"><span className="stat-icon">🐄</span> Calf</span>
-                                                    <span className="stat-value">{order.calfCount}</span>
-                                                </div>
-                                                <div className="stat-item total-amount">
-                                                    <span className="stat-label"><span className="stat-icon">💵</span> Total</span>
-                                                    <span className="stat-value">{formatCurrency(order.totalCost)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="order-card-action">
-                                            <ChevronRight size={20} color="#9CA3AF" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            {selectedOrder && (
-                <div className="order-details-wrapper">
-                    <div className="order-details-container">
-                        <div className="detail-card investor-profile-card">
-                            <div className="detail-card-header">
-                                <User size={20} className="detail-icon" />
-                                <h3>Investor Profile</h3>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Name</span>
-                                <span className="detail-value">{user?.name || 'N/A'}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Mobile</span>
-                                <span className="detail-value">{user?.mobile || searchedMobile}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Email</span>
-                                <span className="detail-value">{user?.email || 'N/A'}</span>
-                            </div>
-                        </div>
-
-                        <div className="detail-card investment-details-card">
-                            <div className="detail-card-header">
-                                <Receipt size={20} className="detail-icon" />
-                                <h3>Investment Details</h3>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Order ID</span>
-                                <span className="detail-value text-dark-bold">{selectedOrder.id}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Total Cost</span>
-                                <span className="detail-value text-dark-bold">{formatCurrency(selectedOrder.totalCost)}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">UTR Number</span>
-                                <span className="detail-value">{'N/A'}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Date</span>
-                                <span className="detail-value">{formatDate(selectedOrder.placedAt)}</span>
-                            </div>
-                        </div>
-
-                        {/* Updated Farm and Shed Selection */}
-                        <div className="farm-select-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <select
-                                className="farm-select"
-                                value={selectedFarmId}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setSelectedFarmId(val);
-                                    if (val) {
-                                        localStorage.setItem('fv_selected_farm_id', String(val));
-                                    } else {
-                                        localStorage.removeItem('fv_selected_farm_id');
-                                    }
-                                }}
-                                style={{ maxWidth: '300px' }}
-                            >
-                                <option value="">Select Farm Location</option>
-                                {farms.map(f => (
-                                    <option key={f.farm_id} value={f.farm_id}>
-                                        {f.farm_name} - {f.location}
-                                    </option>
-                                ))}
-                            </select>
-
-                        </div>
-                    </div>
-
-                    <div className="animals-list-container">
-                        {animals.filter(a => a.type === 'Buffalo').map((animal, filteredIdx) => (
-                            <div key={animal.id} className="animal-card">
-                                <div className="animal-card-header">
-                                    <div className="header-left">
-                                        <div className="animal-index-badge">#{animal.index}</div>
-                                        <div className="animal-title-section">
-                                            <h3>{animal.type}</h3>
-                                            <span className="enter-details-text">Enter details below</span>
-                                        </div>
-                                    </div>
-                                    <div className="header-right">
-
-                                        {animal.rfidTag && animal.earTag && animal.age ? (
-                                            <div className="status-badge completed">
-                                                <CheckCircle size={10} color="#16A34A" />
-                                                <span>Completed</span>
-                                            </div>
-                                        ) : null}
-                                        <button className="delete-btn" onClick={() => handleDeleteAnimal(animal.id)}>
-                                            <Trash2 size={18} color="#EF4444" />
-                                        </button>
-                                    </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Name</span>
+                                    <span className="detail-value">{user?.name || 'N/A'}</span>
                                 </div>
-
-                                <div className="animal-form-grid">
-                                    <div className="form-group">
-                                        <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
-                                        <div className="input-with-icon">
-                                            <QrCode size={18} className="input-icon" />
-                                            <input
-                                                type="text"
-                                                placeholder="RFID-X..."
-                                                value={animal.rfidTag}
-                                                onChange={(e) => handleAnimalChange(animal.id, 'rfidTag', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Ear Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
-                                        <div className="input-with-icon">
-                                            <Tag size={18} className="input-icon" />
-                                            <input
-                                                type="text"
-                                                placeholder="ET-XXXX"
-                                                value={animal.earTag}
-                                                onChange={(e) => handleAnimalChange(animal.id, 'earTag', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Age (Months) <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
-                                        <div className="input-with-icon">
-                                            <Cake size={18} className="input-icon" />
-                                            <input
-                                                type="number"
-                                                placeholder="36"
-                                                value={animal.age}
-                                                onChange={(e) => handleAnimalChange(animal.id, 'age', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Neckband ID (Optional)</label>
-                                        <div className="input-with-icon">
-                                            <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
-                                            <input
-                                                type="text"
-                                                placeholder="NB-XXXX"
-                                                value={animal.neckbandId || ''}
-                                                onChange={(e) => handleAnimalChange(animal.id, 'neckbandId', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    {/* Parent Buffalo field removed as requested */}
+                                <div className="detail-row">
+                                    <span className="detail-label">Mobile</span>
+                                    <span className="detail-value">{user?.mobile || searchedMobile}</span>
                                 </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Email</span>
+                                    <span className="detail-value">{user?.email || 'N/A'}</span>
+                                </div>
+                            </div>
 
-                                <div className="media-section">
-                                    <div className="media-actions-row">
-                                        {animal.isUploading ? (
-                                            <div className="upload-indicator-box">
-                                                <Loader2 size={18} className="animate-spin" color="#2E7D32" />
-                                            </div>
-                                        ) : (
-                                            (animal.photos.length < 3 || animal.videos.length < 1) && (
-                                                <>
-                                                    <button
-                                                        className="media-add-btn"
-                                                        onClick={() => document.getElementById(`media-input-${animal.id}`)?.click()}
-                                                    >
-                                                        <Camera size={20} color="#2E7D32" />
-                                                        <span>Add</span>
-                                                    </button>
-                                                    <input
-                                                        id={`media-input-${animal.id}`}
-                                                        type="file"
-                                                        accept="image/*,video/*"
-                                                        multiple
-                                                        style={{ display: 'none' }}
-                                                        onChange={(e) => {
-                                                            if (e.target.files && e.target.files.length > 0) {
-                                                                handlePhotoSelect(animal.id, e.target.files);
-                                                            }
-                                                        }}
-                                                    />
-                                                </>
-                                            )
-                                        )}
+                            <div className="detail-card investment-details-card">
+                                <div className="detail-card-header">
+                                    <Receipt size={20} className="detail-icon" />
+                                    <h3>Investment Details</h3>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Order ID</span>
+                                    <span className="detail-value text-dark-bold">{selectedOrder.id}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Total Cost</span>
+                                    <span className="detail-value text-dark-bold">{formatCurrency(selectedOrder.totalCost)}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">UTR Number</span>
+                                    <span className="detail-value">{'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Date</span>
+                                    <span className="detail-value">{formatDate(selectedOrder.placedAt)}</span>
+                                </div>
+                            </div>
 
-                                        {/* Calf Details Trigger - Beside Add button */}
-                                        <button
-                                            className="calf-action-btn"
-                                            onClick={() => {
-                                                setActiveParentId(animal.id);
-                                                const existingCalf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
-                                                if (existingCalf) {
-                                                    setTempCalf({
-                                                        rfidTag: existingCalf.rfidTag || '',
-                                                        earTag: existingCalf.earTag || '',
-                                                        neckbandId: existingCalf.neckbandId || '',
-                                                        age: existingCalf.age || '6',
-                                                        photos: existingCalf.photos || [],
-                                                        videos: existingCalf.videos || []
-                                                    });
-                                                } else {
-                                                    setTempCalf({
-                                                        rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
-                                                        earTag: animal.earTag ? `${animal.earTag}-C` : '',
-                                                        neckbandId: animal.neckbandId ? `${animal.neckbandId}-C` : '',
-                                                        age: '6',
-                                                        photos: [],
-                                                        videos: []
-                                                    });
-                                                }
-                                            }}
-                                        >
-                                            <div className="calf-btn-icon">
-                                                <CalfIcon size={28} />
+                            {/* Updated Farm and Shed Selection */}
+                            <div className="farm-select-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <select
+                                    className="farm-select"
+                                    value={selectedFarmId}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedFarmId(val);
+                                        if (val) {
+                                            localStorage.setItem('fv_selected_farm_id', String(val));
+                                        } else {
+                                            localStorage.removeItem('fv_selected_farm_id');
+                                        }
+                                    }}
+                                    style={{ maxWidth: '300px' }}
+                                >
+                                    <option value="">Select Farm Location</option>
+                                    {farms.map(f => (
+                                        <option key={f.farm_id} value={f.farm_id}>
+                                            {f.farm_name} - {f.location}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="animals-list-container">
+                            {animals.filter(a => a.type === 'Buffalo').map((animal, filteredIdx) => (
+                                <div key={animal.id} className="animal-card">
+                                    <div className="animal-card-header">
+                                        <div className="header-left">
+                                            <div className="animal-index-badge">#{animal.index}</div>
+                                            <div className="animal-title-section">
+                                                <h3>{animal.type}</h3>
+                                                <span className="enter-details-text">Enter details below</span>
                                             </div>
-                                            <div className="calf-btn-text">
-                                                <span className="calf-btn-title">Calf Details</span>
-                                                <span className="calf-btn-subtitle">
-                                                    {(() => {
-                                                        const calf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
-                                                        return calf ? `Tag: ${calf.earTag || calf.rfidTag || 'Saved'}` : 'Tap to enter';
-                                                    })()}
-                                                </span>
-                                            </div>
-                                            <ChevronRight size={16} color="white" />
-                                        </button>
+                                        </div>
+                                        <div className="header-right">
+                                            {animal.rfidTag && animal.earTag && animal.age ? (
+                                                <div className="status-badge completed">
+                                                    <CheckCircle size={10} color="#16A34A" />
+                                                    <span>Completed</span>
+                                                </div>
+                                            ) : null}
+                                            <button className="delete-btn" onClick={() => handleDeleteAnimal(animal.id)}>
+                                                <Trash2 size={18} color="#EF4444" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="media-grid previews-only">
-                                        {/* Photos */}
-                                        {animal.photos.map((photo, idx) => (
-                                            <div key={`photo-${idx}`} className="media-preview-item">
-                                                <img
-                                                    src={photo}
-                                                    alt={`Animal ${idx + 1}`}
-                                                    onClick={() => setViewingImage(photo)}
+                                    <div className="animal-form-grid">
+                                        <div className="form-group">
+                                            <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
+                                            <div className="input-with-icon">
+                                                <QrCode size={18} className="input-icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="RFID-X..."
+                                                    value={animal.rfidTag}
+                                                    onChange={(e) => handleAnimalChange(animal.id, 'rfidTag', e.target.value)}
                                                 />
-                                                <button
-                                                    className="remove-media-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleRemovePhoto(animal.id, idx);
-                                                    }}
-                                                >
-                                                    ×
-                                                </button>
                                             </div>
-                                        ))}
-
-                                        {/* Videos */}
-                                        {animal.videos.map((video, idx) => (
-                                            <div key={`video-${idx}`} className="media-preview-item video-item">
-                                                <video src={video} />
-                                                <div className="video-overlay" onClick={() => window.open(video, '_blank')}>
-                                                    <div className="play-icon">▶</div>
-                                                </div>
-                                                <button
-                                                    className="remove-media-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleRemoveVideo(animal.id, idx);
-                                                    }}
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="onboarding-actions" style={{ flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                        <button
-                            className="autofill-btn"
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#F97316',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                padding: '8px'
-                            }}
-                            onClick={handleAutofill}
-                        >
-                            <Wand2 size={16} color="#F97316" />
-                            Autofill Test Data
-                        </button>
-
-                        <button
-                            className="confirm-onboarding-btn"
-                            style={{ width: '100%', maxWidth: '400px' }}
-                            onClick={handleConfirmOnboarding}
-                            disabled={!isFormComplete}
-                        >
-                            Confirm Onboarding
-                        </button>
-                    </div>
-                </div>
-            )}
-            <SuccessToast
-                message="Animal Onboarding Successful!"
-                isVisible={toastVisible}
-                onClose={() => setToastVisible(false)}
-            />
-
-            {/* Calf Details Modal Overlay */}
-            {activeParentId !== null && (
-                <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ background: 'white', width: '90%', maxWidth: '500px', borderRadius: '20px', padding: '24px', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                                    <CalfIcon size={24} />
-                                </div>
-                                <div>
-                                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1F2937', margin: 0 }}>Calf</h3>
-                                    <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, fontStyle: 'italic' }}>Enter details below</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                {tempCalf.rfidTag && tempCalf.earTag && tempCalf.age ? (
-                                    <div className="status-badge completed">
-                                        <CheckCircle size={10} /> Completed
-                                    </div>
-                                ) : null}
-                                <button onClick={() => setActiveParentId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444' }}>
-                                    <Trash2 size={20} />
-                                </button>
-                                <button onClick={() => setActiveParentId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
-                                    <X size={20} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="animal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div className="form-group">
-                                <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
-                                <div className="input-with-icon">
-                                    <QrCode size={18} className="input-icon" />
-                                    <input
-                                        type="text"
-                                        placeholder="RFID-X..."
-                                        value={tempCalf.rfidTag}
-                                        onChange={(e) => setTempCalf(prev => ({ ...prev, rfidTag: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Ear Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
-                                <div className="input-with-icon">
-                                    <Tag size={18} className="input-icon" />
-                                    <input
-                                        type="text"
-                                        placeholder="ET-XXXX"
-                                        value={tempCalf.earTag}
-                                        onChange={(e) => setTempCalf(prev => ({ ...prev, earTag: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Age (Months) <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
-                                <div className="input-with-icon">
-                                    <Cake size={18} className="input-icon" />
-                                    <input
-                                        type="number"
-                                        placeholder="6"
-                                        value={tempCalf.age}
-                                        onChange={(e) => setTempCalf(prev => ({ ...prev, age: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Neckband ID </label>
-                                <div className="input-with-icon">
-                                    <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
-                                    <input
-                                        type="text"
-                                        placeholder="NB-XXXX"
-                                        value={tempCalf.neckbandId || ''}
-                                        onChange={(e) => setTempCalf(prev => ({ ...prev, neckbandId: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-                            {/* Parent Buffalo field removed as requested */}
-                        </div>
-
-                        <div className="media-section" style={{ marginTop: '20px' }}>
-                            <div className="media-grid">
-                                {tempCalf.photos?.map((photo, idx) => (
-                                    <div key={`photo-${idx}`} className="media-preview-item">
-                                        <img
-                                            src={photo}
-                                            alt={`Calf ${idx + 1}`}
-                                            onClick={() => setViewingImage(photo)}
-                                        />
-                                        <button
-                                            className="remove-media-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setTempCalf(prev => ({ ...prev, photos: (prev.photos || []).filter((_, i) => i !== idx) }));
-                                            }}
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
-                                {tempCalf.videos?.map((video, idx) => (
-                                    <div key={`video-${idx}`} className="media-preview-item video-item">
-                                        <video src={video} />
-                                        <div className="video-overlay" onClick={() => window.open(video, '_blank')}>
-                                            <div className="play-icon">▶</div>
                                         </div>
-                                        <button
-                                            className="remove-media-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setTempCalf(prev => ({ ...prev, videos: (prev.videos || []).filter((_, i) => i !== idx) }));
-                                            }}
-                                        >
-                                            ×
-                                        </button>
+                                        <div className="form-group">
+                                            <label>Ear Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
+                                            <div className="input-with-icon">
+                                                <Tag size={18} className="input-icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="ET-XXXX"
+                                                    value={animal.earTag}
+                                                    onChange={(e) => handleAnimalChange(animal.id, 'earTag', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Age (Months) <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
+                                            <div className="input-with-icon">
+                                                <Cake size={18} className="input-icon" />
+                                                <input
+                                                    type="number"
+                                                    placeholder="36"
+                                                    value={animal.age}
+                                                    onChange={(e) => handleAnimalChange(animal.id, 'age', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Neckband ID (Optional)</label>
+                                            <div className="input-with-icon">
+                                                <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="NB-XXXX"
+                                                    value={animal.neckbandId || ''}
+                                                    onChange={(e) => handleAnimalChange(animal.id, 'neckbandId', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
 
-                                {((tempCalf.photos?.length || 0) < 3 || (tempCalf.videos?.length || 0) < 1) && (
-                                    <>
-                                        <button
-                                            className="media-add-btn"
-                                            onClick={() => document.getElementById('calf-media-input')?.click()}
-                                        >
-                                            <Camera size={20} color="#2E7D32" />
-                                            <span>Add</span>
-                                        </button>
-                                        <input
-                                            id="calf-media-input"
-                                            type="file"
-                                            accept="image/*,video/*"
-                                            multiple
-                                            style={{ display: 'none' }}
-                                            onChange={async (e) => {
-                                                if (e.target.files && e.target.files.length > 0) {
-                                                    const files = Array.from(e.target.files);
-                                                    const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+                                    <div className="media-section">
+                                        <div className="media-actions-row">
+                                            {animal.isUploading ? (
+                                                <div className="upload-indicator-box">
+                                                    <Loader2 size={18} className="animate-spin" color="#2E7D32" />
+                                                </div>
+                                            ) : (
+                                                (animal.photos.length < 3 || animal.videos.length < 1) && (
+                                                    <>
+                                                        <button
+                                                            className="media-add-btn"
+                                                            onClick={() => document.getElementById(`media-input-${animal.id}`)?.click()}
+                                                        >
+                                                            <Camera size={20} color="#2E7D32" />
+                                                            <span>Add</span>
+                                                        </button>
+                                                        <input
+                                                            id={`media-input-${animal.id}`}
+                                                            type="file"
+                                                            accept="image/*,video/*"
+                                                            multiple
+                                                            style={{ display: 'none' }}
+                                                            onChange={(e) => {
+                                                                if (e.target.files && e.target.files.length > 0) {
+                                                                    handlePhotoSelect(animal.id, e.target.files);
+                                                                }
+                                                            }}
+                                                        />
+                                                    </>
+                                                )
+                                            )}
 
-                                                    const pUrls: string[] = [];
-                                                    const vUrls: string[] = [];
-
-                                                    for (const file of files) {
-                                                        const isImg = file.type.startsWith('image/');
-                                                        const isVid = file.type.startsWith('video/');
-
-                                                        if (isImg && (tempCalf.photos?.length || 0) + pUrls.length < 3) {
-                                                            const url = await uploadToFirebase(file);
-                                                            pUrls.push(url);
-                                                        } else if (isVid && (tempCalf.videos?.length || 0) + vUrls.length < 1) {
-                                                            const url = await uploadToFirebase(file);
-                                                            vUrls.push(url);
-                                                        } else if (isImg || isVid) {
-                                                            alert(`Limit exceeded for ${isImg ? 'photos' : 'videos'}`);
-                                                        }
+                                            {/* Calf Details Trigger - Beside Add button */}
+                                            <button
+                                                className="calf-action-btn"
+                                                onClick={() => {
+                                                    setActiveParentId(animal.id);
+                                                    const existingCalf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
+                                                    if (existingCalf) {
+                                                        setTempCalf({
+                                                            rfidTag: existingCalf.rfidTag || '',
+                                                            earTag: existingCalf.earTag || '',
+                                                            neckbandId: existingCalf.neckbandId || '',
+                                                            age: existingCalf.age || '6',
+                                                            photos: existingCalf.photos || [],
+                                                            videos: existingCalf.videos || []
+                                                        });
+                                                    } else {
+                                                        setTempCalf({
+                                                            rfidTag: animal.rfidTag ? `${animal.rfidTag}-C` : '',
+                                                            earTag: animal.earTag ? `${animal.earTag}-C` : '',
+                                                            neckbandId: animal.neckbandId ? `${animal.neckbandId}-C` : '',
+                                                            age: '6',
+                                                            photos: [],
+                                                            videos: []
+                                                        });
                                                     }
-                                                    setTempCalf(prev => ({
-                                                        ...prev,
-                                                        photos: [...(prev.photos || []), ...pUrls],
-                                                        videos: [...(prev.videos || []), ...vUrls]
-                                                    }));
-                                                }
-                                            }}
-                                        />
-                                    </>
-                                )}
-                            </div>
+                                                }}
+                                            >
+                                                <div className="calf-btn-icon">
+                                                    <CalfIcon size={28} />
+                                                </div>
+                                                <div className="calf-btn-text">
+                                                    <span className="calf-btn-title">Calf Details</span>
+                                                    <span className="calf-btn-subtitle">
+                                                        {(() => {
+                                                            const calf = animals.find(a => a.type === 'Calf' && a.parentBuffaloId === animal.id);
+                                                            return calf ? `Tag: ${calf.earTag || calf.rfidTag || 'Saved'}` : 'Tap to enter';
+                                                        })()}
+                                                    </span>
+                                                </div>
+                                                <ChevronRight size={16} color="white" />
+                                            </button>
+                                        </div>
+
+                                        <div className="media-grid previews-only">
+                                            {/* Photos */}
+                                            {animal.photos.map((photo, idx) => (
+                                                <div key={`photo-${idx}`} className="media-preview-item">
+                                                    <img
+                                                        src={photo}
+                                                        alt={`Animal ${idx + 1}`}
+                                                        onClick={() => setViewingImage(photo)}
+                                                    />
+                                                    <button
+                                                        className="remove-media-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemovePhoto(animal.id, idx);
+                                                        }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            {/* Videos */}
+                                            {animal.videos.map((video, idx) => (
+                                                <div key={`video-${idx}`} className="media-preview-item video-item">
+                                                    <video src={video} />
+                                                    <div className="video-overlay" onClick={() => window.open(video, '_blank')}>
+                                                        <div className="play-icon">▶</div>
+                                                    </div>
+                                                    <button
+                                                        className="remove-media-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveVideo(animal.id, idx);
+                                                        }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
-                        <button
-                            onClick={() => {
-                                // Save logic
-                                const parentBuffalo = animals.find(a => a.id === activeParentId);
-                                if (!parentBuffalo) return;
+                        <div className="onboarding-actions">
+                            <button className="autofill-btn" onClick={handleAutofill}>
+                                <Wand2 size={16} color="#F97316" />
+                                Autofill Test Data
+                            </button>
 
-                                setAnimals(prev => {
-                                    const existingCalfIndex = prev.findIndex(a => a.type === 'Calf' && a.parentBuffaloId === parentBuffalo.id);
-
-                                    if (existingCalfIndex !== -1) {
-                                        // Update existing calf
-                                        const updatedAnimals = [...prev];
-                                        updatedAnimals[existingCalfIndex] = {
-                                            ...updatedAnimals[existingCalfIndex],
-                                            rfidTag: tempCalf.rfidTag || '',
-                                            earTag: tempCalf.earTag || '',
-                                            neckbandId: tempCalf.neckbandId || '',
-                                            age: tempCalf.age || '6',
-                                            photos: tempCalf.photos || [],
-                                            videos: tempCalf.videos || [],
-                                            status: 'Completed'
-                                        };
-                                        return updatedAnimals;
-                                    } else {
-                                        // Add new calf
-                                        const newCalf: AnimalDetail = {
-                                            id: Date.now() + 999,
-                                            uid: crypto.randomUUID(),
-                                            type: 'Calf',
-                                            rfidTag: tempCalf.rfidTag || '',
-                                            earTag: tempCalf.earTag || '',
-                                            neckbandId: tempCalf.neckbandId || '',
-                                            age: tempCalf.age || '6',
-                                            photos: tempCalf.photos || [],
-                                            videos: tempCalf.videos || [],
-                                            parentBuffaloId: parentBuffalo.id,
-                                            index: 1,
-                                            status: 'Completed'
-                                        };
-                                        return [...prev, newCalf];
-                                    }
-                                });
-
-                                setActiveParentId(null);
-                                setTempCalf({ rfidTag: '', earTag: '', age: '6', photos: [], videos: [] }); // Reset form
-                            }}
-                            style={{
-                                width: '100%',
-                                marginTop: '24px',
-                                padding: '14px',
-                                backgroundColor: '#2E7D32',
-                                color: 'white',
-                                borderRadius: '12px',
-                                border: 'none',
-                                fontWeight: 'bold',
-                                fontSize: '16px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Save Calf Details
-                        </button>
+                            <button
+                                className="confirm-onboarding-btn"
+                                onClick={handleConfirmOnboarding}
+                                disabled={!isFormComplete}
+                            >
+                                Confirm Onboarding
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
+                {loading && (
+                    <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', zIndex: 100 }}>
+                        <Loader2 className="animate-spin" size={48} color="#2E7D32" />
+                    </div>
+                )}
+
+                {viewingImage && (
+                    <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setViewingImage(null)}>
+                        <img src={viewingImage} style={{ maxWidth: '90%', maxHeight: '90%' }} alt="Preview" />
+                    </div>
+                )}
+
+                <SuccessToast
+                    message="Animal Onboarding Successful!"
+                    isVisible={toastVisible}
+                    onClose={() => setToastVisible(false)}
+                />
+
+                {/* Calf Details Modal Overlay */}
+                {activeParentId !== null && (
+                    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ background: 'white', width: '90%', maxWidth: '500px', borderRadius: '20px', padding: '24px', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                                        <CalfIcon size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1F2937', margin: 0 }}>Calf</h3>
+                                        <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, fontStyle: 'italic' }}>Enter details below</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button onClick={() => setActiveParentId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="animal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className="form-group">
+                                    <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
+                                    <div className="input-with-icon">
+                                        <QrCode size={18} className="input-icon" />
+                                        <input
+                                            type="text"
+                                            placeholder="RFID-X..."
+                                            value={tempCalf.rfidTag}
+                                            onChange={(e) => setTempCalf(prev => ({ ...prev, rfidTag: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>Ear Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
+                                    <div className="input-with-icon">
+                                        <Tag size={18} className="input-icon" />
+                                        <input
+                                            type="text"
+                                            placeholder="ET-XXXX"
+                                            value={tempCalf.earTag}
+                                            onChange={(e) => setTempCalf(prev => ({ ...prev, earTag: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>Age (Months) <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
+                                    <div className="input-with-icon">
+                                        <Cake size={18} className="input-icon" />
+                                        <input
+                                            type="number"
+                                            placeholder="6"
+                                            value={tempCalf.age}
+                                            onChange={(e) => setTempCalf(prev => ({ ...prev, age: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>Neckband ID </label>
+                                    <div className="input-with-icon">
+                                        <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
+                                        <input
+                                            type="text"
+                                            placeholder="NB-XXXX"
+                                            value={tempCalf.neckbandId || ''}
+                                            onChange={(e) => setTempCalf(prev => ({ ...prev, neckbandId: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="media-section" style={{ marginTop: '20px' }}>
+                                <div className="media-grid">
+                                    {tempCalf.photos?.map((photo, idx) => (
+                                        <div key={`photo-${idx}`} className="media-preview-item">
+                                            <img
+                                                src={photo}
+                                                alt={`Calf ${idx + 1}`}
+                                                onClick={() => setViewingImage(photo)}
+                                            />
+                                            <button
+                                                className="remove-media-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setTempCalf(prev => ({ ...prev, photos: (prev.photos || []).filter((_, i) => i !== idx) }));
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {tempCalf.videos?.map((video, idx) => (
+                                        <div key={`video-${idx}`} className="media-preview-item video-item">
+                                            <video src={video} />
+                                            <div className="video-overlay" onClick={() => window.open(video, '_blank')}>
+                                                <div className="play-icon">▶</div>
+                                            </div>
+                                            <button
+                                                className="remove-media-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setTempCalf(prev => ({ ...prev, videos: (prev.videos || []).filter((_, i) => i !== idx) }));
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {((tempCalf.photos?.length || 0) < 3 || (tempCalf.videos?.length || 0) < 1) && (
+                                        <>
+                                            <button
+                                                className="media-add-btn"
+                                                onClick={() => document.getElementById('calf-media-input')?.click()}
+                                            >
+                                                <Camera size={20} color="#2E7D32" />
+                                                <span>Add</span>
+                                            </button>
+                                            <input
+                                                id="calf-media-input"
+                                                type="file"
+                                                accept="image/*,video/*"
+                                                multiple
+                                                style={{ display: 'none' }}
+                                                onChange={async (e) => {
+                                                    if (e.target.files && e.target.files.length > 0) {
+                                                        const files = Array.from(e.target.files);
+                                                        const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+
+                                                        const pUrls: string[] = [];
+                                                        const vUrls: string[] = [];
+
+                                                        for (const file of files) {
+                                                            const isImg = file.type.startsWith('image/');
+                                                            const isVid = file.type.startsWith('video/');
+
+                                                            if (isImg && (tempCalf.photos?.length || 0) + pUrls.length < 3) {
+                                                                const url = await uploadToFirebase(file);
+                                                                pUrls.push(url);
+                                                            } else if (isVid && (tempCalf.videos?.length || 0) + vUrls.length < 1) {
+                                                                const url = await uploadToFirebase(file);
+                                                                vUrls.push(url);
+                                                            } else if (isImg || isVid) {
+                                                                alert(`Limit exceeded for ${isImg ? 'photos' : 'videos'}`);
+                                                            }
+                                                        }
+                                                        setTempCalf(prev => ({
+                                                            ...prev,
+                                                            photos: [...(prev.photos || []), ...pUrls],
+                                                            videos: [...(prev.videos || []), ...vUrls]
+                                                        }));
+                                                    }
+                                                }}
+                                            />
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    // Save logic
+                                    const parentBuffalo = animals.find(a => a.id === activeParentId);
+                                    if (!parentBuffalo) return;
+
+                                    setAnimals(prev => {
+                                        const existingCalfIndex = prev.findIndex(a => a.type === 'Calf' && a.parentBuffaloId === parentBuffalo.id);
+
+                                        if (existingCalfIndex !== -1) {
+                                            // Update existing calf
+                                            const updatedAnimals = [...prev];
+                                            updatedAnimals[existingCalfIndex] = {
+                                                ...updatedAnimals[existingCalfIndex],
+                                                rfidTag: tempCalf.rfidTag || '',
+                                                earTag: tempCalf.earTag || '',
+                                                neckbandId: tempCalf.neckbandId || '',
+                                                age: tempCalf.age || '6',
+                                                photos: tempCalf.photos || [],
+                                                videos: tempCalf.videos || [],
+                                                status: 'Completed'
+                                            };
+                                            return updatedAnimals;
+                                        } else {
+                                            // Add new calf
+                                            const newCalf: AnimalDetail = {
+                                                id: Date.now() + 999,
+                                                uid: crypto.randomUUID(),
+                                                type: 'Calf',
+                                                rfidTag: tempCalf.rfidTag || '',
+                                                earTag: tempCalf.earTag || '',
+                                                neckbandId: tempCalf.neckbandId || '',
+                                                age: tempCalf.age || '6',
+                                                photos: tempCalf.photos || [],
+                                                videos: tempCalf.videos || [],
+                                                parentBuffaloId: parentBuffalo.id,
+                                                index: 1,
+                                                status: 'Completed'
+                                            };
+                                            return [...prev, newCalf];
+                                        }
+                                    });
+
+                                    setActiveParentId(null);
+                                    setTempCalf({ rfidTag: '', earTag: '', age: '6', photos: [], videos: [] }); // Reset form
+                                }}
+                                style={{
+                                    width: '100%',
+                                    marginTop: '24px',
+                                    padding: '14px',
+                                    backgroundColor: '#2E7D32',
+                                    color: 'white',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    fontWeight: 'bold',
+                                    fontSize: '16px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Save Calf Details
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

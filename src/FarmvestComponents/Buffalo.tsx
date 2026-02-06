@@ -98,7 +98,6 @@ const BuffaloManagement: React.FC = () => {
                 } else {
                     // Search mode
                     response = await farmvestService.searchAnimal(searchQuery.trim());
-                    console.log('[DEBUG-SEARCH] Raw Response:', response);
                 }
 
                 if (response && (response.status === 'success' || Array.isArray(response) || response.data)) {
@@ -177,7 +176,6 @@ const BuffaloManagement: React.FC = () => {
                     setTotalCount(0);
                 }
             } catch (err: any) {
-                console.error('Search API failed:', err);
                 setError(err.message || 'Failed to fetch buffalo data');
             } finally {
                 setIsLoading(false);
@@ -198,7 +196,6 @@ const BuffaloManagement: React.FC = () => {
                     setLocations(response.data);
                 }
             } catch (err) {
-                console.error("Error fetching locations:", err);
             }
         };
         fetchLocations();
@@ -218,7 +215,6 @@ const BuffaloManagement: React.FC = () => {
                     setFarms(farmResponse.data);
                 }
             } catch (err) {
-                console.error("Error fetching farms:", err);
             }
         };
         fetchFarms();
@@ -241,7 +237,6 @@ const BuffaloManagement: React.FC = () => {
                     }
                 }
             } catch (err) {
-                console.error("Error fetching sheds:", err);
             }
         };
         fetchSheds();
@@ -256,7 +251,6 @@ const BuffaloManagement: React.FC = () => {
                     const response = await farmvestService.getCalves(selectedBuffalo.animalId);
                     setCalves(Array.isArray(response) ? response : (response.data || []));
                 } catch (err) {
-                    console.error("Error fetching calves:", err);
                     setCalves([]);
                 } finally {
                     setIsCalvesLoading(false);
@@ -336,7 +330,6 @@ const BuffaloManagement: React.FC = () => {
 
                 setInlineCalves(prev => ({ ...prev, [animalId]: uniqueCalves }));
             } catch (err) {
-                console.error("Error fetching inline calves:", err);
                 setInlineCalves(prev => ({ ...prev, [animalId]: [] }));
             } finally {
                 setInlineLoading(prev => ({ ...prev, [animalId]: false }));

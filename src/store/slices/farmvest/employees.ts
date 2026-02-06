@@ -7,7 +7,6 @@ export const fetchEmployees = createAsyncThunk(
     async (params: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getEmployees(params);
-            console.log('fetchEmployees thunk response:', response);
 
             let rawData: any[] = [];
 

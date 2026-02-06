@@ -15,7 +15,6 @@ import CustomDropdown from '../components/common/CustomDropdown';
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
     if (!farm) return null;
     // Debug logging to inspect structure
-    console.log('Farm Data Row:', farm);
 
     // Safely calculate serial number
     const pageNum = isNaN(currentPage) ? 1 : currentPage;
@@ -23,21 +22,21 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
 
     return (
         <tr className="bg-white border-b hover:bg-gray-50 transition-colors duration-150">
-            <td className="px-4 py-3 text-center text-gray-400 font-medium">{sNo}</td>
-            <td className="px-4 py-3 font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
+            <td className="px-4 py-2 text-center text-gray-400 font-medium">{sNo}</td>
+            <td className="px-4 py-2 font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
                 {farm.farm_name || '-'}
             </td>
-            <td className="px-4 py-3 text-gray-600">
+            <td className="px-4 py-2 text-gray-600">
                 {farm.location || '-'}
             </td>
-            <td className="px-4 py-3 text-center">
+            <td className="px-4 py-2 text-center">
                 <span className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm mx-auto">
                     {typeof farm.total_buffaloes_count === 'number'
                         ? farm.total_buffaloes_count.toLocaleString()
                         : (farm.total_buffaloes_count || '0')}
                 </span>
             </td>
-            <td className="px-4 py-3 text-gray-600">
+            <td className="px-4 py-2 text-gray-600">
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-900">{farm.farm_manager_name || farm.manager_name || (farm.farm_manager?.name) || '-'}</span>
                     <span className="text-xs text-gray-500 mt-0.5">{farm.mobile_number || farm.manager_mobile || farm.manager_phone || (farm.farm_manager?.mobile) || '-'}</span>
@@ -50,15 +49,9 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
 const Farms: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { farms, loading: farmsLoading, error: farmsError } = useAppSelector((state: RootState) => {
-        // Safe selector fallback
-        const farmState = state.farmvestFarms || { farms: [], loading: false, error: null };
-        return {
-            farms: Array.isArray(farmState.farms) ? farmState.farms : [],
-            loading: !!farmState.loading,
-            error: farmState.error
-        };
-    });
+    const farms = useAppSelector((state: RootState) => state.farmvestFarms?.farms || []);
+    const farmsLoading = useAppSelector((state: RootState) => !!state.farmvestFarms?.loading);
+    const farmsError = useAppSelector((state: RootState) => state.farmvestFarms?.error);
 
     // URL Search Params for Pagination and Location
     const [searchParams, setSearchParams] = useSearchParams();
@@ -85,7 +78,6 @@ const Farms: React.FC = () => {
         const loadLocations = async () => {
             try {
                 const response = await farmvestService.getLocations();
-                console.log('Fetched locations response:', response);
 
                 // Based on node script test: response.data.locations
                 let locs: string[] = [];
@@ -103,7 +95,6 @@ const Farms: React.FC = () => {
                     setAvailableLocations(locs.map(l => String(l).toUpperCase()));
                 }
             } catch (err) {
-                console.error("Failed to load locations", err);
             }
         };
         loadLocations();
@@ -118,7 +109,6 @@ const Farms: React.FC = () => {
 
     // Effect: Trigger fetch when location changes
     useEffect(() => {
-        console.log(`[FarmsComponent] Location changed to: ${location}, triggering fetch`);
         dispatch(fetchFarms(location));
     }, [dispatch, location]);
 
@@ -206,13 +196,12 @@ const Farms: React.FC = () => {
     // Page Clamping: Prevent being on a page that no longer exists
     useEffect(() => {
         if (!farmsLoading && currentPage > totalPages && totalPages > 0) {
-            console.log(`[FarmsComponent] Page clamp: ${currentPage} -> ${totalPages}`);
             setCurrentPage(totalPages);
         }
     }, [totalPages, currentPage, setCurrentPage, farmsLoading]);
 
     return (
-        <div className="farms-container animate-fadeIn">
+        <div className="farms-container h-full flex flex-col overflow-hidden animate-fadeIn">
             <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
                     <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
@@ -279,21 +268,21 @@ const Farms: React.FC = () => {
                 )}
 
                 <div className="bg-white border border-gray-100 rounded-2xl shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
-                    <div className="overflow-auto flex-1 h-full hide-scrollbar">
-                        <table className="farms-table w-full h-full text-xs text-left border-collapse relative">
-                            <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm h-12">
+                    <div className="overflow-auto flex-1 min-h-0 hide-scrollbar">
+                        <table className="farms-table w-full text-xs text-left border-collapse relative">
+                            <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th className="px-4 py-3 text-center">S.no</th>
-                                    <th className="px-4 py-3 text-left">
+                                    <th className="px-4 py-2 text-center">S.no</th>
+                                    <th className="px-4 py-2 text-left">
                                         <div className="flex items-center gap-2">Farm Name</div>
                                     </th>
-                                    <th className="px-4 py-3 text-left">
+                                    <th className="px-4 py-2 text-left">
                                         <div className="flex items-center gap-2">Location</div>
                                     </th>
-                                    <th className="px-4 py-3 text-center">
+                                    <th className="px-4 py-2 text-center">
                                         <div className="flex items-center justify-center gap-2">Live Count</div>
                                     </th>
-                                    <th className="px-4 py-3 text-left">
+                                    <th className="px-4 py-2 text-left">
                                         <div className="flex items-center gap-2">Farm Manager</div>
                                     </th>
                                 </tr>
@@ -330,7 +319,7 @@ const Farms: React.FC = () => {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-10 flex justify-center">
+                    <div className="mt-6 flex justify-center">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
