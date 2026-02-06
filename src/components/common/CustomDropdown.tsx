@@ -8,9 +8,10 @@ interface CustomDropdownProps {
     onChange: (value: string) => void;
     placeholder: string;
     disabled?: boolean;
+    className?: string;
 }
 
-const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChange, placeholder, disabled }) => {
+const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChange, placeholder, disabled, className }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +29,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChang
     const selectedOption = options.find(opt => String(opt.value) === String(value));
 
     return (
-        <div className="custom-dropdown-container" ref={dropdownRef}>
+        <div className={`custom-dropdown-container ${className || ''}`} ref={dropdownRef}>
             <div
                 className={`custom-dropdown-trigger ${disabled ? 'disabled' : ''}`}
                 onClick={() => !disabled && setIsOpen(!isOpen)}

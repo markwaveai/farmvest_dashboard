@@ -211,9 +211,9 @@ function App() {
 
         <Route path="/farmvest/account-deletion" element={
           <ConditionalLayoutWrapper session={session} handleLogout={handleLogout}>
-            <React.Suspense fallback={<UsersPageSkeleton />}>
-              <FarmVestAccountDeletion />
-            </React.Suspense>
+
+            <FarmVestAccountDeletion />
+
           </ConditionalLayoutWrapper>
         } />
 

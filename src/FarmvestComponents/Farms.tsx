@@ -9,8 +9,8 @@ import TableSkeleton from '../components/common/TableSkeleton';
 import { farmvestService } from '../services/farmvest_api';
 import AddFarmModal from './AddFarmModal';
 import './Farms.css';
+import CustomDropdown from '../components/common/CustomDropdown';
 
-// Memoized table row with defensive checks
 // Memoized table row with defensive checks
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
     if (!farm) return null;
@@ -116,21 +116,25 @@ const Farms: React.FC = () => {
         navigate(`/farmvest/farms/${farm.id}`, { state: { farm } });
     }, [navigate]);
 
-    // Removed old modal state and logic
-
-
-
-
-
     // Effect: Trigger fetch when location changes
     useEffect(() => {
         console.log(`[FarmsComponent] Location changed to: ${location}, triggering fetch`);
         dispatch(fetchFarms(location));
     }, [dispatch, location]);
 
-    // Handle location change via URL
-    const handleLocationChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newLocation = e.target.value;
+    // Transform locations for CustomDropdown
+    const locationOptions = useMemo(() => {
+        if (availableLocations.length > 0) {
+            return availableLocations.map(loc => ({ value: loc, label: loc }));
+        }
+        return [
+            { value: 'KURNOOL', label: 'KURNOOL' },
+            { value: 'HYDERABAD', label: 'HYDERABAD' }
+        ];
+    }, [availableLocations]);
+
+    // Handle location change via CustomDropdown
+    const handleLocationSelect = useCallback((newLocation: string) => {
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             next.set('location', newLocation);
@@ -138,7 +142,6 @@ const Farms: React.FC = () => {
             return next;
         });
     }, [setSearchParams]);
-
 
     // Handle pagination
     const setCurrentPage = useCallback((page: number) => {
@@ -208,14 +211,6 @@ const Farms: React.FC = () => {
         }
     }, [totalPages, currentPage, setCurrentPage, farmsLoading]);
 
-
-
-
-    const getSortIcon = useCallback((key: string) => {
-        if (sortConfig.key !== key) return '↕️';
-        return sortConfig.direction === 'asc' ? '↑' : '↓';
-    }, [sortConfig]);
-
     return (
         <div className="farms-container animate-fadeIn">
             <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
@@ -227,7 +222,7 @@ const Farms: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                    {/* Search Input - Swapped with dropdown */}
+                    {/* Search Input */}
                     <div className="w-full sm:w-56 relative group">
                         <input
                             type="text"
@@ -246,26 +241,13 @@ const Farms: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="relative w-full sm:w-36">
-                        <select
-                            className="w-full py-2 px-3 pl-4 pr-10 border border-gray-200 rounded-lg bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
+                    <div className="relative w-full sm:w-48 z-20">
+                        <CustomDropdown
+                            options={locationOptions}
                             value={location}
-                            onChange={handleLocationChange}
-                        >
-                            {availableLocations.length > 0 ? (
-                                availableLocations.map((loc) => (
-                                    <option key={loc} value={loc}>{loc}</option>
-                                ))
-                            ) : (
-                                <>
-                                    <option value="KURNOOL">KURNOOL</option>
-                                    <option value="HYDERABAD">HYDERABAD</option>
-                                </>
-                            )}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
-                        </div>
+                            onChange={handleLocationSelect}
+                            placeholder="Select Location"
+                        />
                     </div>
 
                     <button
@@ -358,8 +340,6 @@ const Farms: React.FC = () => {
                 )}
             </div>
 
-
-
             <AddFarmModal
                 isOpen={isAddFarmModalOpen}
                 onClose={() => setIsAddFarmModalOpen(false)}
@@ -377,7 +357,7 @@ const Farms: React.FC = () => {
                     }
                 }}
             />
-        </div >
+        </div>
     );
 };
 
