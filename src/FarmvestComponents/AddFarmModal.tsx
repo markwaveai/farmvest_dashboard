@@ -11,7 +11,9 @@ interface AddFarmModalProps {
 
 const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess, initialLocation }) => {
     const [farmName, setFarmName] = useState('');
-    const [location, setLocation] = useState(initialLocation ? initialLocation.toUpperCase() : '');
+    // User wants "Select Location" by default, so we initialize with empty string
+    // regardless of what location filter is active on the parent page.
+    const [location, setLocation] = useState('');
     // const [totalBuffaloes, setTotalBuffaloes] = useState<number | ''>(0); // Removed as per API schema
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

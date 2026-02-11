@@ -4,6 +4,7 @@ import type { RootState } from '../../store';
 import { createEmployee } from '../../store/slices/farmvest/employees';
 import { farmvestService } from '../../services/farmvest_api';
 import { X, Loader2, Landmark, MapPin, User, Mail, Phone, Briefcase, Hash } from 'lucide-react';
+import CustomDropdown from '../../components/common/CustomDropdown';
 import './AddEmployeeModal.css';
 
 interface AddEmployeeModalProps {
@@ -78,8 +79,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     setFarmsLoading(false);
                     return;
                 }
-                // Use getAllFarms without params to get everything, then filter locally like the Farms slice does
-                const response = await farmvestService.getAllFarms();
+                // Use getAllFarms with large size to get everything, then filter locally
+                // Or we could trust the API to filter by location if we updated it to use params
+                const response = await farmvestService.getAllFarms({ size: 1000 });
 
                 let allFarms: any[] = [];
                 if (response && (response.status === 200 || response.status === "200")) {
@@ -372,21 +374,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                         <div className="form-group">
                             <label><Landmark size={14} /> Select Farm *</label>
                             <div className="relative">
-                                <select
-                                    name="farm_id"
+                                <CustomDropdown
+                                    placeholder={farmsLoading ? 'Loading farms...' : 'Choose a farm...'}
                                     value={formData.farm_id}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="form-select"
+                                    options={farms.map(farm => ({
+                                        value: farm.id,
+                                        label: farm.farm_name
+                                    }))}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, farm_id: val }))}
                                     disabled={farmsLoading}
-                                >
-                                    <option value="">{farmsLoading ? 'Loading farms...' : 'Choose a farm...'}</option>
-                                    {farms.map(farm => (
-                                        <option key={farm.id} value={farm.id}>
-                                            {farm.farm_name}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                                 {farmsLoading && (
                                     <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
                                         <Loader2 size={16} className="animate-spin text-blue-500" />

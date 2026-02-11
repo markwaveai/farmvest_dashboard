@@ -73,7 +73,7 @@ const Investors: React.FC = () => {
             // Identify items that need stats (not already loaded or loading)
             const itemsToFetch = currentItems.filter(item => {
                 const id = String(item.id || item.investor_id);
-                return !animalStats[id];
+                return !animalStats[id]; // Simple check, ref removed
             });
 
             if (itemsToFetch.length === 0) return;
@@ -106,32 +106,24 @@ const Investors: React.FC = () => {
                         return;
                     }
 
-                    // 2. Filter Buffaloes
+                    // 2. Filter Buffaloes and Calves directly from the response
+                    // This avoids N+1 API calls for getCalves
                     const buffaloes = allAnimals.filter((a: any) =>
                         (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
                     );
 
-                    // 3. Get Calves for each Buffalo (as per Details Page logic)
-                    let totalCalves = 0;
-                    await Promise.all(buffaloes.map(async (buffalo: any) => {
-                        const buffaloFetchId = String(buffalo.animal_id || buffalo.id || buffalo.rfid_tag_number);
-                        if (buffaloFetchId) {
-                            try {
-                                const calvesResponse = await farmvestService.getCalves(buffaloFetchId);
-                                let myCalves = [];
-                                if (Array.isArray(calvesResponse)) {
-                                    myCalves = calvesResponse;
-                                } else if (calvesResponse && Array.isArray(calvesResponse.data)) {
-                                    myCalves = calvesResponse.data;
-                                } else if (calvesResponse && Array.isArray(calvesResponse.calves)) {
-                                    myCalves = calvesResponse.calves;
-                                }
-                                totalCalves += myCalves.length;
-                            } catch (e) {
-                                // ignore individual calf fetch error
-                            }
-                        }
-                    }));
+                    // Count explicitly marked calves or rely on nested data
+                    const indepedentCalves = allAnimals.filter((a: any) =>
+                        (a.animal_type || a.type || '').toUpperCase() === 'CALF'
+                    );
+
+                    // Also check for nested associated_calves if present
+                    const nestedCalvesCount = buffaloes.reduce((acc: number, curr: any) =>
+                        acc + (curr.associated_calves?.length || 0), 0
+                    );
+
+                    // Use the larger of the two counts to catch data however it's structured
+                    const totalCalves = Math.max(indepedentCalves.length, nestedCalvesCount);
 
                     setAnimalStats(prev => ({
                         ...prev,
@@ -148,7 +140,7 @@ const Investors: React.FC = () => {
         };
 
         fetchStats();
-    }, [currentItems]); // Only fetch when items change (e.g. pagination/search)
+    }, [currentItems]); // Only fetch when items change
 
 
     // Debounce Search
@@ -191,7 +183,7 @@ const Investors: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                                <h1 className="text-lg font-bold text-gray-900">FarmVest Investors</h1>
+                                <h1 className="text-md font-bold text-gray-800">FarmVest Investors</h1>
                                 <p className="text-xs text-gray-500 mt-1">Manage all investors (Total: {totalCount || 0})</p>
                             </div>
 
@@ -257,7 +249,7 @@ const Investors: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.email || '-'}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.phone_number || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600 truncate max-w-[200px]" title={investor.address || ''}>{investor.address || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-normal text-center text-sm text-gray-600 min-w-[200px] max-w-[300px] break-words" title={investor.address || ''}>{investor.address || '-'}</td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
                                                     {stats.loading ? (

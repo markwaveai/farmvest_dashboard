@@ -30,6 +30,11 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
                 {farm.location || '-'}
             </td>
             <td className="px-4 py-2 text-center">
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100 shadow-sm mx-auto">
+                    {farm.sheds_count !== undefined ? farm.sheds_count : '-'}
+                </span>
+            </td>
+            <td className="px-4 py-2 text-center">
                 <span className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm mx-auto">
                     {typeof farm.total_buffaloes_count === 'number'
                         ? farm.total_buffaloes_count.toLocaleString()
@@ -107,10 +112,15 @@ const Farms: React.FC = () => {
         navigate(`/farmvest/farms/${farm.id}`, { state: { farm } });
     }, [navigate]);
 
+    const loadedLocation = useAppSelector((state: RootState) => state.farmvestFarms?.loadedLocation);
+
     // Effect: Trigger fetch when location changes
     useEffect(() => {
-        dispatch(fetchFarms(location));
-    }, [dispatch, location]);
+        // Only fetch if location changed or we don't have data for this location
+        if (location !== loadedLocation) {
+            dispatch(fetchFarms(location));
+        }
+    }, [dispatch, location, loadedLocation]);
 
     // Transform locations for CustomDropdown
     const locationOptions = useMemo(() => {
@@ -248,7 +258,7 @@ const Farms: React.FC = () => {
                 </div>
             </div>
 
-            <div className="farms-content p-6 flex-1 flex flex-col min-h-0">
+            <div className="farms-content p-2 flex-1 flex flex-col min-h-0">
                 {farmsError && (
                     <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg flex items-center shadow-md animate-shake">
                         <div className="p-2 bg-red-100 rounded-lg mr-4">
@@ -280,6 +290,9 @@ const Farms: React.FC = () => {
                                         <div className="flex items-center gap-2">Location</div>
                                     </th>
                                     <th className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-2">Sheds</div>
+                                    </th>
+                                    <th className="px-4 py-2 text-center">
                                         <div className="flex items-center justify-center gap-2">Live Count</div>
                                     </th>
                                     <th className="px-4 py-2 text-left">
@@ -289,10 +302,10 @@ const Farms: React.FC = () => {
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {farmsLoading ? (
-                                    <TableSkeleton cols={5} rows={10} />
+                                    <TableSkeleton cols={6} rows={10} />
                                 ) : (currentItems.length === 0 && !farmsError) ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 text-center h-full align-middle">
+                                        <td colSpan={6} className="px-6 text-center h-full align-middle">
                                             <div className="flex flex-col items-center justify-center h-full pb-12">
                                                 <div className="text-3xl mb-2 animate-bounce">🚜</div>
                                                 <p className="text-sm font-bold text-gray-800 tracking-tight">No Farm Records Found</p>
@@ -319,7 +332,7 @@ const Farms: React.FC = () => {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-6 flex justify-center">
+                    <div className="mt-2 flex justify-center">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

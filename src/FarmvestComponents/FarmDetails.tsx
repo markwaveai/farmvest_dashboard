@@ -64,7 +64,8 @@ const FarmDetails: React.FC = () => {
         navigate('/farmvest/unallocated-animals', {
             state: {
                 farmId: id,
-                shedId: shed.id || shed.shed_id
+                shedId: shed.id || shed.shed_id,
+                fromShedView: true
             }
         });
     };

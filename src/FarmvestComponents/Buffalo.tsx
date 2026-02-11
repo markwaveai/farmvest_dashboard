@@ -342,8 +342,8 @@ const BuffaloManagement: React.FC = () => {
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-                        <Users className="text-[#113025]" size={28} /> Buffalo Registry
+                    <h1 className="text-md font-black text-gray-800 flex items-center gap-3">
+                        <Users className="text-[#113025]" size={25} /> Buffalo Registry
                     </h1>
                     <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">
                         Individual Asset Management & Life-cycle Tracking

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { RootState } from '../store';
 import { farmvestService } from '../services/farmvest_api';
@@ -11,16 +11,26 @@ import './Employees.css'; // Import CSS for animations
 const EmployeeDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     // Removed Redux selector for single employee fetch
 
-    const [employee, setEmployee] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const stateEmployee = location.state?.employee;
+    const [employee, setEmployee] = useState<any>(stateEmployee || null);
+    const [loading, setLoading] = useState(!stateEmployee);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDetails = async () => {
             if (!id) return;
-            setLoading(true);
+
+            // If we have state passed from list, we can use that primarily
+            // But we ALWAYS fetch to get latest status and details like location
+            if (stateEmployee && (String(stateEmployee.id) === String(id))) {
+                // Don't show loading spinner if we have data, but let fetch proceed
+                setLoading(false);
+            } else {
+                setLoading(true);
+            }
             try {
                 // First attempt: Direct API call
                 const data = await farmvestService.getEmployeeDetailsById(id);
@@ -37,6 +47,7 @@ const EmployeeDetailsPage: React.FC = () => {
                         id: result.id || result.user_id || result.employee_id || result.emp_id || result.employee_code || result.investor_id || result.user?.id || result.data?.id,
                         farm_name: result.farm_name || result.farm?.farm_name || result.farm?.name || (result.farm_details ? result.farm_details.farm_name : '') || result.farm_id || result.farm?.id || '',
                         shed_name: result.shed_name || result.shed?.shed_name || result.shed?.name || (result.shed_details ? result.shed_details.shed_name : '') || result.shed_id || result.shed?.id || '',
+                        location: result.location || result.farm?.location || result.farm_location || (result.farm_details ? result.farm_details.location : '') || '',
                     };
                     setEmployee(normalized);
                     setError(null);
@@ -64,6 +75,7 @@ const EmployeeDetailsPage: React.FC = () => {
                             id: found.id || found.user_id || found.employee_id || found.emp_id || found.employee_code || found.investor_id || found.user?.id || found.data?.id,
                             farm_name: found.farm_name || found.farm?.farm_name || found.farm?.name || (found.farm_details ? found.farm_details.farm_name : '') || found.farm_id || found.farm?.id || '',
                             shed_name: found.shed_name || found.shed?.shed_name || found.shed?.name || (found.shed_details ? found.shed_details.shed_name : '') || found.shed_id || found.shed?.id || '',
+                            location: found.location || found.farm?.location || found.farm_location || (found.farm_details ? found.farm_details.location : '') || '',
                         };
                         setEmployee(normalized);
                         setError(null);
@@ -79,8 +91,10 @@ const EmployeeDetailsPage: React.FC = () => {
             }
         };
 
-        fetchDetails();
-    }, [id]);
+        if (!stateEmployee || String(stateEmployee.id) !== String(id)) {
+            fetchDetails();
+        }
+    }, [id, stateEmployee]);
 
     const handleBack = () => {
         navigate(-1);

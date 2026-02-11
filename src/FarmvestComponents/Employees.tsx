@@ -7,7 +7,7 @@ import AddEmployeeModal from './AddEmployee/AddEmployeeModal';
 
 import DeleteEmployeeModal from './DeleteEmployeeModal';
 import Snackbar from '../components/common/Snackbar';
-import { Trash2, Search, Users, ChevronDown, Check } from 'lucide-react';
+import { Trash2, Search, Users, ChevronDown, Check, X } from 'lucide-react';
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
@@ -54,7 +54,7 @@ const Employees: React.FC = () => {
     }, []);
 
     const handleNameClick = useCallback((employee: any) => {
-        navigate(`/farmvest/employees/${employee.id}`);
+        navigate(`/farmvest/employees/${employee.id}`, { state: { employee } });
     }, [navigate]);
 
     const handleConfirmDelete = async () => {
@@ -298,10 +298,18 @@ const Employees: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-9 pr-4 py-2 w-full border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                className="pl-9 pr-8 py-2 w-full border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
                         </div>
 
                         <div

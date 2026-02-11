@@ -44,10 +44,34 @@ export const fetchFarms = createAsyncThunk(
                 location: item.location || normalizedLocation,
                 total_buffaloes_count: item.total_buffaloes_count || item.total_animals || item.buffalo_count || 0,
                 farm_manager_name: item.farm_manager_name || item.manager_name || (item.farm_manager?.name) || '-',
-                mobile_number: item.mobile_number || item.manager_mobile || item.manager_phone || (item.farm_manager?.mobile) || '-'
+                mobile_number: item.mobile_number || item.manager_mobile || item.manager_phone || (item.farm_manager?.mobile) || '-',
+                sheds_count: item.sheds_count || item.shed_count || item.total_sheds || 0
             }));
 
-            return allFarms;
+            // Fetch shed counts for each farm
+            const farmsWithShedCounts = await Promise.all(
+                allFarms.map(async (farm) => {
+                    try {
+                        const shedData = await farmvestService.getShedList(farm.id);
+                        let count = 0;
+                        if (Array.isArray(shedData)) {
+                            count = shedData.length;
+                        } else if (shedData && Array.isArray(shedData.data)) {
+                            count = shedData.data.length;
+                        } else if (shedData && typeof shedData === 'object') {
+                            if (Object.keys(shedData).length > 0) {
+                                count = Object.keys(shedData).length; // Fallback if object
+                            }
+                        }
+                        return { ...farm, sheds_count: count };
+                    } catch (error) {
+                        console.error(`Failed to fetch sheds for farm ${farm.id}`, error);
+                        return farm; // Return farm with default 0 if fetch fails
+                    }
+                })
+            );
+
+            return farmsWithShedCounts;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch farms');
         }
@@ -58,12 +82,14 @@ interface FarmsState {
     farms: FarmvestFarm[];
     loading: boolean;
     error: string | null;
+    loadedLocation: string | null;
 }
 
 const initialState: FarmsState = {
     farms: [],
     loading: false,
     error: null,
+    loadedLocation: null,
 };
 
 const farmsSlice = createSlice({
@@ -86,6 +112,7 @@ const farmsSlice = createSlice({
             .addCase(fetchFarms.fulfilled, (state, action) => {
                 state.loading = false;
                 state.farms = Array.isArray(action.payload) ? action.payload : [];
+                state.loadedLocation = action.meta.arg || 'KURNOOL';
             })
             .addCase(fetchFarms.rejected, (state, action) => {
                 state.loading = false;

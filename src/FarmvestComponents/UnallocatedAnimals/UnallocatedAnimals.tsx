@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CustomDropdown from '../../components/common/CustomDropdown';
 import './UnallocatedAnimals.css';
 import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2, Camera } from 'lucide-react';
@@ -45,7 +45,8 @@ const UnallocatedAnimals: React.FC = () => {
     // 1. STATE
     // ---------------------------------------------------------
     const location = useLocation();
-    const navState = location.state as { farmId?: string; shedId?: string } | null;
+    const navigate = useNavigate();
+    const navState = location.state as { farmId?: string; shedId?: string; fromShedView?: boolean } | null;
 
     const [farms, setFarms] = useState<Farm[]>([]);
     const [sheds, setSheds] = useState<Shed[]>([]);
@@ -633,7 +634,17 @@ const UnallocatedAnimals: React.FC = () => {
     return (
         <div className="unallocated-animals-container">
             <div className="ua-header p-6 pb-0">
-                <h1><span>Shed Allocation</span></h1>
+                <div className="flex items-center gap-4 mb-2">
+                    {navState?.fromShedView && (
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="bg-white border border-gray-200 text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors"
+                        >
+                            <ChevronDown size={14} className="rotate-90" /> Back to Farms
+                        </button>
+                    )}
+                    <h1><span>Shed Allocation</span></h1>
+                </div>
                 <button
                     className="save-allocation-btn"
                     onClick={handleSaveAllocation}
