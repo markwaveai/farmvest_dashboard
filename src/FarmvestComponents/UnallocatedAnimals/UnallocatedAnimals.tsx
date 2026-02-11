@@ -159,7 +159,19 @@ const UnallocatedAnimals: React.FC = () => {
                     imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
                 }
 
-                if (imgUrl.includes('unsplash') && (a.rfid || a.rfid_tag_number)) {
+                // Buffalo Specific Image Override
+                // Buffalo Specific Image Override
+                const rawRole = a.animal_type || a.role || a.species || a.category || 'Animal';
+
+                // Debug Log for List
+                if (idx < 3) {
+                    console.log('UnallocatedList Debug:', { id: a.id, rawRole, a });
+                }
+
+                if (String(rawRole).toLowerCase().includes('buffalo')) {
+                    if (imgUrl.includes('unsplash') || imgUrl.includes('placeholder')) {
+                        imgUrl = '/buffaloe.png';
+                    }
                 }
 
                 return {
@@ -316,7 +328,24 @@ const UnallocatedAnimals: React.FC = () => {
                     label: standardLabel,
                     status: finalStatus,
                     isOccupied: (finalStatus === 'Occupied'),
-                    animal_image: animal?.images?.[0] || p.animal_image || p.image,
+                    animal_image: (() => {
+                        const img = animal?.images?.[0] || p.animal_image || p.image;
+                        const role = animal?.animal_type || animal?.role || animal?.species || animal?.category ||
+                            p.animal_type || p.role || p.species || p.category || '';
+
+                        // Debug log for first few items to verify structure
+                        if (Math.random() < 0.01) {
+                            console.log('UnallocatedAnimals Debug:', { label: standardLabel, role, img, animal, p });
+                        }
+
+                        if (String(role).toLowerCase().includes('buffalo')) {
+                            // Override if no image, or if it's a placeholder/unsplash
+                            if (!img || img.includes('unsplash') || img.includes('placeholder')) {
+                                return '/buffaloe.png';
+                            }
+                        }
+                        return img;
+                    })(),
                     rfid_tag_number: animal?.rfid_tag_number || p.rfid_tag_number,
                     parking_id: animal?.parking_id || p.parking_id || p.id,
                     _animal: animal // Store full object for easy modal access
@@ -785,8 +814,8 @@ const UnallocatedAnimals: React.FC = () => {
                             const renderRow = (letter: string, rowLabel: string) => {
                                 const rowPositions = groupedPositions[letter];
                                 const chunks = [];
-                                for (let i = 0; i < rowPositions.length; i += 4) {
-                                    chunks.push(rowPositions.slice(i, i + 4));
+                                for (let i = 0; i < rowPositions.length; i += 5) {
+                                    chunks.push(rowPositions.slice(i, i + 5));
                                 }
 
                                 return (
@@ -803,7 +832,7 @@ const UnallocatedAnimals: React.FC = () => {
                                                         <div className="w-full h-0.5 bg-blue-200"></div>
                                                     </div>
 
-                                                    <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[164px]">
+                                                    <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[200px]">
                                                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-blue-200"></div>
                                                         {chunk.map((pos) => {
                                                             const rawStatus = String(pos.status || 'Available').trim().toLowerCase();
@@ -826,7 +855,14 @@ const UnallocatedAnimals: React.FC = () => {
                                                                     `}>
                                                                         {isOccupied && !isPending && (
                                                                             <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
-                                                                                <PawPrint size={18} color="#22C55E" fill="#22C55E" />
+                                                                                <img
+                                                                                    src={displayImg}
+                                                                                    alt="Buffalo"
+                                                                                    className={`w-8 h-8 object-contain mb-0.5 rounded-full shadow-sm`}
+                                                                                    onError={(e) => {
+                                                                                        e.currentTarget.src = "/buffalo_green_icon.png";
+                                                                                    }}
+                                                                                />
                                                                                 <span className="text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
                                                                             </div>
                                                                         )}
