@@ -68,8 +68,48 @@ function App() {
 
       // Fetch admin profile if not already loaded to prevent repeated API calls
       // Skip for specific test user causing 500 errors or Farmvest admins not in Animalkart DB
+      // Fetch admin profile if not already loaded to prevent repeated API calls
+      // Skip for specific test user causing 500 errors or Farmvest admins not in Animalkart DB
       if (!adminProfile && session.mobile !== '9876543210') {
         dispatch(fetchAdminProfile(session.mobile));
+      } else if (adminProfile) {
+        // Sync Logic:
+        // Only update if the current session role is invalid/missing, OR if the profile role is actually 'better' or 'authorized'.
+        // PROBLEM FIX: The profile returns 'SpecialCategory' but login returns 'ADMIN'. We must NOT overwrite 'ADMIN' with 'SpecialCategory'.
+
+        const currentRole = session.role;
+        const profileRole = adminProfile.role;
+
+        // Check if current role is already a "Super Role" that shouldn't be overwritten by a weak profile role
+        const isCurrentRoleAdmin = currentRole && (
+          currentRole.toLowerCase() === 'admin' ||
+          currentRole.toLowerCase() === 'super admin' ||
+          currentRole.toLowerCase() === 'farmvest admin'
+        );
+
+        // If we are already Admin in session, and profile says something else (like SpecialCategory), IGNORE profile role.
+        if (isCurrentRoleAdmin && profileRole && profileRole.toLowerCase() !== 'admin') {
+          console.log(`Maintaining session role '${currentRole}' despite profile role '${profileRole}'`);
+        }
+        else if (profileRole && currentRole !== profileRole) {
+          const updatedSession = {
+            ...session,
+            role: profileRole,
+            name: adminProfile.name || adminProfile.full_name || session.name
+          };
+
+          // Verify if this new role is actually authorized. If not, don't sync it if we are currently authorized!
+          const wouldBeAuthorized = AUTHORIZED_ROLES.includes(profileRole.toLowerCase());
+          const currentlyAuthorized = currentRole && AUTHORIZED_ROLES.includes(currentRole.toLowerCase());
+
+          if (currentlyAuthorized && !wouldBeAuthorized) {
+            console.log(`Skipping sync: Profile role '${profileRole}' is not authorized, keeping authorized session role '${currentRole}'`);
+          } else if (JSON.stringify(updatedSession) !== JSON.stringify(session)) {
+            console.log('Syncing adminProfile to session:', updatedSession);
+            setSession(updatedSession);
+            window.localStorage.setItem('ak_dashboard_session', JSON.stringify(updatedSession));
+          }
+        }
       }
     }
   }, [dispatch, session, adminProfile]);
@@ -119,7 +159,32 @@ function App() {
     setSession(null);
   };
 
-  const isAdmin = session?.role === 'Admin' || session?.role === 'Farmvest admin';
+  console.log('Current Session:', session);
+  console.log('Session Role:', session?.role); // DEBUG LOG
+  console.log('Normalized Role:', session?.role?.toLowerCase()); // DEBUG LOG
+
+  const AUTHORIZED_ROLES = [
+    'admin',
+    'super admin',
+    'farmvest admin',
+    'farm_manager', 'farm manager',
+    'supervisor',
+    'doctor',
+    'assistant_doctor', 'assistant doctor',
+    'assistant_doctor', 'assistant doctor', // duplications for safety
+    'farm_manager', 'farm manager',
+    'supervisor'
+  ];
+
+  const checkAdmin = () => {
+    if (!session?.role) return false;
+    const role = session.role.toLowerCase();
+    const isAuth = AUTHORIZED_ROLES.includes(role);
+    console.log(`Checking role '${role}' against authorized list. Result: ${isAuth}`); // DEBUG LOG
+    return isAuth;
+  };
+
+  const isAdmin = checkAdmin();
 
   return (
     <div className="App">

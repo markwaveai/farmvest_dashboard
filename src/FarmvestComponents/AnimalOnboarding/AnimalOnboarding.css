@@ -359,6 +359,10 @@
     box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
 }
 
+.farm-onboarding-dropdown {
+    max-width: 300px;
+}
+
 /* Animal Details Section - REFINED */
 .animals-list-container {
     max-width: 1200px;

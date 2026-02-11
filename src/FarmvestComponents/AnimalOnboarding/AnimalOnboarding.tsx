@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { farmvestService } from '../../services/farmvest_api';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
 import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X, CheckCircle } from 'lucide-react';
+import CustomDropdown from '../../components/common/CustomDropdown';
 
 const CalfIcon = ({ size = 24 }: { size?: number }) => (
     <img src="/buffalo_green_icon.png" alt="Calf" style={{ width: size, height: size, objectFit: 'contain' }} />
@@ -136,7 +137,7 @@ const AnimalOnboarding: React.FC = () => {
         const fetchInitialData = async () => {
             try {
                 const [farmData, investorData] = await Promise.all([
-                    farmvestService.getAllFarms(),
+                    farmvestService.getAllFarms({ size: 1000 }), // Fetch all farms
                     farmvestService.getAllInvestors({ size: 5000 })
                 ]);
 
@@ -144,9 +145,9 @@ const AnimalOnboarding: React.FC = () => {
                 let farmList: Farm[] = [];
                 if (Array.isArray(farmData)) {
                     farmList = farmData;
-                } else if (farmData.farms && Array.isArray(farmData.farms)) {
+                } else if (farmData && Array.isArray(farmData.farms)) {
                     farmList = farmData.farms;
-                } else if (farmData.data && Array.isArray(farmData.data)) {
+                } else if (farmData && Array.isArray(farmData.data)) {
                     farmList = farmData.data;
                 }
                 const normalizedFarms = farmList.map((f: any) => ({
@@ -758,13 +759,14 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Updated Farm and Shed Selection */}
                             <div className="farm-select-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <select
-                                    className="farm-select"
+                                <CustomDropdown
+                                    options={farms.map(f => ({
+                                        value: f.farm_id,
+                                        label: `${f.farm_name} - ${f.location}`
+                                    }))}
                                     value={selectedFarmId}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
+                                    onChange={(val) => {
                                         setSelectedFarmId(val);
                                         if (val) {
                                             localStorage.setItem('fv_selected_farm_id', String(val));
@@ -772,15 +774,9 @@ const AnimalOnboarding: React.FC = () => {
                                             localStorage.removeItem('fv_selected_farm_id');
                                         }
                                     }}
-                                    style={{ maxWidth: '300px' }}
-                                >
-                                    <option value="">Select Farm Location</option>
-                                    {farms.map(f => (
-                                        <option key={f.farm_id} value={f.farm_id}>
-                                            {f.farm_name} - {f.location}
-                                        </option>
-                                    ))}
-                                </select>
+                                    placeholder="Select Farm Location"
+                                    className="farm-onboarding-dropdown"
+                                />
                             </div>
                         </div>
 
