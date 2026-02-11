@@ -1,7 +1,7 @@
 export const API_CONFIG = {
   getFarmVestBaseUrl: () => {
-    const productionUrl = 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
-   // const productionUrl = 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app';
+    //const productionUrl = 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
+    const productionUrl = 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app';
 
     // Only use CORS proxy in local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

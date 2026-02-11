@@ -1,17 +1,9 @@
 import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, API_CONFIG } from '../config/api';
 
 export const FARMVEST_API_CONFIG = {
     getBaseUrl: () => {
-        const productionUrl = process.env.REACT_APP_FARMVEST_PRODUCTION_URL || 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
-
-        // Only use CORS proxy in local development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            const corsUrl = process.env.REACT_APP_CORS_URL || 'https://cors-612299373064.asia-south1.run.app';
-            return `${corsUrl}/${productionUrl}`;
-        } else {
-            return productionUrl;
-        }
+        return API_CONFIG.getFarmVestBaseUrl();
     },
     getApiKey: () => process.env.REACT_APP_FARMVEST_API_KEY || 'bWFya3dhdmUtZmFybXZlc3QtdGVzdHRpbmctYXBpa2V5'
 };
