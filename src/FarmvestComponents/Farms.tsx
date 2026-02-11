@@ -72,7 +72,7 @@ const Farms: React.FC = () => {
         return isNaN(page) || page < 1 ? 1 : page;
     }, [searchParams]);
 
-    const itemsPerPage = 15;
+    const itemsPerPage = 20;
 
     // Local State for search
     const [searchTerm, setSearchTerm] = useState('');
