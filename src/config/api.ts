@@ -2,7 +2,15 @@ import { remoteConfig, RemoteConfigKeys } from '../services/remoteConfigService'
 
 export const API_CONFIG = {
   getEnvironment: () => {
-    return localStorage.getItem('farmvest_env_mode') || 'live';
+    const saved = localStorage.getItem('farmvest_env_mode');
+    if (saved) return saved;
+
+    // Default to 'dev' for local development or staging builds
+    const isDev = window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      (process.env.REACT_APP_TAG && process.env.REACT_APP_TAG.includes('staging'));
+
+    return isDev ? 'dev' : 'live';
   },
   getFarmVestBaseUrl: () => {
     const mode = API_CONFIG.getEnvironment();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './UserTabs.css';
 import axios from 'axios';
-import { API_ENDPOINTS } from '../../config/api';
+import { API_ENDPOINTS, API_CONFIG } from '../../config/api';
 import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package, Trash2, AlertCircle, Calendar, Milk } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
@@ -171,7 +171,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
 
           {/* Right: Status + Profile */}
           <div className="header-right flex items-center">
-            {localStorage.getItem('farmvest_env_mode') === 'dev' && (
+            {API_CONFIG.getEnvironment() === 'dev' && (
               <div className="status-pill bg-amber-100 border border-amber-200 px-4 py-1.5 rounded-full flex items-center gap-2 mr-3">
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse"></div>
                 <span className="text-sm font-bold text-amber-700">Dev_mode</span>
