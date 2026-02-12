@@ -133,7 +133,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleEnvSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (envPassword === 'dev') {
+    if (envPassword === '5963') {
       localStorage.setItem('farmvest_env_mode', 'dev');
       window.location.reload();
     } else if (envPassword === 'live') {
@@ -208,7 +208,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </button>
                   </div>
                   <form onSubmit={handleEnvSubmit} className="space-y-4">
-                    <p className="text-sm text-gray-500">Enter environment password (dev/live) to switch mode.</p>
+                    <p className="text-sm text-gray-500">Enter security code to switch environment mode.</p>
                     <input
                       autoFocus
                       type="password"

@@ -6,6 +6,7 @@ import { RootState } from './store';
 import React, { useState, useCallback, useEffect } from 'react';
 import UserTabs from './components/UserTabs/UserTabs';
 import Login from './components/auth/Login';
+import { remoteConfig } from './services/remoteConfigService';
 
 // Public Pages
 import FarmvestUserActivationPage from './components/public/FarmvestUserActivationPage';
@@ -42,7 +43,7 @@ interface Session {
   currentLoginTime?: string;
 }
 
-import { remoteConfig } from './services/remoteConfigService';
+
 
 function App() {
   const [configLoaded, setConfigLoaded] = useState(false);
