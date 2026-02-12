@@ -7,7 +7,6 @@ export const fetchEmployees = createAsyncThunk(
     async (params: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getEmployees(params);
-            console.log('fetchEmployees thunk response:', response);
 
             let rawData: any[] = [];
 
@@ -18,6 +17,8 @@ export const fetchEmployees = createAsyncThunk(
                 rawData = response.data;
             } else if (response && (response.users || response.employees)) {
                 rawData = response.users || response.employees;
+            } else if (response && response.data && (Array.isArray(response.data.employees) || Array.isArray(response.data.users))) {
+                rawData = response.data.employees || response.data.users;
             } else {
                 // Fallback: check if status is 200 and data exists but hasn't been caught yet
                 if (response && response.status === 200 && Array.isArray(response.data)) {
@@ -28,24 +29,24 @@ export const fetchEmployees = createAsyncThunk(
             if (rawData.length > 0 || (response && response.status === 'success')) {
                 // Map the data to match FarmvestEmployee interface
                 const mappedData = rawData.map((item: any, index: number) => {
-                    const isActive = item.active_status ?? item.is_active;
-                    const normalizedActive = isActive === 1 || isActive === '1' || isActive === true;
+                    // Normalize status
+                    const rawStatus = item.is_active !== undefined ? item.is_active : item.active_status;
+                    const isActive = Number(rawStatus) ? 1 : 0;
 
                     return {
-                        ...item, // Spread first so defaults can override
-                        id: item.id || item.investor_id || index, // Fallback to index if no ID
+                        ...item,
+                        id: item.id || item.user_id || item.employee_id || item.emp_id || item.employee_code || item.investor_id || item.user?.id || item.data?.id || index, // Robust fallback for ID including nested objects
                         first_name: item.first_name || '',
                         last_name: item.last_name || '',
                         email: item.email || '',
                         mobile: item.mobile || item.phone_number || '', // Map phone_number to mobile
                         phone_number: item.mobile || item.phone_number || '', // Ensure phone_number is also available for component
                         roles: item.roles || ['Investor'], // Default role
-                        active_status: normalizedActive, // Ensure boolean for UI
-                        // Explicitly extract farm and shed info to ensure they appear
-                        farm_name: item.farm_name || (item.farm && item.farm.farm_name) || '',
-                        shed_name: item.shed_name || (item.shed && item.shed.shed_name) || (item.shed && item.shed.name) || '',
-                        farm_id: item.farm_id || (item.farm && item.farm.id) || '',
-                        shed_id: item.shed_id || (item.shed && item.shed.id) || '',
+                        is_active: isActive,
+                        active_status: isActive, // Sync both fields
+                        joining_date: item.created_at || item.joining_date || '',
+                        farm_name: item.farm_name || item.farm?.farm_name || item.farm?.name || (item.farm_details ? item.farm_details.farm_name : '') || item.farm_id || item.farm?.id || '',
+                        shed_name: item.shed_name || item.shed?.shed_name || item.shed?.name || (item.shed_details ? item.shed_details.shed_name : '') || item.shed_id || item.shed?.id || ''
                     };
                 });
 
@@ -77,10 +78,12 @@ export const createEmployee = createAsyncThunk(
             const response = await farmvestService.createEmployee(employeeData);
             // Refresh list after creation
             dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts()); // Refresh allEmployees for search
             return response;
         } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to create employee';
-            return rejectWithValue(message);
+            // Pass the full error data if available for debugging validation errors
+            const errorData = error.response?.data || error.message || 'Failed to create employee';
+            return rejectWithValue(errorData);
         }
     }
 );
@@ -92,6 +95,7 @@ export const deleteEmployee = createAsyncThunk(
             const response = await farmvestService.deleteEmployee(id);
             // Refresh list after deletion
             dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts()); // Refresh allEmployees for search
             return response;
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to delete employee';
@@ -100,89 +104,135 @@ export const deleteEmployee = createAsyncThunk(
     }
 );
 
-export interface RoleCounts {
-    FARM_MANAGER: number;
-    SUPERVISOR: number;
-    DOCTOR: number;
-    ASSISTANT_DOCTOR: number;
-    [key: string]: number;
-}
+
+
+
+export const updateEmployeeStatus = createAsyncThunk(
+    'farmvestEmployees/updateEmployeeStatus',
+    async ({ mobile, status }: { mobile: string; status: boolean }, { rejectWithValue, dispatch }) => {
+        try {
+            if (status) {
+                await farmvestService.activateUser(mobile);
+            } else {
+                await farmvestService.deactivateUser(mobile);
+            }
+            dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts()); // Refresh allEmployees for search and counts
+            return { mobile, status };
+        } catch (error: any) {
+            const message = error.response?.data?.message || error.message || 'Failed to update employee status';
+            return rejectWithValue(message);
+        }
+    }
+);
 
 export const fetchRoleCounts = createAsyncThunk(
     'farmvestEmployees/fetchRoleCounts',
     async (_, { rejectWithValue }) => {
         try {
-            const roles = ['FARM_MANAGER', 'SUPERVISOR', 'DOCTOR', 'ASSISTANT_DOCTOR'];
-            const promises = roles.map(role =>
-                farmvestService.getEmployees({ role, size: 1, page: 1 })
-                    .then(response => {
-                        const count =
-                            response.pagination?.total_items ||
-                            response.pagination?.total_count ||
-                            response.data?.pagination?.total_items ||
-                            response.total_users ||
-                            response.total ||
-                            response.count ||
-                            response.total_count ||
-                            (Array.isArray(response) ? response.length :
-                                (response.data && Array.isArray(response.data) ? response.data.length : 0));
-                        return { role, count: Number(count) || 0 };
-                    })
-                    .catch(() => ({ role, count: 0 }))
-            );
+            // Fetch a large number to ensure we get most employees for accurate counts
+            // Ideally backend should provide a stats endpoint
+            const response = await farmvestService.getEmployees({ size: 1000 });
 
-            const results = await Promise.all(promises);
+            let allEmployees: any[] = [];
 
-            const counts: RoleCounts = {
-                FARM_MANAGER: 0,
-                SUPERVISOR: 0,
-                DOCTOR: 0,
-                ASSISTANT_DOCTOR: 0,
-            };
+            if (Array.isArray(response)) {
+                allEmployees = response;
+            } else if (response && Array.isArray(response.data)) {
+                allEmployees = response.data;
+            } else if (response && (response.users || response.employees)) {
+                allEmployees = response.users || response.employees;
+            } else if (response && response.data && (Array.isArray(response.data.employees) || Array.isArray(response.data.users))) {
+                allEmployees = response.data.employees || response.data.users;
+            }
 
-            results.forEach(({ role, count }) => {
-                counts[role] = count;
+            const counts: Record<string, number> = {};
+            const statusCounts = { active: 0, inactive: 0 };
+
+            allEmployees.forEach((emp: any) => {
+                // Roles Count
+                let roleToCount: string | null = null;
+                if (emp.roles && Array.isArray(emp.roles) && emp.roles.length > 0) {
+                    roleToCount = emp.roles[0];
+                } else if (emp.role) {
+                    roleToCount = emp.role;
+                } else if (emp.role_name) {
+                    roleToCount = emp.role_name;
+                }
+
+                if (roleToCount) {
+                    const normalizedRole = String(roleToCount).trim().toUpperCase().replace(/\s+/g, '_');
+                    counts[normalizedRole] = (counts[normalizedRole] || 0) + 1;
+                }
+
+                // Status Count
+                const rawStatus = emp.is_active !== undefined ? emp.is_active : emp.active_status;
+                if (Number(rawStatus)) {
+                    statusCounts.active++;
+                } else {
+                    statusCounts.inactive++;
+                }
             });
 
-            return counts;
+            // Map allEmployees to follow the same structure as fetchEmployees for consistency
+            const mappedEmployees = allEmployees.map((item: any, index: number) => {
+                const rawStatus = item.is_active !== undefined ? item.is_active : item.active_status;
+                const isActive = Number(rawStatus) ? 1 : 0;
+                return {
+                    ...item,
+                    id: item.id || item.user_id || item.employee_id || item.emp_id || item.employee_code || item.investor_id || item.user?.id || item.data?.id || index,
+                    first_name: item.first_name || '',
+                    last_name: item.last_name || '',
+                    email: item.email || '',
+                    mobile: item.mobile || item.phone_number || '',
+                    phone_number: item.mobile || item.phone_number || '',
+                    roles: item.roles || ['Investor'],
+                    is_active: isActive,
+                    active_status: isActive,
+                    joining_date: (item.created_at || item.joining_date || '').split('T')[0],
+                    farm_name: item.farm_name || item.farm?.farm_name || item.farm?.name || (item.farm_details ? item.farm_details.farm_name : '') || item.farm_id || item.farm?.id || '',
+                    shed_name: item.shed_name || item.shed?.shed_name || item.shed?.name || (item.shed_details ? item.shed_details.shed_name : '') || item.shed_id || item.shed?.id || ''
+                };
+            });
+
+            return { roleCounts: counts, statusCounts, allEmployees: mappedEmployees };
         } catch (error: any) {
-            return rejectWithValue(error.message || 'Failed to fetch role counts');
+            return rejectWithValue(error.message);
         }
     }
 );
 
-
-
 interface EmployeesState {
     employees: FarmvestEmployee[];
+    allEmployees: FarmvestEmployee[];
     totalCount: number;
-    roleCounts: RoleCounts;
+    globalTotalCount: number;
     loading: boolean;
     roleCountsLoading: boolean;
     createLoading: boolean;
     deleteLoading: boolean;
     error: string | null;
     successMessage: string | null;
+    roleCounts: Record<string, number>;
+    statusCounts: { active: number; inactive: number };
+    updateStatusLoading: string | null;
 }
 
 const initialState: EmployeesState = {
     employees: [],
+    allEmployees: [],
     totalCount: 0,
-    roleCounts: {
-        FARM_MANAGER: 0,
-        SUPERVISOR: 0,
-        DOCTOR: 0,
-        ASSISTANT_DOCTOR: 0,
-    },
+    globalTotalCount: 0,
     loading: false,
     roleCountsLoading: false,
     createLoading: false,
     deleteLoading: false,
     error: null,
     successMessage: null,
+    roleCounts: {},
+    statusCounts: { active: 0, inactive: 0 },
+    updateStatusLoading: null,
 };
-
-
 
 const employeesSlice = createSlice({
     name: 'farmvestEmployees',
@@ -198,6 +248,13 @@ const employeesSlice = createSlice({
     },
 
     extraReducers: (builder) => {
+        builder
+            .addCase(fetchRoleCounts.fulfilled, (state, action) => {
+                state.roleCounts = action.payload.roleCounts;
+                state.statusCounts = action.payload.statusCounts;
+                state.allEmployees = action.payload.allEmployees || [];
+                state.globalTotalCount = (action.payload.allEmployees || []).length;
+            })
         builder
             .addCase(fetchEmployees.pending, (state) => {
                 state.loading = true;
@@ -230,7 +287,12 @@ const employeesSlice = createSlice({
             })
             .addCase(createEmployee.rejected, (state, action) => {
                 state.createLoading = false;
-                state.error = action.payload as string;
+                // Handle object payloads (validation errors) to prevent React rendering crash
+                if (typeof action.payload === 'object' && action.payload !== null) {
+                    state.error = JSON.stringify(action.payload);
+                } else {
+                    state.error = action.payload as string || 'An error occurred';
+                }
             })
             // Delete Employee
             .addCase(deleteEmployee.pending, (state) => {
@@ -246,16 +308,24 @@ const employeesSlice = createSlice({
                 state.deleteLoading = false;
                 state.error = action.payload as string;
             })
-            // Fetch Role Counts
-            .addCase(fetchRoleCounts.pending, (state) => {
-                state.roleCountsLoading = true;
+            // Update Employee Status
+            .addCase(updateEmployeeStatus.pending, (state, action) => {
+                state.updateStatusLoading = action.meta.arg.mobile;
+                state.error = null;
             })
-            .addCase(fetchRoleCounts.fulfilled, (state, action) => {
-                state.roleCountsLoading = false;
-                state.roleCounts = action.payload;
+            .addCase(updateEmployeeStatus.fulfilled, (state, action) => {
+                state.updateStatusLoading = null;
+                state.successMessage = `Employee ${action.meta.arg.status ? 'activated' : 'deactivated'} successfully`;
+                // Optimistic update
+                const employee = state.employees.find(e => e.mobile === action.meta.arg.mobile);
+                if (employee) {
+                    employee.active_status = action.meta.arg.status ? 1 : 0;
+                    employee.is_active = action.meta.arg.status ? 1 : 0;
+                }
             })
-            .addCase(fetchRoleCounts.rejected, (state) => {
-                state.roleCountsLoading = false;
+            .addCase(updateEmployeeStatus.rejected, (state, action) => {
+                state.updateStatusLoading = null;
+                state.error = action.payload as string;
             });
     },
 

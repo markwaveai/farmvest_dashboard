@@ -1,17 +1,9 @@
 import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, API_CONFIG } from '../config/api';
 
 export const FARMVEST_API_CONFIG = {
     getBaseUrl: () => {
-        const productionUrl = process.env.REACT_APP_FARMVEST_PRODUCTION_URL || 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app';
-
-        // Only use CORS proxy in local development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return productionUrl;
-        } else {
-            const corsUrl = process.env.REACT_APP_CORS_URL || 'https://cors-612299373064.asia-south1.run.app';
-            return `${corsUrl}/${productionUrl}`;
-        }
+        return API_CONFIG.getFarmVestBaseUrl();
     },
     getApiKey: () => process.env.REACT_APP_FARMVEST_API_KEY || 'bWFya3dhdmUtZmFybXZlc3QtdGVzdHRpbmctYXBpa2V5'
 };
@@ -19,7 +11,8 @@ export const FARMVEST_API_CONFIG = {
 const farmvestApi = axios.create({
     baseURL: FARMVEST_API_CONFIG.getBaseUrl(),
     headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
     }
 });
 
@@ -39,7 +32,6 @@ farmvestApi.interceptors.request.use((config) => {
                 tokenType = session.token_type || 'Bearer';
             }
         } catch (e) {
-            console.error('Error parsing session for token', e);
         }
     }
 
@@ -47,9 +39,9 @@ farmvestApi.interceptors.request.use((config) => {
     if (token) {
         config.headers['Authorization'] = `${tokenType} ${token}`;
     } else {
-        // Fallback to the API Key, ensuring Bearer prefix is used
+        // Fallback to the API Key, sending it raw without Bearer prefix as expected by backend
         const apiKey = FARMVEST_API_CONFIG.getApiKey();
-        config.headers['Authorization'] = apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`;
+        config.headers['Authorization'] = apiKey;
     }
 
     return config;
@@ -67,38 +59,34 @@ export const farmvestService = {
             });
             return response.data;
         } catch (error) {
-            console.error('Error during farmvest static login:', error);
             throw error;
         }
     },
-    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number }) => {
+    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number; farm_id?: number }) => {
         try {
-            const { role, active_status, sort_by = 1, page = 1, size = 20 } = params || {};
+            const { role, active_status, sort_by = 1, page = 1, size = 20, farm_id } = params || {};
             let query = `?sort_by=${sort_by}&page=${page}&size=${size}`;
             if (role) query += `&role=${role}`;
             if (active_status !== undefined && active_status !== null && active_status.toString() !== '') query += `&is_active=${active_status}`;
+            if (farm_id) query += `&farm_id=${farm_id}`;
 
             const url = `/api/employee/get_all_employees${query}`;
-            console.log('[FarmVest] Fetching employees with URL:', url);
-            console.log('[FarmVest] Params:', { role, sort_by, page, size });
             const response = await farmvestApi.get(url);
-            console.log('[FarmVest] API Response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Error fetching farmvest employees:', error);
             throw error;
         }
     },
     getAllInvestors: async (params?: { page?: number; size?: number }) => {
         try {
-            const { page = 1, size = 20 } = params || {};
-            const url = `/api/investors/get_all_investors?page=${page}&size=${size}`;
-            console.log('[FarmVest] Fetching investors with URL:', url);
+            const { page = 1, size = 5000 } = params || {};
+            // Build URL using the config endpoint + query params
+            const baseUrl = API_ENDPOINTS.getAllInvestors();
+            const url = `${baseUrl}?page=${page}&size=${size}`;
+
             const response = await farmvestApi.get(url);
-            console.log('[FarmVest] Investors API Response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Error fetching farmvest investors:', error);
             throw error;
         }
     },
@@ -107,7 +95,14 @@ export const farmvestService = {
             const response = await farmvestApi.get(`/api/farm/get_all_farms?location=${location}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching farms for ${location}:`, error);
+            throw error;
+        }
+    },
+    getLocations: async () => {
+        try {
+            const response = await farmvestApi.get('/api/farm/locations');
+            return response.data;
+        } catch (error) {
             throw error;
         }
     },
@@ -125,8 +120,16 @@ export const farmvestService = {
             const response = await farmvestApi.get(url);
             return response.data;
         } catch (error) {
-            console.error('Error fetching all farms:', error);
             throw error;
+        }
+    },
+    searchEmployee: async (query: string) => {
+        try {
+            const response = await farmvestApi.get(`/api/employee/search_employee?search_query=${query}`);
+            return response.data;
+        } catch (error) {
+            // Return empty list or null instead of throwing to avoid breaking UI flow if just searching name
+            return [];
         }
     },
     createEmployee: async (employeeData: any) => {
@@ -134,7 +137,15 @@ export const farmvestService = {
             const response = await farmvestApi.post('/api/employee/create_employee', employeeData);
             return response.data;
         } catch (error) {
-            console.error('Error creating farmvest employee:', error);
+            throw error;
+        }
+    },
+    getEmployeeDetailsById: async (id: string) => {
+        try {
+            // Updated parameter name to 'user_id' as per Swagger documentation
+            const response = await farmvestApi.get(`/api/employee/get_employee_details_by_id?user_id=${id}`);
+            return response.data;
+        } catch (error) {
             throw error;
         }
     },
@@ -143,7 +154,6 @@ export const farmvestService = {
             const response = await farmvestApi.delete(`/api/admin/delete_employee/${id}`);
             return response.data;
         } catch (error) {
-            console.error(`Error deleting farmvest employee ${id}:`, error);
             throw error;
         }
     },
@@ -152,21 +162,15 @@ export const farmvestService = {
             const response = await farmvestApi.get(`/api/shed/list?farm_id=${farm_id}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching sheds for farm ${farm_id}:`, error);
             throw error;
         }
     },
     getShedsByFarm: async (farmId: number) => {
         try {
             const url = `/api/shed/list?farm_id=${farmId}`;
-            console.log(`[FarmVest] Fetching sheds from: ${url}`);
             const response = await farmvestApi.get(url);
-            // If response.data is the list, return it.
-            // If response.data.data is the list (common pattern), return that.
-            // Let's return response.data for now and handle parsing in the component as we are not 100% sure of the structure.
             return response.data;
         } catch (error) {
-            console.error(`Error fetching sheds for farm ${farmId}:`, error);
             throw error;
         }
     },
@@ -175,7 +179,6 @@ export const farmvestService = {
             const response = await farmvestApi.get(`/api/shed/list?farm_id=${farmId}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching shed list for farm ${farmId}:`, error);
             throw error;
         }
     },
@@ -184,7 +187,43 @@ export const farmvestService = {
             const response = await farmvestApi.get(`/api/shed/available_positions?shed_id=${shedId}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching positions for shed ${shedId}:`, error);
+            throw error;
+        }
+    },
+    getAnimalPositions: async (shedId: number) => {
+        try {
+            const response = await farmvestApi.get(`/api/animal/get-position?shed_id=${shedId}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    getAnimalPositionDetails: async (params: { parkingId: string; farmId?: number; shedId?: number; rowNumber?: string }) => {
+        try {
+            const { parkingId, farmId, shedId, rowNumber } = params;
+            let url = `/api/animal/get-position?parking_id=${parkingId}`;
+            if (farmId) url += `&farm_id=${farmId}`;
+            if (shedId) url += `&shed_id=${shedId}`;
+            if (rowNumber) url += `&row_number=${rowNumber}`;
+
+            const response = await farmvestApi.get(url);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    getTotalAnimals: async (farmId?: number, shedId?: number) => {
+        try {
+            let url = '/api/animal/get_total_animals';
+            const params = new URLSearchParams();
+            if (farmId) params.append('farm_id', farmId.toString());
+            if (shedId) params.append('shed_id', shedId.toString());
+
+            if (params.toString()) url += `?${params.toString()}`;
+
+            const response = await farmvestApi.get(url);
+            return response.data;
+        } catch (error) {
             throw error;
         }
     },
@@ -193,17 +232,14 @@ export const farmvestService = {
             const response = await farmvestApi.get(`/api/animal/shed_allocation?shed_id=${shedId}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching allocation for shed ${shedId}:`, error);
             throw error;
         }
     },
     getUnallocatedAnimals: async (farmId: number) => {
         try {
-            console.log(`Fetching unallocated animals for farm ${farmId}`);
             const response = await farmvestApi.get(`/api/animal/unallocated_animals?farm_id=${farmId}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching unallocated animals for farm ${farmId}:`, error);
             throw error;
         }
     },
@@ -212,56 +248,69 @@ export const farmvestService = {
             const response = await farmvestApi.post('/api/farm/farm', farmData);
             return response.data;
         } catch (error) {
-            console.error('Error creating farm:', error);
             throw error;
         }
     },
-    createShed: async (shedData: { farm_id: number; shed_id: string; shed_name: string; capacity: number; cctv_url: string }) => {
+    createShed: async (shedData: { farm_id: number; shed_id: string; shed_name: string; capacity: number; cctv_url?: string }) => {
         try {
             const response = await farmvestApi.post('/api/shed/create_shed', shedData);
             return response.data;
         } catch (error) {
-            console.error('Error creating shed:', error);
             throw error;
         }
     },
     deactivateUser: async (mobile: string) => {
         try {
-            const response = await farmvestApi.put(`/api/users/deactivate/${mobile}`);
+            const response = await farmvestApi.put(`/api/users/activate_deactivate_user/${mobile}?is_active=false`);
             return response.data;
         } catch (error) {
-            console.error(`Error deactivating user ${mobile}:`, error);
+            throw error;
+        }
+    },
+    activateUser: async (mobile: string) => {
+        try {
+            const response = await farmvestApi.put(`/api/users/activate_deactivate_user/${mobile}?is_active=true`);
+            return response.data;
+        } catch (error) {
             throw error;
         }
     },
     getPaidOrders: async (mobile: string) => {
         try {
-            // using the AnimalKart staging endpoint
-            // API_ENDPOINTS.markInTransit() points to /order-tracking/intransit
-            const url = API_ENDPOINTS.markInTransit();
-            console.log('[FarmVest] Fetching paid orders from:', url, 'with mobile:', mobile);
-            // 405 error on GET suggests POST is required. Sending mobile in body.
-            const response = await farmvestApi.post(url, { mobile });
-            console.log('[FarmVest] Paid orders response:', response.data);
-            return response.data;
-        } catch (error: any) {
-            console.error(`Error fetching paid orders for ${mobile}:`, error);
-            if (error.response) {
-                console.error('[FarmVest] Error Response:', error.response.status, error.response.data);
-            } else if (error.request) {
-                console.error('[FarmVest] No response received:', error.request);
-            } else {
-                console.error('[FarmVest] Request setup error:', error.message);
+
+            // Get admin mobile from session
+            const sessionStr = localStorage.getItem('ak_dashboard_session');
+            let adminMobile = '';
+            if (sessionStr) {
+                try {
+                    const session = JSON.parse(sessionStr);
+                    adminMobile = session.mobile;
+                } catch (e) {
+                }
             }
-            throw error;
+
+            const url = API_ENDPOINTS.getInTransitOrders();
+            const response = await axios.post(url, {
+                mobile: mobile || ""
+            }, {
+                headers: {
+                    'x-admin-mobile': adminMobile,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 200 || response.status === 201) {
+                return response.data; // Return the full { user, orders, status, statuscode }
+            }
+            return { user: null, orders: [] };
+        } catch (error: any) {
+            return { user: null, orders: [] };
         }
     },
     onboardAnimal: async (onboardingData: any) => {
         try {
-            console.log('[FarmVest] Onboarding animal with data:', JSON.stringify(onboardingData, null, 2));
 
-            // Append farm_id to URL if present (backend might expect it as query param)
-            let url = '/api/animal/onboard_animal';
+            let url = API_ENDPOINTS.onboardAnimal();
             if (onboardingData.farm_id !== undefined && onboardingData.farm_id !== null) {
                 url += `?farm_id=${onboardingData.farm_id}`;
             }
@@ -269,52 +318,32 @@ export const farmvestService = {
             const response = await farmvestApi.post(url, onboardingData, {
                 headers: { 'Content-Type': 'application/json' }
             });
-            console.log('[FarmVest] Onboarding response:', response.data);
             return response.data;
         } catch (error: any) {
-            console.error('Error onboarding animals:', error);
             if (error.response) {
-                console.error('[FarmVest] Onboard Error Response:', error.response.status, error.response.data);
-
-                // Construct a helpful error message from the detail array
-                let errorMsg = `Onboarding Error (${error.response.status}): `;
-                if (error.response.data && Array.isArray(error.response.data.detail)) {
-                    // Show first 3 errors to avoid huge alert
-                    const details = error.response.data.detail.slice(0, 3).map((d: any) =>
-                        `${d.loc.join('.')} : ${d.msg}`
-                    ).join('\n');
-                    errorMsg += '\n' + details;
-                } else {
-                    errorMsg += JSON.stringify(error.response.data);
-                }
-
-                alert(errorMsg);
             }
             throw error;
         }
     },
     allocateAnimal: async (shedId: string, allocations: { rfid_tag_number: string; row_number: string; parking_id: string }[]) => {
         try {
+            // Reverting to path parameter as per Swagger docs (404 was likely due to 'Animal Not Found' not 'Endpoint Not Found')
             const url = `/api/animal/shed_allocation/${shedId}`;
-            console.log(`[FarmVest] POST Request to: ${url}`);
-            console.log(`[FarmVest] Payload:`, JSON.stringify({ allocations }, null, 2));
-            const response = await farmvestApi.post(url, { allocations });
+            const payload = { allocations };
+            const response = await farmvestApi.post(url, payload);
             return response.data;
         } catch (error: any) {
-            console.error('Error allocating animal:', error);
             if (error.response) {
-                console.error('[FarmVest] Allocation Error Response:', error.response.status, error.response.data);
-                alert(`Allocation Failed: ${JSON.stringify(error.response.data.detail || error.response.data)}`);
+                // alert replaced with console error
             }
             throw error;
         }
     },
-    searchAnimal: async (rfid: string) => {
+    searchAnimal: async (queryStr: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/search_animal?search_query=${rfid}`);
+            const response = await farmvestApi.get(`/api/animal/search_animal?query_str=${queryStr}`);
             return response.data;
         } catch (error) {
-            console.error(`Error searching animal ${rfid}:`, error);
             throw error;
         }
     },
@@ -323,17 +352,14 @@ export const farmvestService = {
             const response = await farmvestApi.get(`/api/investors/animals?investor_id=${investorId}`);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching animals for investor ${investorId}:`, error);
             throw error;
         }
     },
-    getCalves: async (rfid: string) => {
+    getCalves: async (animalId: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/get_calves?rfid=${rfid}`);
+            const response = await farmvestApi.get(`/api/animal/get_calves?animal_id=${animalId}`);
             return response.data;
-        } catch (error) {
-            console.error(`Error fetching calves for animal ${rfid}:`, error);
-            // Return empty array on error so we don't break the whole page
+        } catch (error: any) {
             return [];
         }
     }

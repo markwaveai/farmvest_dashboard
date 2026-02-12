@@ -118,7 +118,6 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ isOpen, onClose, pr
             }
             onClose();
         } catch (error) {
-            console.error('Failed to save product:', error);
         } finally {
             setLoading(false);
         }

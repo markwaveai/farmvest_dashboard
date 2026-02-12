@@ -9,13 +9,12 @@ import TableSkeleton from '../components/common/TableSkeleton';
 import { farmvestService } from '../services/farmvest_api';
 import AddFarmModal from './AddFarmModal';
 import './Farms.css';
+import CustomDropdown from '../components/common/CustomDropdown';
 
-// Memoized table row with defensive checks
 // Memoized table row with defensive checks
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
     if (!farm) return null;
     // Debug logging to inspect structure
-    console.log('Farm Data Row:', farm);
 
     // Safely calculate serial number
     const pageNum = isNaN(currentPage) ? 1 : currentPage;
@@ -23,21 +22,26 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
 
     return (
         <tr className="bg-white border-b hover:bg-gray-50 transition-colors duration-150">
-            <td className="px-4 py-3 text-center text-gray-400 font-medium">{sNo}</td>
-            <td className="px-4 py-3 font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
+            <td className="px-4 py-2 text-center text-gray-400 font-medium">{sNo}</td>
+            <td className="px-4 py-2 font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
                 {farm.farm_name || '-'}
             </td>
-            <td className="px-4 py-3 text-gray-600">
+            <td className="px-4 py-2 text-gray-600">
                 {farm.location || '-'}
             </td>
-            <td className="px-4 py-3">
-                <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm">
+            <td className="px-4 py-2 text-center">
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100 shadow-sm mx-auto">
+                    {farm.sheds_count !== undefined ? farm.sheds_count : '-'}
+                </span>
+            </td>
+            <td className="px-4 py-2 text-center">
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm mx-auto">
                     {typeof farm.total_buffaloes_count === 'number'
                         ? farm.total_buffaloes_count.toLocaleString()
                         : (farm.total_buffaloes_count || '0')}
                 </span>
             </td>
-            <td className="px-4 py-3 text-gray-600">
+            <td className="px-4 py-2 text-gray-600">
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-900">{farm.farm_manager_name || farm.manager_name || (farm.farm_manager?.name) || '-'}</span>
                     <span className="text-xs text-gray-500 mt-0.5">{farm.mobile_number || farm.manager_mobile || farm.manager_phone || (farm.farm_manager?.mobile) || '-'}</span>
@@ -50,22 +54,16 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
 const Farms: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { farms, loading: farmsLoading, error: farmsError } = useAppSelector((state: RootState) => {
-        // Safe selector fallback
-        const farmState = state.farmvestFarms || { farms: [], loading: false, error: null };
-        return {
-            farms: Array.isArray(farmState.farms) ? farmState.farms : [],
-            loading: !!farmState.loading,
-            error: farmState.error
-        };
-    });
+    const farms = useAppSelector((state: RootState) => state.farmvestFarms?.farms || []);
+    const farmsLoading = useAppSelector((state: RootState) => !!state.farmvestFarms?.loading);
+    const farmsError = useAppSelector((state: RootState) => state.farmvestFarms?.error);
 
     // URL Search Params for Pagination and Location
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Derived location from URL or default to KURNOOL
+    // Derived location from URL or default to Kurnool
     const location = useMemo(() => {
-        return (searchParams.get('location') || 'KURNOOL').toUpperCase();
+        return searchParams.get('location') ? searchParams.get('location')!.toUpperCase() : 'KURNOOL';
     }, [searchParams]);
 
     // Defensive parsing of currentPage
@@ -74,11 +72,38 @@ const Farms: React.FC = () => {
         return isNaN(page) || page < 1 ? 1 : page;
     }, [searchParams]);
 
-    const itemsPerPage = 15;
+    const itemsPerPage = 20;
 
     // Local State for search
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddFarmModalOpen, setIsAddFarmModalOpen] = useState(false);
+    const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+
+    useEffect(() => {
+        const loadLocations = async () => {
+            try {
+                const response = await farmvestService.getLocations();
+
+                // Based on node script test: response.data.locations
+                let locs: string[] = [];
+
+                if (response && response.data && Array.isArray(response.data.locations)) {
+                    locs = response.data.locations;
+                } else if (response && Array.isArray(response.locations)) {
+                    locs = response.locations;
+                } else if (Array.isArray(response)) {
+                    locs = response;
+                }
+
+                // Set locations if valid strings
+                if (locs.length > 0) {
+                    setAvailableLocations(locs.map(l => String(l).toUpperCase()));
+                }
+            } catch (err) {
+            }
+        };
+        loadLocations();
+    }, []);
 
     const handleFarmNameClick = useCallback((farm: any) => {
         if (!farm || !farm.id) return;
@@ -87,21 +112,29 @@ const Farms: React.FC = () => {
         navigate(`/farmvest/farms/${farm.id}`, { state: { farm } });
     }, [navigate]);
 
-    // Removed old modal state and logic
-
-
-
-
+    const loadedLocation = useAppSelector((state: RootState) => state.farmvestFarms?.loadedLocation);
 
     // Effect: Trigger fetch when location changes
     useEffect(() => {
-        console.log(`[FarmsComponent] Location changed to: ${location}, triggering fetch`);
-        dispatch(fetchFarms(location));
-    }, [dispatch, location]);
+        // Only fetch if location changed or we don't have data for this location
+        if (location !== loadedLocation) {
+            dispatch(fetchFarms(location));
+        }
+    }, [dispatch, location, loadedLocation]);
 
-    // Handle location change via URL
-    const handleLocationChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        const newLocation = e.target.value;
+    // Transform locations for CustomDropdown
+    const locationOptions = useMemo(() => {
+        if (availableLocations.length > 0) {
+            return availableLocations.map(loc => ({ value: loc, label: loc }));
+        }
+        return [
+            { value: 'KURNOOL', label: 'KURNOOL' },
+            { value: 'HYDERABAD', label: 'HYDERABAD' }
+        ];
+    }, [availableLocations]);
+
+    // Handle location change via CustomDropdown
+    const handleLocationSelect = useCallback((newLocation: string) => {
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             next.set('location', newLocation);
@@ -109,7 +142,6 @@ const Farms: React.FC = () => {
             return next;
         });
     }, [setSearchParams]);
-
 
     // Handle pagination
     const setCurrentPage = useCallback((page: number) => {
@@ -124,9 +156,19 @@ const Farms: React.FC = () => {
     const searchFn = useCallback((item: any, query: string) => {
         if (!item) return false;
         const lowerQuery = query.toLowerCase();
-        const farmName = (item.farm_name || '').toLowerCase();
-        const farmLocation = (item.location || '').toLowerCase();
-        return farmName.includes(lowerQuery) || farmLocation.includes(lowerQuery);
+
+        // Safely access and convert properties to strings for searching
+        const farmName = String(item.farm_name || '').toLowerCase();
+        const farmLocation = String(item.location || '').toLowerCase();
+
+        // Also search by manager name and mobile as they are displayed in the table
+        const managerName = String(item.farm_manager_name || item.manager_name || item.farm_manager?.name || '').toLowerCase();
+        const mobile = String(item.mobile_number || item.manager_mobile || item.manager_phone || item.farm_manager?.mobile || '').toLowerCase();
+
+        return farmName.includes(lowerQuery) ||
+            farmLocation.includes(lowerQuery) ||
+            managerName.includes(lowerQuery) ||
+            mobile.includes(lowerQuery);
     }, []);
 
     const {
@@ -164,63 +206,27 @@ const Farms: React.FC = () => {
     // Page Clamping: Prevent being on a page that no longer exists
     useEffect(() => {
         if (!farmsLoading && currentPage > totalPages && totalPages > 0) {
-            console.log(`[FarmsComponent] Page clamp: ${currentPage} -> ${totalPages}`);
             setCurrentPage(totalPages);
         }
     }, [totalPages, currentPage, setCurrentPage, farmsLoading]);
 
-    // Extra safeguard for currentPage parsing
-    const currentPageToUse = useMemo(() => {
-        const page = parseInt(searchParams.get('page') || '1', 10);
-        return isNaN(page) || page < 1 ? 1 : page;
-    }, [searchParams]);
-
-
-    const getSortIcon = useCallback((key: string) => {
-        if (sortConfig.key !== key) return '↕️';
-        return sortConfig.direction === 'asc' ? '↑' : '↓';
-    }, [sortConfig]);
-
     return (
-        <div className="farms-container animate-fadeIn">
-            <div className="farms-header p-6 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
+        <div className="farms-container h-full flex flex-col overflow-hidden animate-fadeIn">
+            <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">FarmVest Management</h2>
+                    <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
                     <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
-                        {/* <span className={`inline-block w-2 h-2 rounded-full ${farmsLoading ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`}></span> */}
-                        {/* <span>{location} Operations • {farms.length} Farms Loaded</span> */}
+                        <span>{location} Operations • {filteredFarms.length} Farms Loaded</span>
                     </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                    <button
-                        onClick={() => setIsAddFarmModalOpen(true)}
-                        className="px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md flex items-center gap-2"
-                    >
-                        <span>+</span> Add Farm
-                    </button>
-
-                    {/* Location Selector */}
-                    <div className="relative w-full sm:w-56">
-                        <select
-                            className="w-full p-3 pl-4 pr-10 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none font-bold text-gray-700 shadow-sm"
-                            value={location}
-                            onChange={handleLocationChange}
-                        >
-                            <option value="KURNOOL">KURNOOL </option>
-                            <option value="HYDERABAD">HYDERABAD</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
-                        </div>
-                    </div>
-
                     {/* Search Input */}
-                    <div className="w-full sm:w-80 relative group">
+                    <div className="w-full sm:w-56 relative group">
                         <input
                             type="text"
                             placeholder="Find farm name..."
-                            className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
+                            className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -233,10 +239,26 @@ const Farms: React.FC = () => {
                             </button>
                         )}
                     </div>
+
+                    <div className="relative w-full sm:w-48 z-20">
+                        <CustomDropdown
+                            options={locationOptions}
+                            value={location}
+                            onChange={handleLocationSelect}
+                            placeholder="Select Location"
+                        />
+                    </div>
+
+                    <button
+                        onClick={() => setIsAddFarmModalOpen(true)}
+                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
+                    >
+                        <span className="text-base">+</span> Add Farm
+                    </button>
                 </div>
             </div>
 
-            <div className="farms-content p-6">
+            <div className="farms-content p-2 flex-1 flex flex-col min-h-0">
                 {farmsError && (
                     <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg flex items-center shadow-md animate-shake">
                         <div className="p-2 bg-red-100 rounded-lg mr-4">
@@ -255,54 +277,62 @@ const Farms: React.FC = () => {
                     </div>
                 )}
 
-                <div className="overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-2xl">
-                    <table className="farms-table w-full text-sm text-left border-collapse">
-                        <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] uppercase font-bold tracking-widest text-gray-400">
-                            <tr>
-                                <th className="px-6 py-5 text-center">S.no</th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('farm_name')}>
-                                    <div className="flex items-center gap-2">Farm Name <span className="text-blue-500 opacity-60">{getSortIcon('farm_name')}</span></div>
-                                </th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('location')}>
-                                    <div className="flex items-center gap-2">Location <span className="text-blue-500 opacity-60">{getSortIcon('location')}</span></div>
-                                </th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group" onClick={() => requestSort('total_buffaloes_count')}>
-                                    <div className="flex items-center gap-2">Live Count <span className="text-blue-500 opacity-60">{getSortIcon('total_buffaloes_count')}</span></div>
-                                </th>
-                                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100/50 transition-colors group">
-                                    <div className="flex items-center gap-2">Farm Manager</div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {farmsLoading ? (
-                                <TableSkeleton cols={4} rows={10} />
-                            ) : (currentItems.length === 0 && !farmsError) ? (
+                <div className="bg-white border border-gray-100 rounded-2xl shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <div className="overflow-auto flex-1 min-h-0 hide-scrollbar">
+                        <table className="farms-table w-full text-xs text-left border-collapse relative">
+                            <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-16 text-center text-gray-400">
-                                        <div className="text-4xl mb-4 grayscale opacity-50">🚜</div>
-                                        <p className="text-lg font-medium text-gray-500">No Farm Records Found</p>
-                                        <p className="text-sm">We couldn't find any farms matching your filter in {location}</p>
-                                    </td>
+                                    <th className="px-4 py-2 text-center">S.no</th>
+                                    <th className="px-4 py-2 text-left">
+                                        <div className="flex items-center gap-2">Farm Name</div>
+                                    </th>
+                                    <th className="px-4 py-2 text-left">
+                                        <div className="flex items-center gap-2">Location</div>
+                                    </th>
+                                    <th className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-2">Sheds</div>
+                                    </th>
+                                    <th className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-2">Live Count</div>
+                                    </th>
+                                    <th className="px-4 py-2 text-left">
+                                        <div className="flex items-center gap-2">Farm Manager</div>
+                                    </th>
                                 </tr>
-                            ) : (
-                                currentItems.map((farm: any, index: number) => (
-                                    <FarmRow
-                                        key={`${farm?.id || 'farm'}-${index}`}
-                                        farm={farm}
-                                        index={index}
-                                        currentPage={currentPage}
-                                        itemsPerPage={itemsPerPage}
-                                        onFarmClick={handleFarmNameClick}
-                                    />
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {farmsLoading ? (
+                                    <TableSkeleton cols={6} rows={10} />
+                                ) : (currentItems.length === 0 && !farmsError) ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 text-center h-full align-middle">
+                                            <div className="flex flex-col items-center justify-center h-full pb-12">
+                                                <div className="text-3xl mb-2 animate-bounce">🚜</div>
+                                                <p className="text-sm font-bold text-gray-800 tracking-tight">No Farm Records Found</p>
+                                                <p className="text-xs text-gray-500 mt-1">We couldn't find any farms matching your filter in <span className="font-bold text-blue-600">{location}</span></p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    currentItems.map((farm: any, index: number) => (
+                                        <FarmRow
+                                            key={`${farm?.id || 'farm'}-${index}`}
+                                            farm={farm}
+                                            index={index}
+                                            currentPage={currentPage}
+                                            itemsPerPage={itemsPerPage}
+                                            onFarmClick={handleFarmNameClick}
+                                        />
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-10 flex justify-center">
+                    <div className="mt-2 flex justify-center">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
@@ -311,8 +341,6 @@ const Farms: React.FC = () => {
                     </div>
                 )}
             </div>
-
-
 
             <AddFarmModal
                 isOpen={isAddFarmModalOpen}
@@ -331,7 +359,7 @@ const Farms: React.FC = () => {
                     }
                 }}
             />
-        </div >
+        </div>
     );
 };
 

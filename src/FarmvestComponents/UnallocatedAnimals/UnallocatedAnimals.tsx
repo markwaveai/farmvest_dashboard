@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import CustomDropdown from '../../components/common/CustomDropdown';
 import './UnallocatedAnimals.css';
-import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2 } from 'lucide-react';
+import { ChevronDown, Video, LayoutGrid, PawPrint, ShoppingBag, Loader2, Camera } from 'lucide-react';
 import CommonShedGrid from '../../components/common/ShedGrid/CommonShedGrid';
 import { farmvestService } from '../../services/farmvest_api';
+import AnimalDetailsModal from '../AnimalDetailsModal';
 
 interface Farm {
     farm_id: number;
@@ -27,19 +30,34 @@ interface Animal {
     images?: string[];
     // New fields from user's JSON
     rfid?: string;
+    uuid?: string; // Raw Backend UUID
+    isOccupied?: boolean;
     investor_name?: string;
     display_text?: string;
     onboarding_time?: string;
 }
 
+// Custom Dropdown Component for Scrollable Selection
+
+
 const UnallocatedAnimals: React.FC = () => {
     // ---------------------------------------------------------
     // 1. STATE
     // ---------------------------------------------------------
+    const location = useLocation();
+    const navigate = useNavigate();
+    const navState = location.state as { farmId?: string; shedId?: string; fromShedView?: boolean } | null;
+
     const [farms, setFarms] = useState<Farm[]>([]);
     const [sheds, setSheds] = useState<Shed[]>([]);
-    const [selectedFarmId, setSelectedFarmId] = useState<string>('');
-    const [selectedShedId, setSelectedShedId] = useState<string>('');
+    const [selectedFarmId, setSelectedFarmId] = useState<string>(() => {
+        if (navState?.farmId) {
+            localStorage.setItem('fv_selected_farm_id', navState.farmId);
+            return navState.farmId;
+        }
+        return localStorage.getItem('fv_selected_farm_id') || '';
+    });
+    const [selectedShedId, setSelectedShedId] = useState<string>(navState?.shedId || '');
     const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
 
     const [animals, setAnimals] = useState<Animal[]>([]);
@@ -48,8 +66,18 @@ const UnallocatedAnimals: React.FC = () => {
     const [loadingGrid, setLoadingGrid] = useState(false);
     const [selectedShedAlloc, setSelectedShedAlloc] = useState<any>(null);
 
+    // BATCH ALLOCATION STATE
+    // Map<SlotLabel, AnimalID>
+    const [pendingAllocations, setPendingAllocations] = useState<Map<string, string>>(new Map());
+    const [isSaving, setIsSaving] = useState(false);
+
     // Fail-safe "Stop" when API fails
     const [hasError, setHasError] = useState(false);
+
+    // Modal State
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [selectedParkingId, setSelectedParkingId] = useState<string | undefined>(undefined);
+    const [selectedRowContext, setSelectedRowContext] = useState<string | undefined>(undefined);
 
     // ---------------------------------------------------------
     // 2. STABILITY REFS (Guaranteed One-Time Fetching)
@@ -58,18 +86,23 @@ const UnallocatedAnimals: React.FC = () => {
     const lastShedIdRef = useRef<string | null>(null);
     const isMounted = useRef(false);
 
-    const log = (msg: string) => console.log(`[FarmVest Final] ${new Date().toLocaleTimeString()}: ${msg}`);
+    const log = useCallback((msg: string) => { }, []);
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return '';
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return dateString;
-            return date.toLocaleTimeString('en-IN', {
-                hour: '2-digit',
+
+            const day = date.getDate();
+            const month = date.getMonth() + 1; // 0-indexed
+            const time = date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
             });
+
+            return `${day}/${month} ${time}`;
         } catch {
             return dateString;
         }
@@ -107,10 +140,38 @@ const UnallocatedAnimals: React.FC = () => {
 
             const mapped = animalList.map((a, idx) => {
                 let imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
+
+                // Check all possible image fields
                 if (a.images && Array.isArray(a.images) && a.images.length > 0 && a.images[0]) {
                     imgUrl = a.images[0];
                 } else if (a.image && typeof a.image === 'string' && a.image.trim() !== '') {
                     imgUrl = a.image;
+                } else if (a.photos && Array.isArray(a.photos) && a.photos.length > 0 && a.photos[0]) { // Check 'photos'
+                    imgUrl = a.photos[0];
+                } else if (a.documents && Array.isArray(a.documents) && a.documents.length > 0) { // Check 'documents'
+                    // Sometimes images are stored in documents with type 'image' or just as strings
+                    const docImg = a.documents.find((d: any) => typeof d === 'string' && (d.startsWith('http') || d.startsWith('data:image')));
+                    if (docImg) imgUrl = docImg;
+                }
+
+                // Filter out the specific bad fallback URL from previous onboardings
+                if (imgUrl.includes('payment_receipt.jpg')) {
+                    imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
+                }
+
+                // Buffalo Specific Image Override
+                // Buffalo Specific Image Override
+                const rawRole = a.animal_type || a.role || a.species || a.category || 'Animal';
+
+                // Debug Log for List
+                if (idx < 3) {
+                    console.log('UnallocatedList Debug:', { id: a.id, rawRole, a });
+                }
+
+                if (String(rawRole).toLowerCase().includes('buffalo')) {
+                    if (imgUrl.includes('unsplash') || imgUrl.includes('placeholder')) {
+                        imgUrl = '/buffaloe.png';
+                    }
                 }
 
                 return {
@@ -122,15 +183,17 @@ const UnallocatedAnimals: React.FC = () => {
                     display_text: a.display_text,
                     investor_name: a.investor_name,
                     // Extensive fallbacks to find the onboarding date
+                    // Fix: User requested "RFID-1540-002" format, checking all possible fields
+                    uuid: a.rfid_tag || a.rfid_tag_number || a.rfid || a.uuid || a._id || a.id || a.animal_id,
                     onboarding_time: a.investment_details?.order_date || a.order_date || a.created_at || a.onboarded_time || a.onboarded_at || a.onboarding_date || a.placedAt
                 };
             });
 
             // DEBUG LOG: Help identify the correct field if still missing
-            if (mapped.length > 0) {
+            if (animalList.length > 0) {
                 const first = animalList[0];
-                log(`>>> DEBUG Mapping Sample (ID: ${first.animal_id}): Found Time: ${mapped[0].onboarding_time || 'NOT FOUND'}`);
-                log(`Available Keys: ${Object.keys(first).join(', ')}`);
+                log(`>>> DEBUG Mapping Sample (Raw Keys): ${Object.keys(first).join(', ')}`);
+                log(`>>> DEBUG Mapping Sample (Raw Object): ${JSON.stringify(first, null, 2)}`);
             }
             setAnimals(mapped);
             log(`<<< END FETCH FARM: Successfully loaded ${mapped.length} animals`);
@@ -147,12 +210,19 @@ const UnallocatedAnimals: React.FC = () => {
         log(`>>> START FETCH SHED: ${sId}`);
         try {
             setLoadingGrid(true);
-            const numericId = isNaN(Number(sId)) ? sId : Number(sId);
-            const [allocResponse, gridData] = await Promise.all([
-                farmvestService.getShedAllocation(sId).catch(e => {
-                    log(`Note: Shed allocation fetch failed (possibly empty or 404): ${sId}`);
-                    return null;
+
+            // Fix: Use raw ID directly. Removed manual index-based calculation.
+            const numericId = Number(sId);
+
+            log(`Fetching Shed: ${sId} (Numeric: ${numericId})`);
+
+            const [animalsResponse, gridData] = await Promise.all([
+                // Fix: Use numericId (Global ID) to fetch animals from the same shed ID we saved to
+                farmvestService.getTotalAnimals(Number(selectedFarmId), numericId).catch(e => {
+                    log(`Note: Animal fetch failed (possibly empty): ${numericId} (Raw: ${sId})`);
+                    return { data: [] };
                 }),
+                // Use available_positions as requested by USER
                 farmvestService.getShedPositions(numericId as any).catch(e => {
                     log(`Warning: Shed positions fetch failed: ${e.message}`);
                     return [];
@@ -161,26 +231,77 @@ const UnallocatedAnimals: React.FC = () => {
 
             if (!isMounted.current) return;
 
-            const allocations = allocResponse?.data?.allocations || [];
+            const allocatedAnimals = animalsResponse?.data || [];
             const allocationMap = new Map();
             const rowToLetter: { [key: string]: string } = { 'R1': 'A', 'R2': 'B', 'R3': 'C', 'R4': 'D' };
 
-            allocations.forEach((a: any) => {
+            allocatedAnimals.forEach((a: any) => {
+                // Key it by the short identifier we expect in the grid (e.g. "A1")
+                // Row can be R1, R2...
                 const rowLetter = rowToLetter[a.row_number] || a.row_number;
-                // Mapped Keys (A1, A-1)
-                allocationMap.set(`${rowLetter}${a.parking_id}`, a);
-                allocationMap.set(`${rowLetter}-${a.parking_id}`, a);
-                // Original Keys (R11, R1-1)
-                allocationMap.set(`${a.row_number}${a.parking_id}`, a);
-                allocationMap.set(`${a.row_number}-${a.parking_id}`, a);
+
+                // Try to extract the short label from the long parking_id or use provided info
+                let shortId = null;
+                if (a.parking_id) {
+                    const match = a.parking_id.match(/[A-DF][0-9]+$/);
+                    shortId = match ? match[0] : a.parking_id;
+                }
+
+                if (shortId) {
+                    allocationMap.set(shortId, a);
+                    // Also key by the literal label if it's stored differently
+                    allocationMap.set(`${rowLetter}${shortId.replace(/^\D+/, '')}`, a);
+                }
+
+                // Fallback: search by RFID too if needed
+                if (a.rfid_tag_number) allocationMap.set(a.rfid_tag_number, a);
             });
 
             // 3. Process Positions Layout and Merge with Allocations
-            let positions = Array.isArray(gridData) ? gridData : (gridData.data || []);
+            let positions: any[] = [];
+            const extractPositions = (pkg: any, rowContext?: string) => {
+                if (!pkg) return;
 
-            // If API returns no positions, generate base layout to ensure allocations show somewhere
+                if (Array.isArray(pkg)) {
+                    const processed = pkg.map(p => {
+                        const base = typeof p === 'string' ? { label: p, id: p } : { ...p };
+                        return { ...base, _rowContext: rowContext };
+                    });
+                    positions = positions.concat(processed);
+                } else if (typeof pkg === 'object') {
+                    if (pkg.available || pkg.filled) {
+                        if (Array.isArray(pkg.available)) {
+                            const avail = pkg.available.map((p: any) => {
+                                const base = typeof p === 'string' ? { label: p, id: p } : { ...p };
+                                return { ...base, status: 'Available', _rowContext: rowContext };
+                            });
+                            positions = positions.concat(avail);
+                        }
+                        if (Array.isArray(pkg.filled)) {
+                            const filled = pkg.filled.map((p: any) => {
+                                const base = typeof p === 'string' ? { label: p, id: p } : { ...p };
+                                return { ...base, status: 'Occupied', _rowContext: rowContext };
+                            });
+                            positions = positions.concat(filled);
+                        }
+                        return;
+                    }
+                    if (pkg.data && (Array.isArray(pkg.data) || typeof pkg.data === 'object')) {
+                        extractPositions(pkg.data, rowContext);
+                        return;
+                    }
+                    Object.entries(pkg).forEach(([key, val]: [string, any]) => {
+                        const isRowKey = key.match(/^[R|r][0-9]+/);
+                        const nextContext = isRowKey ? key : rowContext;
+                        extractPositions(val, nextContext);
+                    });
+                }
+            };
+            extractPositions(gridData);
+
+            // Mock generation if empty
             if (positions.length === 0) {
-                log(`Shed ${sId} layout empty from API. Generating base grid for mapping.`);
+                log(`Shed ${sId} layout empty from API. Generating base grid.`);
                 const mock: any[] = [];
                 ['A', 'B', 'C', 'D'].forEach(r => {
                     for (let i = 1; i <= 75; i++) mock.push({ label: `${r}${i}`, status: 'Available', id: `${r}${i}` });
@@ -189,27 +310,48 @@ const UnallocatedAnimals: React.FC = () => {
             }
 
             const mergedPositions = positions.map((p: any) => {
-                const label = p.position_name || p.label || p.id || "";
-                const allocation = allocationMap.get(label);
-
-                if (allocation) {
-                    log(`Matched Allocation: Label ${label} -> RFID ${allocation.rfid_tag_number}`);
+                let rawLabel = p.position_name || p.label || p.id || "";
+                if ((!rawLabel || !isNaN(Number(rawLabel))) && p._rowContext) {
+                    const letter = rowToLetter[p._rowContext.toUpperCase()] || p._rowContext;
+                    rawLabel = `${letter}${rawLabel}`;
                 }
 
+                let standardLabel = String(rawLabel);
+
+                // Find allocation
+                const animal = allocationMap.get(standardLabel) || allocationMap.get(rawLabel) || allocationMap.get(p.id);
+                const isOccupiedFromGrid = p.status && String(p.status).toLowerCase() !== 'available';
+                const finalStatus = (animal || isOccupiedFromGrid) ? 'Occupied' : 'Available';
+
                 return {
-                    id: p.id,
-                    label: label,
-                    status: allocation ? 'Occupied' : (p.status || 'Available'),
-                    animal_image: allocation?.animal_image || p.animal_image || p.image,
-                    rfid_tag_number: allocation?.rfid_tag_number || p.rfid_tag_number || p.rfid,
-                    onboarding_time: allocation?.investment_details?.order_date || allocation?.order_date || allocation?.created_at || allocation?.onboarded_time || allocation?.onboarded_at || allocation?.onboarding_date || allocation?.placedAt
+                    ...p,
+                    label: standardLabel,
+                    status: finalStatus,
+                    isOccupied: (finalStatus === 'Occupied'),
+                    animal_image: (() => {
+                        const img = animal?.images?.[0] || p.animal_image || p.image;
+                        const role = animal?.animal_type || animal?.role || animal?.species || animal?.category ||
+                            p.animal_type || p.role || p.species || p.category || '';
+
+                        // Debug log for first few items to verify structure
+                        if (Math.random() < 0.01) {
+                            console.log('UnallocatedAnimals Debug:', { label: standardLabel, role, img, animal, p });
+                        }
+
+                        if (String(role).toLowerCase().includes('buffalo')) {
+                            // Override if no image, or if it's a placeholder/unsplash
+                            if (!img || img.includes('unsplash') || img.includes('placeholder')) {
+                                return '/buffaloe.png';
+                            }
+                        }
+                        return img;
+                    })(),
+                    rfid_tag_number: animal?.rfid_tag_number || p.rfid_tag_number,
+                    parking_id: animal?.parking_id || p.parking_id || p.id,
+                    _animal: animal // Store full object for easy modal access
                 };
             });
 
-            const occupied = mergedPositions.filter((p: any) => p.status.toLowerCase() !== 'available');
-            log(`<<< END FETCH SHED: ${mergedPositions.length} positions total, ${occupied.length} occupied slots found.`);
-
-            setSelectedShedAlloc(allocResponse);
             setGridPositions(mergedPositions);
         } catch (e: any) {
             log(`CRITICAL: Shed detail handler exception: ${e.message}`);
@@ -233,6 +375,17 @@ const UnallocatedAnimals: React.FC = () => {
                 if (!isMounted.current) return;
                 const list = Array.isArray(data) ? data : (data.farms || data.data || []);
                 setFarms(list);
+
+                // Auto-select or Validate Persisted ID from Onboarding Handoff
+                const persistedId = localStorage.getItem('fv_selected_farm_id');
+                if (persistedId) {
+                    const exists = list.some((f: any) => String(f.farm_id || f.id) === persistedId);
+                    if (exists) {
+                        setSelectedFarmId(persistedId);
+                    }
+                    // CONSUME ONCE: Clear it so it doesn't persist on refresh or direct navigation later
+                    localStorage.removeItem('fv_selected_farm_id');
+                }
             } catch (e: any) {
                 log(`FATAL: Farm load failed: ${e.message}`);
                 setHasError(true);
@@ -319,73 +472,136 @@ const UnallocatedAnimals: React.FC = () => {
     };
 
     const handleGridSlotClick = async (position: any, e?: React.MouseEvent) => {
-        if (hasError) { alert("API Connection is currently blocked. Please refresh."); return; }
+        if (hasError) { return; }
+
+        const isOccupied = position.status.toLowerCase() !== 'available';
+
+        if (isOccupied) {
+            // New Requirement: Show Details Modal instead of blocking
+            // Use explicit parking_id if available (LONG one), otherwise fallback to label (SHORT one)
+            const pId = position.parking_id || position.label || position.id;
+            const rContext = position._rowContext;
+
+
+            setSelectedParkingId(pId);
+            setSelectedRowContext(rContext);
+            setDetailsModalOpen(true);
+            return;
+        }
+
         if (!selectedFarmId) { alert('Please select a farm first.'); return; }
         if (!selectedShedId) { alert('Please select a shed first.'); return; }
-        if (!selectedAnimalId) { alert('Please select an animal first.'); return; }
-        if (position.status !== 'Available') { alert('This slot is already occupied.'); return; }
+        if (!selectedAnimalId) { alert('Please select an animal from the list below first.'); return; }
 
-        const selectedAnimal = animals.find(a => a.id === selectedAnimalId);
-        if (!selectedAnimal || !selectedAnimal.rfid) { alert('Selected animal missing RFID tag.'); return; }
+        // BATCH MODE: Toggle pending state
+        const slotLabel = position.label;
+        const currentPending = new Map(pendingAllocations);
 
-        const shedName = sheds.find(s => String(s.shed_id) === selectedShedId)?.shed_name || 'shed';
-        if (!window.confirm(`Allocate animal ${selectedAnimal.rfid} to slot ${position.label} in ${shedName}?`)) return;
+        if (currentPending.has(slotLabel)) {
+            // ALREADY HERE? Toggle off (remove)
+            currentPending.delete(slotLabel);
+        } else {
+            // CHECK: Is this animal already pending in ANOTHER slot?
+            // If so, remove that old slot first (enforce 1-to-1)
+            const entries = Array.from(currentPending.entries());
+            for (const [sLabel, sAnimalId] of entries) {
+                if (sAnimalId === selectedAnimalId) {
+                    currentPending.delete(sLabel);
+                    break;
+                }
+            }
 
-        // Trigger animation immediately after confirmation
-        if (e && e.target) {
-            // Use currentTarget or specific logic to get the slot element effectively
-            // e.currentTarget is the slot card div because we attached onClick there
-            const targetEl = e.currentTarget as HTMLElement;
-            const rect = targetEl.getBoundingClientRect();
-            runFlyAnimation(selectedAnimal.id, rect, selectedAnimal.image);
+            // Add new pending allocation
+            // Note: We allow selecting occupied slots to show the "Red Paw" (invalid) state as requested
+            currentPending.set(slotLabel, selectedAnimalId);
+        }
+        setPendingAllocations(currentPending);
+    };
+
+    const handleSaveAllocation = async () => {
+        if (pendingAllocations.size === 0) {
+            return;
+        }
+
+        const validAllocations: any[] = [];
+        const invalidAllocations: string[] = [];
+
+        // Validate pending items
+        pendingAllocations.forEach((animalId, slotLabel) => {
+            const slot = gridPositions.find(p => p.label === slotLabel);
+            const isOccupied = slot && slot.status.toLowerCase() !== 'available';
+
+            if (isOccupied) {
+                invalidAllocations.push(slotLabel);
+            } else {
+                // Prepare payload item
+                const animal = animals.find(a => a.id === animalId);
+                if (animal && animal.rfid) {
+                    // NEW REQUIREMENT (Step 906):
+                    // row_number: "R1", "R2"...
+                    // parking_id: "A1", "A2", "B1"... (The Label)
+
+                    let rowNum = 'R1';
+                    const letter = slotLabel.charAt(0).toUpperCase();
+
+                    if (letter === 'A') rowNum = 'R1';
+                    else if (letter === 'B') rowNum = 'R2';
+                    else if (letter === 'C') rowNum = 'R3';
+                    else if (letter === 'D') rowNum = 'R4';
+                    else if (slotLabel.startsWith('R')) {
+                        // Fallback for R1-1 style
+                        const match = slotLabel.match(/^R(\d+)/);
+                        if (match) rowNum = `R${match[1]}`;
+                    }
+
+                    validAllocations.push({
+                        rfid_tag_number: animal.uuid || animal.rfid || animal.id, // User Request: Convert RFID to UUID
+                        row_number: rowNum,    // "R1"
+                        parking_id: slotLabel  // "A1"
+                    });
+                }
+            }
+        });
+
+        if (validAllocations.length === 0) {
+            return;
         }
 
         try {
-            setLoadingGrid(true);
-            const label = position.label;
+            setIsSaving(true);
 
-            // Parse row and parking ID. Handles "A1" or "R1-1"
-            let rowNum = label.charAt(0);
-            let parkId = label.slice(1);
+            // CRITICAL FIX: The API requires the uniquely identified GLOBAL Shed ID (e.g., 1-12, 13-24)
+            // The UI dropdown might provide a Local ID (1-12 per farm).
+            // DEBUG: Log available sheds to verify ID logic
 
-            // If it's a hyphenated label (like R1-1), split it
-            if (label.includes('-')) {
-                const parts = label.split('-');
-                rowNum = parts[0];
-                parkId = parts[1];
-            } else if (label.startsWith('R') && !isNaN(Number(label.charAt(1)))) {
-                // Potential fallback for "R1-1" without hyphen
-                rowNum = label.substring(0, 2);
-                parkId = label.substring(2);
-            }
+            // Fix: Trust the ID from the dropdown (API provided), do not manually calculate 'numeric' ID based on index.
+            // This avoids mapping errors if IDs are not perfectly sequential/dense.
 
-            await farmvestService.allocateAnimal(selectedShedId, [
-                {
-                    rfid_tag_number: selectedAnimal.rfid,
-                    row_number: rowNum,
-                    parking_id: parkId
-                }
-            ]);
+            // Try to use the STRING ID ("KUR_F1_S1") if available, as that is likely the unique identifier for allocation
+            const selectedShedObj = sheds.find((s: any) => String(s.id) === String(selectedShedId));
+            const targetShedId = selectedShedObj?.shed_id || selectedShedId;
 
-            alert('Allocation Successful!');
-            // Refresh logic: clear selection and trigger manual refetch
+
+            // Use the raw ID or String ID
+            const saveResponse = await farmvestService.allocateAnimal(String(targetShedId), validAllocations);
+
+
+            // Clear all pending state
+            setPendingAllocations(new Map());
             setSelectedAnimalId(null);
 
-            // To prevent full page reload, we manually trigger the fetch calls
-            // and clear refs to ensure they execute
+            // Refetch data
             lastFarmIdRef.current = null;
             lastShedIdRef.current = null;
             fetchFarmData(Number(selectedFarmId));
+
+            // Force refresh of shed details to show new allocations
             fetchShedDetails(selectedShedId);
+
         } catch (error: any) {
-            log(`Allocation Failed: ${error.message}`);
-            // Extract meaningful error message
             const apiError = error.response?.data?.message || error.message || 'Unknown error';
-            alert(`Allocation Failed: ${apiError}`);
-            // Do NOT setHasError(true) here, so the user can try again
-            // setHasError(true); 
         } finally {
-            if (isMounted.current) setLoadingGrid(false);
+            if (isMounted.current) setIsSaving(false);
         }
     };
 
@@ -393,8 +609,11 @@ const UnallocatedAnimals: React.FC = () => {
     // 5. MEMOIZED DATA
     // ---------------------------------------------------------
     const stats = useMemo(() => {
-        const shed = sheds.find(s => String(s.shed_id) === selectedShedId);
+        // Dropdown now uses 'id' (numeric PK), so we find based on that.
+        // We cast to Number just in case selectedShedId is a string.
+        const shed = sheds.find((s: any) => s.id == selectedShedId);
         const cap = shed?.capacity || 300;
+
         if (selectedShedAlloc) {
             return {
                 capacity: cap,
@@ -417,10 +636,12 @@ const UnallocatedAnimals: React.FC = () => {
 
     const rows = useMemo(() => {
         // Updated layout according to user request:
-        // Drainage, R1, Feed way, R2, Drainage, R3, Feed way, R4, Drainage
-        return ['Drainage', 'R1', 'Feed way', 'R2', 'Drainage', 'R3', 'Feed way', 'R4', 'Drainage'];
+        // Drainage, R1, TMR way, R2, Drainage, R3, TMR way, R4, Drainage
+        return ['Drainage', 'R1', 'TMR way', 'R2', 'Drainage', 'R3', 'TMR way', 'R4', 'Drainage'];
     }, []);
 
+    // ---------------------------------------------------------
+    // 6. RENDER
     // ---------------------------------------------------------
     // 6. RENDER
     // ---------------------------------------------------------
@@ -441,120 +662,281 @@ const UnallocatedAnimals: React.FC = () => {
 
     return (
         <div className="unallocated-animals-container">
-            <div className="ua-header">
-                <h1><span>Shed Allocation</span></h1>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                <div className="ua-select-wrapper">
-                    <select className="ua-select" value={selectedFarmId} onChange={(e) => {
-                        setSelectedFarmId(e.target.value);
-                        setSelectedShedId('');
-                        lastShedIdRef.current = null;
-                    }}>
-                        <option value="">Select Farm</option>
-                        {farms.map((f: any) => (
-                            <option key={f.farm_id || f.id} value={f.farm_id || f.id}>
-                                🚜 {f.farm_name || f.name || 'Unnamed Farm'}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="ua-select-icon" size={20} color="#9CA3AF" />
-                </div>
-
-                <div className="ua-select-wrapper">
-                    <select className="ua-select" value={selectedShedId} onChange={(e) => setSelectedShedId(e.target.value)} disabled={!selectedFarmId}>
-                        <option value="">{!selectedFarmId ? "Select Farm First" : (sheds.length === 0 ? "No Sheds Found" : "Select Shed")}</option>
-                        {sheds.map((s: any) => (
-                            <option key={s.shed_id || s.id} value={s.shed_id || s.id}>
-                                🏠 {s.shed_name}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="ua-select-icon" size={20} color="#9CA3AF" />
-                </div>
-            </div>
-
-            <div className="ua-stats-card">
-                <div className="ua-stat-item">
-                    <div className="ua-stat-value"><LayoutGrid size={24} color="#3B82F6" />{stats.capacity}</div>
-                    <span className="ua-stat-label">Capacity</span>
-                </div>
-                <div className="ua-stat-item">
-                    <div className="ua-stat-value"><PawPrint size={24} color="#15803D" />{stats.allocated}</div>
-                    <span className="ua-stat-label">Allocated</span>
-                </div>
-                <div className="ua-stat-item">
-                    <div className="ua-stat-value"><ShoppingBag size={24} color="#F97316" />{stats.pending}</div>
-                    <span className="ua-stat-label">Pending</span>
-                </div>
-            </div>
-
-            <div className="ua-section-title">Select Animal to Allocate</div>
-            <div className="ua-animals-list">
-                {loadingAnimals ? <div style={{ padding: '20px' }}>Loading animals...</div> : (
-                    animals.length > 0 ? animals.map((animal) => (
-                        <div
-                            key={animal.id}
-                            id={`ua-animal-card-${animal.id}`}
-                            className={`ua-animal-avatar-card ${selectedAnimalId === animal.id ? 'selected' : ''}`}
-                            onClick={() => setSelectedAnimalId(animal.id)}
+            <div className="ua-header p-6 pb-0">
+                <div className="flex items-center gap-4 mb-2">
+                    {navState?.fromShedView && (
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="bg-white border border-gray-200 text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors"
                         >
-                            <img
-                                src={animal.image}
-                                alt={animal.id}
-                                className="ua-animal-img"
-                                onError={(e) => {
-                                    const fallback = 'https://via.placeholder.com/100?text=No+Img';
-                                    if (e.currentTarget.src !== fallback) {
-                                        e.currentTarget.src = fallback;
-                                    }
-                                }}
-                            />
-                            <span className="ua-animal-id" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{animal.display_text || animal.rfid || 'Animal'}</span>
-                            {animal.onboarding_time && (
-                                <span className="ua-animal-time" style={{ fontSize: '0.65rem', color: '#6B7280', marginTop: '2px' }}>
-                                    Onboarded at: {formatDate(animal.onboarding_time)}
-                                </span>
-                            )}
-                        </div>
-                    )) : <div style={{ padding: '10px' }}>{selectedFarmId ? "No unallocated animals." : "Select farm first."}</div>
-                )}
+                            <ChevronDown size={14} className="rotate-90" /> Back to Farms
+                        </button>
+                    )}
+                    <h1><span>Shed Allocation</span></h1>
+                </div>
+                <button
+                    className="save-allocation-btn"
+                    onClick={handleSaveAllocation}
+                    disabled={isSaving || pendingAllocations.size === 0}
+                    style={{
+                        marginLeft: 'auto',
+                        backgroundColor: pendingAllocations.size > 0 ? '#f59e0b' : '#9CA3AF',
+                        color: 'white',
+                        padding: '8px 24px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontWeight: 600,
+                        cursor: pendingAllocations.size > 0 ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : null}
+                    {isSaving ? 'Saving...' : `Save Changes (${pendingAllocations.size})`}
+                </button>
             </div>
 
-            {loadingGrid ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Loader2 size={32} className="animate-spin" color="#2E7D32" /></div>
-            ) : (
-                <CommonShedGrid
-                    positions={displayPositions}
-                    layout="row"
-                    groups={rows}
-                    onSlotClick={(pos, e) => handleGridSlotClick(pos, e)}
-                    renderSlot={(pos: any) => {
-                        const isOccupied = pos.status.toLowerCase() !== 'available';
-                        const displayImg = pos.animal_image || "/buffalo_green_icon.png";
-                        return (
-                            <div className="slot-inner-icon">
+            <div className="flex-1 overflow-auto p-6 scrollbar-hide">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                    <CustomDropdown
+                        placeholder="Select Farm"
+                        value={selectedFarmId}
+                        options={farms.map((f: any) => ({
+                            value: f.farm_id || f.id,
+                            label: `🚜 ${f.farm_name || f.name || 'Unnamed Farm'} - ${f.location || 'Unknown'}`
+                        }))}
+                        onChange={(val: string) => {
+                            setSelectedFarmId(val);
+                            setSelectedShedId('');
+                            lastShedIdRef.current = null;
+                        }}
+                    />
+
+                    <CustomDropdown
+                        placeholder={!selectedFarmId ? "Select Farm First" : "Select Shed"}
+                        value={selectedShedId}
+                        disabled={!selectedFarmId}
+                        options={sheds.map((s: any) => ({
+                            value: s.id || s.shed_id,
+                            label: `🏠 ${s.shed_name || s.name || 'Unnamed Shed'}`
+                        }))}
+                        onChange={(val: string) => setSelectedShedId(val)}
+                    />
+                </div>
+
+                {selectedShedId && (() => {
+                    const shed = sheds.find((s: any) => String(s.id) === selectedShedId || s.shed_id === selectedShedId) || {} as any;
+                    const capacity = shed.capacity || 300;
+                    const allocated = shed.current_buffaloes ?? shed.entry_count ?? 0;
+                    const pendingCount = pendingAllocations.size;
+
+                    return (
+                        <div className="ua-stats-card">
+                            <div className="ua-stat-item">
+                                <div className="ua-stat-value"><LayoutGrid size={24} color="#3B82F6" />{capacity}</div>
+                                <span className="ua-stat-label">Capacity</span>
+                            </div>
+                            <div className="ua-stat-item">
+                                <div className="ua-stat-value"><PawPrint size={24} color="#15803D" />{allocated}</div>
+                                <span className="ua-stat-label">Allocated</span>
+                            </div>
+                            <div className="ua-stat-item">
+                                <div className="ua-stat-value"><ShoppingBag size={24} color="#F97316" />{pendingCount}</div>
+                                <span className="ua-stat-label">Pending</span>
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                <div className="ua-section-title">Select Animal to Allocate</div>
+                <div className="ua-animals-list">
+                    {loadingAnimals ? <div style={{ padding: '20px' }}>Loading animals...</div> : (
+                        animals.length > 0 ? animals.map((animal, idx) => (
+                            <div
+                                key={animal.id}
+                                id={`ua-animal-card-${animal.id}`}
+                                className={`ua-animal-avatar-card card-animate ${selectedAnimalId === animal.id ? 'selected' : ''}`}
+                                style={{ animationDelay: `${idx * 0.05}s` }}
+                                onClick={() => setSelectedAnimalId(prev => prev === animal.id ? null : animal.id)}
+                            >
                                 <img
-                                    src={displayImg}
-                                    alt="animal"
-                                    className={`slot-animal-icon ${isOccupied && !pos.animal_image ? 'faded' : ''}`}
+                                    src={animal.image}
+                                    alt={animal.id}
+                                    className="ua-animal-img"
+                                    onError={(e) => {
+                                        const fallback = 'https://via.placeholder.com/100?text=No+Img';
+                                        if (e.currentTarget.src !== fallback) {
+                                            e.currentTarget.src = fallback;
+                                        }
+                                    }}
                                 />
-                                <span className="slot-label">
-                                    {isOccupied ? (pos.rfid_tag_number || pos.label) : pos.label}
-                                </span>
-                                {isOccupied && pos.onboarding_time && (
-                                    <span className="slot-time">
-                                        {formatDate(pos.onboarding_time)}
+                                <span className="ua-animal-id" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{animal.display_text || animal.rfid || 'Animal'}</span>
+                                {animal.onboarding_time && (
+                                    <span className="ua-animal-time" style={{ fontSize: '0.65rem', color: '#6B7280', marginTop: '2px' }}>
+                                        {formatDate(animal.onboarding_time)}
                                     </span>
                                 )}
                             </div>
-                        );
-                    }}
-                />
-            )}
+                        )) : <div style={{ padding: '10px' }}>{selectedFarmId ? "No unallocated animals." : "Select farm first."}</div>
+                    )}
+                </div>
+
+                {loadingGrid ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><Loader2 size={32} className="animate-spin" color="#2E7D32" /></div>
+                ) : (
+                    <div className="space-y-2 p-4">
+                        {(() => {
+                            const Separator = ({ label }: { label: string }) => (
+                                <div className="w-full bg-[#f0fdf4]/80 border border-green-100/50 rounded-lg py-1.5 mb-3 shadow-sm flex items-center justify-center">
+                                    <span className="text-[10px] font-bold text-green-700/60 tracking-widest uppercase">{label}</span>
+                                </div>
+                            );
+
+                            const groupedPositions: Record<string, any[]> = { A: [], B: [], C: [], D: [] };
+                            const sortPositions = (a: any, b: any) => {
+                                const numA = parseInt(a.label.slice(1));
+                                const numB = parseInt(b.label.slice(1));
+                                return numA - numB;
+                            };
+
+                            displayPositions.forEach((pos: any) => {
+                                const letter = pos.label.charAt(0).toUpperCase();
+                                if (groupedPositions[letter]) {
+                                    groupedPositions[letter].push(pos);
+                                }
+                            });
+
+                            Object.keys(groupedPositions).forEach(key => {
+                                groupedPositions[key].sort(sortPositions);
+                            });
+
+                            const renderRow = (letter: string, rowLabel: string) => {
+                                const rowPositions = groupedPositions[letter];
+                                const chunks = [];
+                                for (let i = 0; i < rowPositions.length; i += 5) {
+                                    chunks.push(rowPositions.slice(i, i + 5));
+                                }
+
+                                return (
+                                    <div className="mb-4">
+                                        <h4 className="text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
+                                        <div className="ua-grid-row-scroll scrollbar-hide px-1">
+                                            {chunks.map((chunk, groupIndex) => (
+                                                <div key={groupIndex} className="flex flex-col items-center">
+                                                    <div className="mb-0.5 flex flex-col items-center animate-pulse">
+                                                        <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
+                                                            <Camera size={11} className="text-blue-600" />
+                                                        </div>
+                                                        <div className="h-1.5 w-0.5 bg-blue-200 -mt-0.5"></div>
+                                                        <div className="w-full h-0.5 bg-blue-200"></div>
+                                                    </div>
+
+                                                    <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[200px]">
+                                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-blue-200"></div>
+                                                        {chunk.map((pos) => {
+                                                            const rawStatus = String(pos.status || 'Available').trim().toLowerCase();
+                                                            const isOccupied = rawStatus !== 'available' || (pos.animal && pos.animal.length > 0) || pos.isOccupied;
+                                                            const isPending = pendingAllocations.has(pos.label);
+                                                            const displayImg = pos.animal_image || "/buffalo_green_icon.png";
+
+                                                            return (
+                                                                <div
+                                                                    key={pos.label}
+                                                                    className={`flex-shrink-0 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform`}
+                                                                    onClick={(e) => {
+                                                                        handleGridSlotClick(pos, e);
+                                                                    }}
+                                                                >
+                                                                    <div className={`
+                                                                        w-11 h-11 border rounded-md flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
+                                                                        ${isOccupied && !isPending ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}
+                                                                        ${isPending ? 'ring-1 ring-emerald-500 border-emerald-500' : ''}
+                                                                    `}>
+                                                                        {isOccupied && !isPending && (
+                                                                            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
+                                                                                <img
+                                                                                    src={displayImg}
+                                                                                    alt="Buffalo"
+                                                                                    className={`w-8 h-8 object-contain mb-0.5 rounded-full shadow-sm`}
+                                                                                    onError={(e) => {
+                                                                                        e.currentTarget.src = "/buffalo_green_icon.png";
+                                                                                    }}
+                                                                                />
+                                                                                <span className="text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {isPending && (
+                                                                            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
+                                                                                <PawPrint
+                                                                                    size={18}
+                                                                                    color={isOccupied ? '#EF4444' : '#22C55E'}
+                                                                                    fill={isOccupied ? '#EF4444' : '#22C55E'}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+
+                                                                        {!isOccupied && !isPending && (
+                                                                            <>
+                                                                                <img
+                                                                                    src={displayImg}
+                                                                                    alt="Buffalo"
+                                                                                    className={`w-4 h-4 object-contain mb-0.5`}
+                                                                                />
+                                                                                <span className="text-[8px] font-bold text-gray-400">{pos.label}</span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            };
+
+                            return (
+                                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mt-4 w-full max-w-full mx-auto">
+                                    <div className="space-y-1">
+                                        <Separator label="DRAINAGE" />
+                                        {renderRow('A', 'Row R1')}
+
+                                        <Separator label="TMR WAY" />
+                                        {renderRow('B', 'Row R2')}
+
+                                        <Separator label="DRAINAGE" />
+                                        {renderRow('C', 'Row R3')}
+
+                                        <Separator label="TMR WAY" />
+                                        {renderRow('D', 'Row R4')}
+
+                                        <Separator label="DRAINAGE" />
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                )}
+            </div>
+
+            <AnimalDetailsModal
+                isOpen={detailsModalOpen}
+                onClose={() => {
+                    setDetailsModalOpen(false);
+                    setSelectedParkingId(undefined);
+                    setSelectedRowContext(undefined);
+                }}
+                parkingId={selectedParkingId}
+                farmId={selectedFarmId ? Number(selectedFarmId) : undefined}
+                shedId={selectedShedId ? Number(selectedShedId) : undefined}
+                rowNumber={selectedRowContext}
+            />
         </div>
     );
 };
+
 
 export default UnallocatedAnimals;

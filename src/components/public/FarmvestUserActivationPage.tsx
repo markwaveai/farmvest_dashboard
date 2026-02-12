@@ -103,7 +103,7 @@ const ConfirmModal = ({
                         onClick={onConfirm}
                         className={`flex-1 py-2.5 rounded-xl font-semibold text-white shadow-sm transition-all active:scale-95 ${type === 'danger'
                             ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-200'
-                            : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-200'
+                            : 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:from-[#d97706] hover:to-[#b45309] shadow-orange-200'
                             }`}
                     >
                         {okText}
@@ -184,9 +184,15 @@ const FarmvestUserActivationPage = () => {
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (name === 'first_name' || name === 'last_name') {
+            // Only allow letters and spaces
+            if (/[0-9]/.test(value)) return;
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value,
+            [name]: value,
         });
     };
 
@@ -279,15 +285,13 @@ const FarmvestUserActivationPage = () => {
                     message: 'Account deactivated successfully',
                 });
             } else {
-                // Keep mock for activation for now unless specified otherwise
-                setTimeout(() => {
-                    setLoading(false);
-                    setModalConfig({
-                        isOpen: true,
-                        type: 'success',
-                        message: 'Account activated successfully (Mock)',
-                    });
-                }, 1500);
+                await farmvestService.activateUser(formData.mobile);
+                setLoading(false);
+                setModalConfig({
+                    isOpen: true,
+                    type: 'success',
+                    message: 'Account activated successfully',
+                });
             }
         } catch (error: any) {
             setLoading(false);
@@ -326,7 +330,7 @@ const FarmvestUserActivationPage = () => {
                 {/* Left */}
                 <div className="farmvest-hero-content">
                     <div className="farmvest-image-container" style={{ marginTop: 0 }}>
-                        <img src="/buffalo-family.png" alt="Farmvest Family" className="farmvest-hero-image" />
+                        <img src="/farmvest family.png" alt="Farmvest Family" className="farmvest-hero-image" />
                     </div>
                 </div>
 
@@ -426,10 +430,10 @@ const FarmvestUserActivationPage = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || !formData.mobile}
                                     className="w-full font-bold py-3 rounded-full transition mt-6 shadow-lg uppercase tracking-wide mb-4 disabled:opacity-70 disabled:cursor-not-allowed farmvest-btn"
                                     style={{
-                                        backgroundColor: mode === 'deactivate' ? '#ef4444' : '#16a34a',
+                                        backgroundColor: (loading || !formData.mobile) ? '#9CA3AF' : (mode === 'deactivate' ? '#ef4444' : '#f59e0b'),
                                     }}
                                 >
                                     {loading ? 'Sending OTP...' : 'Send OTP'}
@@ -457,7 +461,7 @@ const FarmvestUserActivationPage = () => {
                                     disabled={loading}
                                     className="w-full font-bold py-3 rounded-full transition mt-6 shadow-lg uppercase tracking-wide mb-4 disabled:opacity-70 disabled:cursor-not-allowed farmvest-btn"
                                     style={{
-                                        backgroundColor: mode === 'deactivate' ? '#ef4444' : '#16a34a',
+                                        backgroundColor: mode === 'deactivate' ? '#ef4444' : '#f59e0b',
                                     }}
                                 >
                                     {loading ? 'Processing...' : mode === 'deactivate' ? 'Deactivate Account' : 'Activate Account'}

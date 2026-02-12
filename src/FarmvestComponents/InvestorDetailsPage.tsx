@@ -1,185 +1,127 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { RootState } from '../store';
-import { fetchInvestors } from '../store/slices/farmvest/investors';
-import { fetchEmployees } from '../store/slices/farmvest/employees';
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Milk, Activity, Tag, Info, ChevronDown, ChevronRight } from 'lucide-react';
 import { farmvestService } from '../services/farmvest_api';
-import { User, ArrowLeft, Mail, Phone, Calendar, TrendingUp, Warehouse, Tractor, Stethoscope, Users, MapPin, Filter } from 'lucide-react';
+import TableSkeleton from '../components/common/TableSkeleton';
 
 const InvestorDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const dispatch = useAppDispatch();
-
-    const { investors, loading } = useAppSelector((state: RootState) => state.farmvestInvestors);
-    // const { employees } = useAppSelector((state: RootState) => state.farmvestEmployees); // Don't use Redux state as it might be paginated
-    const [allEmployees, setAllEmployees] = useState<any[]>([]); // Local state for full list
     const [investor, setInvestor] = useState<any>(null);
-    const [investorAnimals, setInvestorAnimals] = useState<any[]>([]);
-    const [farmsMap, setFarmsMap] = useState<Record<number, string>>({});
-    const [shedsMap, setShedsMap] = useState<Record<number, string>>({}); // Cache shed names
-    const [loadingDetails, setLoadingDetails] = useState(false);
-    const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+    const [animals, setAnimals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [animalsLoading, setAnimalsLoading] = useState(true);
+    const [expandedRow, setExpandedRow] = useState<number | string | null>(null);
 
-    // Filter State
-    const [filterType, setFilterType] = useState<'ALL' | 'BUFFALO' | 'CALF'>('ALL');
-
-    useEffect(() => {
-        if (investors.length === 0) {
-            dispatch(fetchInvestors(undefined));
+    const toggleRow = (id: number | string) => {
+        if (expandedRow === id) {
+            setExpandedRow(null);
+        } else {
+            setExpandedRow(id);
         }
-    }, [dispatch, investors.length]);
+    };
 
-    useEffect(() => {
-        if (id && investors.length > 0) {
-            const found = investors.find((inv: any) => String(inv.id) === id);
-            setInvestor(found || null);
-        }
-    }, [id, investors]);
-
-    // Fetch Animals and Employees on load
     useEffect(() => {
         const fetchDetails = async () => {
-            if (!investor) return;
-
-            setLoadingDetails(true);
+            if (!id) return;
+            setLoading(true);
             try {
-                // 1. Fetch Investor's Animals (Buffaloes)
-                const animalData = await farmvestService.getAnimalsByInvestor(Number(investor.id));
-                // The API returns { status, count, data: [...] } or just [...]
-                const buffaloes = Array.isArray(animalData) ? animalData : (animalData.data || []);
+                // Fetch all investors to find the current one (since there isn't a getSingleInvestor endpoint explicitly visible yet)
+                // Optimization: In a real app we'd have getInvestorById. For now, we rely on the list or passed state.
+                // However, getting animals is accurate.
+                // Let's try to fetch recent list or default to passed state if we had it, but here we'll just fetch animals first.
+                // Actually, let's fetch the specific investor from the list if possible or just show skeleton if not found
+                // For this implementation, I will fetch the full list effectively or rely on a "getInvestor" if it existed.
+                // Since I saw getAllInvestors, I will use that for now to find the user.
 
-                // 2. Fetch Calves for each Buffalo and Attach
-                const buffaloesWithCalves = await Promise.all(buffaloes.map(async (buffalo: any) => {
-                    const rfid = buffalo.rfid_tag_number || buffalo.rfid_tag;
-                    let linkedCalves: any[] = [];
-                    if (rfid) {
-                        const calves = await farmvestService.getCalves(rfid);
-                        linkedCalves = Array.isArray(calves) ? calves : (calves.data || []);
-                    }
-                    return { ...buffalo, linkedCalves };
-                }));
+                const response = await farmvestService.getAllInvestors({ page: 1, size: 1000 }); // Temporary hack to find user
+                let foundInvestor = null;
+                const list = Array.isArray(response) ? response : (response.data || response.users || []);
 
-                setInvestorAnimals(buffaloesWithCalves);
+                foundInvestor = list.find((inv: any) =>
+                    String(inv.id) === id || String(inv.investor_id) === id
+                );
 
-                // 2. Fetch All Employees internally (to avoid pagination issues from Redux store)
-                try {
-                    const empResponse = await farmvestService.getEmployees({ size: 1000 });
-                    let rawEmps: any[] = [];
-                    if (Array.isArray(empResponse)) rawEmps = empResponse;
-                    else if (empResponse && Array.isArray(empResponse.data)) rawEmps = empResponse.data;
-                    else if (empResponse && (empResponse.users || empResponse.employees)) rawEmps = empResponse.users || empResponse.employees;
-
-                    if (rawEmps.length > 0) {
-                        // Normalize for lookup
-                        const mappedEmps = rawEmps.map((e: any) => ({
-                            ...e,
-                            farm_id: e.farm_id || (e.farm && e.farm.id),
-                            roles: e.roles || (e.role ? [e.role] : ['Investor'])
-                        }));
-                        setAllEmployees(mappedEmps);
-                    }
-                } catch (e) {
-                    console.error("Failed to load employees for details", e);
+                if (foundInvestor) {
+                    setInvestor(foundInvestor);
                 }
 
-                // 3. Fetch Farms to map IDs to Names and Sheds
-                const farmsData = await farmvestService.getAllFarms();
-                const farmsList = Array.isArray(farmsData) ? farmsData : (farmsData.farms || farmsData.data || []);
+                // Fetch Animals
+                setAnimalsLoading(true);
+                const animalsResponse = await farmvestService.getAnimalsByInvestor(Number(id));
+                let allAnimals = Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse.data || []);
 
-                const fMap: Record<number, string> = {};
-                farmsList.forEach((f: any) => {
-                    const fId = f.farm_id || f.id;
-                    fMap[fId] = f.farm_name || f.name;
-                });
-                setFarmsMap(fMap);
+                // Client-side processing: Separating Buffaloes and Calves
+                if (allAnimals.length > 0) {
+                    // Filter for Buffaloes
+                    const buffaloes = allAnimals.filter((a: any) =>
+                        (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
+                    );
 
-                // 4. Fetch Sheds specifically for farms involved (since getAllFarms might not have sheds)
-                const uniqueFarmIds = Array.from(new Set(buffaloesWithCalves.map(a => a.farm_id).filter(id => id)));
-                const sMap: Record<number, string> = {};
+                    // Fetch calves for each buffalo
+                    const enrichedBuffaloes = await Promise.all(buffaloes.map(async (buffalo: any) => {
+                        // For display: prioritize readable tags (rfid_tag) over generic ids which might be UUIDs
+                        const buffaloDisplayTag = buffalo.rfid_tag || buffalo.tag_id || buffalo.rfid_tag_number;
 
-                await Promise.all(uniqueFarmIds.map(async (fId: any) => {
-                    try {
-                        const shedsData = await farmvestService.getShedList(fId);
-                        const shedsList: any[] = Array.isArray(shedsData) ? shedsData : (shedsData.data || []); // Handle different responses
-                        shedsList.forEach((s: any) => {
-                            sMap[s.shed_id || s.id] = s.shed_name || s.name;
-                        });
-                    } catch (e) {
-                        console.error(`Failed to load sheds for farm ${fId}`, e);
-                    }
-                }));
-                setShedsMap(sMap);
+                        // For fetching: prioritize stable IDs (animal_id, id)
+                        const buffaloFetchId = String(buffalo.animal_id || buffalo.id || buffalo.rfid_tag_number);
 
-            } catch (err) {
-                console.error("Failed to load investment details", err);
+                        let myCalves = [];
+                        if (buffaloFetchId) {
+                            try {
+                                const calvesResponse = await farmvestService.getCalves(buffaloFetchId);
+
+                                if (Array.isArray(calvesResponse)) {
+                                    myCalves = calvesResponse;
+                                } else if (calvesResponse && Array.isArray(calvesResponse.data)) {
+                                    myCalves = calvesResponse.data;
+                                } else if (calvesResponse && Array.isArray(calvesResponse.calves)) {
+                                    myCalves = calvesResponse.calves;
+                                }
+                            } catch (e) {
+                            }
+                        }
+
+                        return {
+                            ...buffalo,
+                            rfid_tag_number: buffaloDisplayTag || '-',
+                            breed: buffalo.breed || buffalo.breed_name || 'Murrah',
+                            age_months: buffalo.age_months || buffalo.age || (buffalo.age_in_months ? buffalo.age_in_months : 0),
+                            animal_type: 'BUFFALO',
+                            farm_name: (buffalo.farm && buffalo.farm.farm_name) || (buffalo.farm_details && buffalo.farm_details.farm_name) || (buffalo.Farm && buffalo.Farm.farm_name) || buffalo.farm_name || '-',
+                            farm_location: (buffalo.farm && buffalo.farm.location) || (buffalo.farm_details && buffalo.farm_details.location) || (buffalo.Farm && buffalo.Farm.location) || buffalo.farm_location || buffalo.location || '',
+                            associated_calves: myCalves.map((c: any) => ({
+                                ...c,
+                                rfid_tag_number: c.rfid || c.rfid_tag_number || c.rfidTag || c.rfid_tag || c.TagId || c.tag_id || '-',
+                                age_months: c.age || c.age_months || 0,
+                                animal_type: 'CALF',
+                                gender: c.gender || 'Female',
+                                farm_location: (c.farm && c.farm.location) || c.location || (buffalo.farm && buffalo.farm.location) || (buffalo.farm_details && buffalo.farm_details.location) || (buffalo.Farm && buffalo.Farm.location) || buffalo.farm_location || buffalo.location || ''
+                            }))
+                        };
+                    }));
+
+                    setAnimals(enrichedBuffaloes);
+                } else {
+                    setAnimals([]);
+                }
+
+            } catch (error) {
             } finally {
-                setLoadingDetails(false);
+                setLoading(false);
+                setAnimalsLoading(false);
             }
         };
 
-        if (investor) {
-            fetchDetails();
-        }
-    }, [investor, dispatch]);
-
-    const toggleRow = (idx: number) => {
-        setExpandedRows(prev => ({
-            ...prev,
-            [idx]: !prev[idx]
-        }));
-    };
-
-    // Calculate Counts
-    const buffaloCount = investorAnimals.filter(a => (a.animal_type || 'BUFFALO') !== 'CALF').length;
-    const calfCount = investorAnimals.reduce((acc, curr) => {
-        const children = curr.linkedCalves?.length || 0;
-        const isSelfCalf = curr.animal_type === 'CALF';
-        return acc + children + (isSelfCalf ? 1 : 0);
-    }, 0);
-    const totalAnimals = buffaloCount + calfCount;
-
-    const getEmployeeByRoleAndFarm = (role: string, farmId: number) => {
-        // Look up in local allEmployees list
-        // console.log(`[Lookup] Role: ${role}, FarmId: ${farmId}, Total Employees: ${allEmployees.length}`);
-
-        const found = allEmployees.find((e: any) => {
-            const roles = e.roles || [];
-            // Check exact or case-insensitive
-            const hasRole = roles.includes(role) || roles.some((r: string) => r.toLowerCase() === role.toLowerCase());
-
-            // Check where farm_id might be located (normalized during fetch)
-            const empFarmId = e.farm_id;
-
-            if (hasRole) {
-                // console.log(`[Match Attempt] Role: ${role}, EmpFarm: ${empFarmId} vs Target: ${farmId} -> Match? ${Number(empFarmId) === Number(farmId)}`);
-            }
-
-            return hasRole && Number(empFarmId) === Number(farmId);
-        });
-        // DEBUG: Show Farm ID if not found
-        return found ? `${found.first_name || ''} ${found.last_name || ''}`.trim() : `Not Assigned (F:${farmId})`;
-    };
-
-    const handleBack = () => {
-        navigate(-1);
-    };
+        fetchDetails();
+    }, [id]);
 
     if (loading && !investor) {
         return (
-            <div className="p-6">
-                <button onClick={handleBack} className="flex items-center text-gray-600 mb-6 hover:text-gray-900 transition-colors">
-                    <ArrowLeft size={20} className="mr-2" />
-                    Back to Investors
-                </button>
-                <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="h-40 bg-gray-200 rounded"></div>
-                        <div className="h-40 bg-gray-200 rounded"></div>
-                    </div>
+            <div className="p-6 max-w-[1600px] mx-auto">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-64 bg-gray-200 rounded"></div>
                 </div>
             </div>
         );
@@ -188,316 +130,226 @@ const InvestorDetailsPage: React.FC = () => {
     if (!investor && !loading) {
         return (
             <div className="p-6 text-center">
-                <button onClick={handleBack} className="flex items-center text-gray-600 mb-6 hover:text-gray-900 transition-colors">
-                    <ArrowLeft size={20} className="mr-2" />
-                    Back to Investors
-                </button>
-                <h2 className="text-xl font-semibold text-gray-700">Investor not found</h2>
+                <h2 className="text-xl font-bold text-gray-700">Investor not found</h2>
+                <button onClick={() => navigate(-1)} className="mt-4 text-blue-600 hover:underline">Go Back</button>
             </div>
         );
     }
 
-    // Filter Logic
-    const getFilteredAnimals = () => {
-        if (filterType === 'CALF') {
-            // Flatten all calves into a single list
-            return investorAnimals.flatMap(parent => {
-                const parentFarmId = parent.farm_id;
-                const parentShedId = parent.shed_id;
-                const parentPosition = parent.shed_position || parent.position;
-
-                return (parent.linkedCalves || []).map((calf: any) => ({
-                    ...calf,
-                    isCalf: true,
-                    // Ensure calf has parent-inherited details if missing
-                    farm_id: calf.farm_id || parentFarmId,
-                    shed_id: calf.shed_id || parentShedId,
-                    shed_position: calf.shed_position || calf.position || parentPosition,
-                    animal_type: 'CALF',
-                    // Preserve parent details for reference if needed
-                    parent_rfid: parent.rfid_tag_number || parent.rfid_tag
-                }));
-            });
-        } else if (filterType === 'BUFFALO') {
-            // Show only Buffalo rows (parents). 
-            // Strictly exclude any top-level items that are explicitly CALF
-            return investorAnimals.filter((a: any) => (a.animal_type || 'BUFFALO') !== 'CALF');
-        }
-        // ALL: Show parents (which contain children)
-        return investorAnimals;
-    };
-
-    const filteredList = getFilteredAnimals();
-
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <button
-                onClick={handleBack}
-                className="flex items-center text-gray-600 mb-6 hover:text-blue-600 transition-colors font-medium"
-            >
-                <ArrowLeft size={20} className="mr-2" />
-                Back to Investors
-            </button>
+        <div className="p-4 max-w-full mx-auto min-h-screen">
+            {/* Header */}
+            <div className="mb-6">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center text-gray-500 hover:text-gray-900 transition-colors mb-4"
+                >
+                    <ArrowLeft size={20} className="mr-2" /> Back to Investors
+                </button>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900">{investor.first_name} {investor.last_name}</h1>
+                        <p className="text-gray-500 flex items-center mt-1">
+                            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${investor.active_status || investor.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                            {investor.active_status || investor.is_active ? 'Active Investor' : 'Inactive Investor'}
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-            {investor && (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-50 to-white px-8 py-8 border-b border-blue-100">
-                        <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-blue-600 p-3 rounded-xl shadow-lg shadow-blue-200">
-                                    <TrendingUp className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-3xl font-bold text-gray-900">
-                                        {investor.first_name} {investor.last_name}
-                                    </h1>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                                            {investor.roles?.[0] || 'Investor'}
-                                        </span>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${investor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                            }`}>
-                                            {investor.is_active ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm text-gray-500 mb-1">Investor ID</p>
-                                <p className="text-xl font-mono font-bold text-gray-800">#{investor.id}</p>
-                            </div>
+            {/* Profile Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+                <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center">
+                    <User size={18} className="mr-2 text-blue-500" /> Personal Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                        <Mail className="text-gray-400 mt-1 mr-3" size={18} />
+                        <div>
+                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Email Address</p>
+                            <p className="text-gray-900 font-medium">{investor.email || '-'}</p>
                         </div>
                     </div>
-
-                    <div className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {/* Contact Information */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                    <Mail className="w-5 h-5 text-gray-400" />
-                                    Contact Details
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="group">
-                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Email Address</label>
-                                        <div className="text-gray-900 font-medium flex items-center gap-2">
-                                            {investor.email || 'N/A'}
-                                        </div>
-                                    </div>
-                                    <div className="group">
-                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Mobile Number</label>
-                                        <div className="text-gray-900 font-medium flex items-center gap-2">
-                                            <Phone className="w-4 h-4 text-gray-300" />
-                                            {investor.mobile || investor.phone_number || 'N/A'}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* System Details */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                    <Calendar className="w-5 h-5 text-gray-400" />
-                                    System Metadata
-                                </h3>
-                                <div className="space-y-4">
-                                    <div className="group">
-                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Joined Date</label>
-                                        <div className="text-gray-900 font-medium flex items-center gap-2">
-                                            <Calendar className="w-4 h-4 text-gray-300" />
-                                            {investor.created_at ? new Date(investor.created_at).toLocaleDateString(undefined, {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            }) : 'N/A'}
-                                        </div>
-                                    </div>
-                                    <div className="group">
-                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Role</label>
-                                        <div className="text-gray-900 font-medium">
-                                            {investor.roles?.join(', ') || 'N/A'}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                        <Phone className="text-gray-400 mt-1 mr-3" size={18} />
+                        <div>
+                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Phone Number</p>
+                            <p className="text-gray-900 font-medium">{investor.mobile || investor.phone_number || '-'}</p>
                         </div>
-
-                        {/* Investment Details Section */}
-                        <div className="mt-8 pt-8 border-t border-gray-100">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 m-0">
-                                    <Warehouse size={20} className="text-blue-600" />
-                                    Investment Units
-                                    <span className="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                        Total Animals: {totalAnimals}
-                                        <span className="text-gray-400 mx-1">|</span>
-                                        Buffalo: {buffaloCount}
-                                        <span className="text-gray-400 mx-1">|</span>
-                                        Calf: {calfCount}
-                                    </span>
-                                </h3>
-
-                                {/* Filter Dropdown */}
-                                <div className="relative flex items-center gap-2">
-                                    <Filter size={18} className="text-gray-500" />
-                                    <select
-                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 min-w-[150px] outline-none transition-all hover:bg-white"
-                                        value={filterType}
-                                        onChange={(e) => setFilterType(e.target.value as any)}
-                                    >
-                                        <option value="ALL">All Animals</option>
-                                        <option value="BUFFALO">Buffalo Only</option>
-                                        <option value="CALF">Calf Only</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
-                                            <tr>
-                                                <th className="px-6 py-3 font-semibold w-10"></th>
-                                                <th className="px-6 py-3 font-semibold">Animal ID / RFID</th>
-                                                <th className="px-6 py-3 font-semibold">Shed</th>
-                                                <th className="px-6 py-3 font-semibold">Farm</th>
-                                                <th className="px-6 py-3 font-semibold">Position</th>
-                                                <th className="px-6 py-3 font-semibold">Doctor</th>
-                                                <th className="px-6 py-3 font-semibold">Manager</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {loadingDetails ? (
-                                                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Loading investment details...</td></tr>
-                                            ) : filteredList.length === 0 ? (
-                                                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">No investment records found for this filter.</td></tr>
-                                            ) : (
-                                                filteredList.map((animal: any, idx) => {
-                                                    const farmId = animal.farm_id;
-                                                    const farmName = animal.farm_name || farmsMap[farmId] || `Farm #${farmId}`;
-                                                    const shedId = animal.shed_id;
-                                                    const shedName = animal.shed_name || shedsMap[shedId] || (shedId ? `Shed #${shedId}` : 'N/A');
-                                                    const position = animal.shed_position || animal.position || 'N/A';
-                                                    const isExpanded = expandedRows[idx];
-                                                    const isCalfRow = animal.isCalf;
-                                                    // Modification: If filter is ALL, allow expansion. If BUFFALO, disable expansion (effectively hiding calves).
-                                                    const hasCalves = !isCalfRow && animal.linkedCalves && animal.linkedCalves.length > 0 && filterType === 'ALL';
-
-                                                    return (
-                                                        <React.Fragment key={idx}>
-                                                            <tr
-                                                                className={`bg-white border-b hover:bg-gray-50 transition-colors ${isExpanded ? 'bg-blue-50/50' : ''}`}
-                                                                onClick={() => hasCalves && toggleRow(idx)}
-                                                                style={{ cursor: hasCalves ? 'pointer' : 'default' }}
-                                                            >
-                                                                <td className="px-6 py-4">
-                                                                    {hasCalves ? (
-                                                                        <div className={`p-1 rounded-full transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}>
-                                                                            <ArrowLeft size={16} className={`transform transition-transform ${isExpanded ? '-rotate-90' : 'rotate-180'}`} />
-                                                                        </div>
-                                                                    ) : <div className="w-6"></div>}
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="font-medium text-gray-900">{animal.rfid_tag_number || animal.rfid_tag || animal.animal_id || 'N/A'}</div>
-                                                                    <div className="text-xs text-gray-400 mt-0.5">{animal.animal_type || (isCalfRow ? 'CALF' : 'BUFFALO')}</div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Warehouse size={14} className="text-blue-500" />
-                                                                        <span>{shedName}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Tractor size={14} className="text-green-600" />
-                                                                        <span>{farmName}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <span className="inline-flex items-center justify-center bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-blue-100">
-                                                                        {position}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Stethoscope size={14} className="text-red-500" />
-                                                                        <span className="text-gray-700">{getEmployeeByRoleAndFarm('DOCTOR', farmId)}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <User size={14} className="text-orange-500" />
-                                                                        <span className="text-gray-700">{getEmployeeByRoleAndFarm('FARM_MANAGER', farmId)}</span>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            {isExpanded && hasCalves && (
-                                                                <tr className="bg-gray-50/50">
-                                                                    <td colSpan={8} className="px-6 py-4 border-b border-gray-100">
-                                                                        <div className="ml-10 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
-                                                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                                                                Linked Calves ({animal.linkedCalves.length})
-                                                                            </h4>
-                                                                            <div className="overflow-x-auto">
-                                                                                <table className="w-full text-sm text-left text-gray-500">
-                                                                                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
-                                                                                        <tr>
-                                                                                            <th className="px-4 py-2 font-semibold">Calf RFID</th>
-                                                                                            <th className="px-4 py-2 font-semibold">Shed</th>
-                                                                                            <th className="px-4 py-2 font-semibold">Farm</th>
-                                                                                            <th className="px-4 py-2 font-semibold">Position</th>
-                                                                                            <th className="px-4 py-2 font-semibold">Doctor</th>
-                                                                                            <th className="px-4 py-2 font-semibold">Manager</th>
-                                                                                        </tr>
-                                                                                    </thead>
-                                                                                    <tbody>
-                                                                                        {animal.linkedCalves.map((calf: any, cIdx: number) => {
-                                                                                            // Map fields for calf, similar to parent
-                                                                                            const cFarmId = calf.farm_id || farmId; // Fallback to parent farm if missing
-                                                                                            const cFarmName = calf.farm_name || farmsMap[cFarmId] || farmName;
-                                                                                            const cShedId = calf.shed_id || shedId;
-                                                                                            const cShedName = calf.shed_name || shedsMap[cShedId] || shedName;
-                                                                                            const cPosition = calf.shed_position || calf.position || position; // Fallback to parent position
-
-                                                                                            return (
-                                                                                                <tr key={cIdx} className="bg-white border-b hover:bg-gray-50">
-                                                                                                    <td className="px-4 py-2">
-                                                                                                        <div className="font-medium text-gray-900">{calf.rfid_tag_number || calf.rfid_tag || 'N/A'}</div>
-                                                                                                        <div className="text-xs text-gray-400">CALF</div>
-                                                                                                    </td>
-                                                                                                    <td className="px-4 py-2">{cShedName}</td>
-                                                                                                    <td className="px-4 py-2">{cFarmName}</td>
-                                                                                                    <td className="px-4 py-2">
-                                                                                                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">
-                                                                                                            {cPosition}
-                                                                                                        </span>
-                                                                                                    </td>
-                                                                                                    <td className="px-4 py-2">{getEmployeeByRoleAndFarm('DOCTOR', cFarmId)}</td>
-                                                                                                    <td className="px-4 py-2">{getEmployeeByRoleAndFarm('FARM_MANAGER', cFarmId)}</td>
-                                                                                                </tr>
-                                                                                            );
-                                                                                        })}
-                                                                                    </tbody>
-                                                                                </table>
-                                                                            </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            )}
-                                                        </React.Fragment>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                    </div>
+                    <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                        <Calendar className="text-gray-400 mt-1 mr-3" size={18} />
+                        <div>
+                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Joined Date</p>
+                            <p className="text-gray-900 font-medium">{investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}</p>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Investments / Animals Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                    <h3 className="text-base font-bold text-gray-800 flex items-center">
+                        <Milk size={18} className="mr-2 text-orange-500" /> Livestock Portfolio
+                    </h3>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-blue-100">
+                            <span className="text-base mr-1.5">🐃</span> {animals ? animals.filter((a: any) => String(a.animal_type || a.type || '').toUpperCase() === 'BUFFALO').length : 0} Buffaloes
+                        </div>
+                        <div className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-orange-100">
+                            <span className="text-base mr-1.5">🐄</span> {animals ? animals.reduce((acc, curr) => acc + (curr.associated_calves?.length || 0), 0) : 0} Calf
+                        </div>
+                        <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-green-100">
+                            <span className="text-base mr-1.5">🏡</span> {animals ? new Set(animals.map((a: any) => a.farm_name || a.farm_id).filter(Boolean)).size : 0} Farms
+                        </div>
+                        <div className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-purple-100">
+                            <span className="text-base mr-1.5">🛖</span> {animals ? new Set(animals.map(a => a.shed_name || a.shed_id).filter(Boolean)).size : 0} Sheds
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-gray-100">
+                    <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-[#f8f9fa] border-b border-gray-100">
+                            <tr>
+                                <th className="px-3 py-3 text-left w-10"></th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Tag ID</th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Farm</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Shed</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Position</th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Breed</th>
+                                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Gender</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Age (M)</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Location</th>
+                                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-50">
+                            {animalsLoading ? (
+                                <TableSkeleton cols={9} rows={3} />
+                            ) : animals.length > 0 ? (
+                                animals.map((animal: any, index: number) => (
+                                    <React.Fragment key={animal.id || index}>
+                                        <tr className="hover:bg-amber-50/10 transition-colors cursor-pointer border-b border-gray-50" onClick={() => toggleRow(animal.id || index)}>
+                                            <td className="px-3 py-3 text-gray-400">
+                                                {animal.associated_calves?.length > 0 ? (
+                                                    expandedRow === (animal.id || index) ? <ChevronDown size={18} className="text-amber-600" /> : <ChevronRight size={18} />
+                                                ) : <div className="w-5" />}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <span className="p-1 bg-blue-100 text-blue-600 rounded mr-2">
+                                                        <Tag size={12} />
+                                                    </span>
+                                                    <span className="font-black text-gray-900 text-xs">{animal.rfid_tag_number}</span>
+                                                    <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-50 text-blue-600 uppercase tracking-tighter">Buffalo</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-[11px] text-gray-600 font-bold">
+                                                {animal.farm_name || animal.farm?.farm_name || '-'}{animal.farm_location || animal.location ? ` - ${animal.farm_location || animal.location}` : ''}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[11px] text-gray-500 font-bold">
+                                                {animal.shed_name || animal.shed_id || (animal.shed ? animal.shed.shed_id : '-') || '-'}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[10px] text-gray-400 font-black font-mono">
+                                                {animal.position || (animal.row_number && animal.parking_id ? `${animal.row_number}-${animal.parking_id}` : (animal.parking_id || '-'))}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-gray-600">{animal.breed}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-gray-600">{animal.gender || 'Female'}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[11px] font-black text-gray-700">{animal.age_months}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center text-[11px] font-bold text-gray-500">
+                                                {animal.farm_location || '-'}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-green-50 text-green-700 uppercase`}>
+                                                    Active
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {expandedRow === (animal.id || index) && animal.associated_calves?.length > 0 && (
+                                            <tr className="bg-gray-50 border-b border-gray-100">
+                                                <td colSpan={10} className="p-4 pl-14">
+                                                    <div className="rounded-lg border border-[#113025] bg-white overflow-hidden">
+                                                        <div className="px-4 py-2 bg-[#113025] border-b border-[#113025] flex items-center">
+                                                            <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                                                <Milk size={14} className="mr-2 text-white" /> Associated Calf ({animal.associated_calves.length})
+                                                            </span>
+                                                        </div>
+                                                        <table className="min-w-full divide-y divide-[#113025]/10">
+                                                            <thead className="bg-[#113025]">
+                                                                <tr>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Tag ID</th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Farm</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Shed</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Position</th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Breed</th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Gender</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Age (Months)</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Location</th>
+                                                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-[#113025]/10 bg-white">
+                                                                {animal.associated_calves.map((calf: any, cIndex: number) => (
+                                                                    <tr key={cIndex}>
+                                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                                            <div className="flex items-center">
+                                                                                <span className="p-1.5 bg-[#113025]/10 text-[#113025] rounded mr-2">
+                                                                                    <Tag size={12} />
+                                                                                </span>
+                                                                                <span className="font-bold text-gray-800 text-sm">{calf.rfid_tag_number}</span>
+                                                                                <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#113025]/10 text-[#113025] uppercase">Calf</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                                                                            {calf.farm_name || animal.farm_name || '-'}{calf.farm_location || animal.farm_location ? ` - ${calf.farm_location || animal.farm_location}` : ''}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                                                            {calf.shed_name || calf.shed_id || animal.shed_name || animal.shed_id || '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono text-center">
+                                                                            {calf.position || '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                                            {calf.breed || animal.breed || 'Murrah'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                                            {calf.gender || 'Female'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                                                            {calf.age_months}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                                                            {calf.farm_location || '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                                Active
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-gray-400 text-sm">
+                                        No buffaloes assigned to this investor yet.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 };

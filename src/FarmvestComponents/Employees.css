@@ -15,6 +15,42 @@
     border-bottom: 1px solid #f0f2f5;
 }
 
-.employees-table tr:hover {
-    background-color: #f8f9fa;
+
+/* Animation Keyframes */
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Staggered Animation Utility Classes */
+.animate-slide-up-fade-1 {
+    animation: slideUpFadeIn 0.5s ease-out forwards;
+    animation-delay: 0s;
+    opacity: 0;
+    /* meaningful start state */
+}
+
+.animate-slide-up-fade-2 {
+    animation: slideUpFadeIn 0.5s ease-out forwards;
+    animation-delay: 0.15s;
+    opacity: 0;
+}
+
+.animate-slide-up-fade-3 {
+    animation: slideUpFadeIn 0.5s ease-out forwards;
+    animation-delay: 0.3s;
+    opacity: 0;
+}
+
+.animate-slide-up-fade-4 {
+    animation: slideUpFadeIn 0.5s ease-out forwards;
+    animation-delay: 0.45s;
+    opacity: 0;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { farmvestService } from '../services/farmvest_api';
 import './AddFarmModal.css'; // Reusing the same CSS for consistency
 
@@ -7,15 +7,24 @@ interface AddShedModalProps {
     onClose: () => void;
     onSuccess: () => void;
     farmId: number;
+    farmName: string;
 }
 
-const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess, farmId }) => {
+const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess, farmId, farmName }) => {
     const [shedId, setShedId] = useState('');
     const [shedName, setShedName] = useState('');
     const [capacity, setCapacity] = useState(300);
-    const [cctvUrl, setCctvUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const isFormValid = useMemo(() => {
+        return (
+            shedId.trim().length > 0 &&
+            shedName.trim().length > 0 &&
+            !isNaN(capacity) &&
+            capacity > 0
+        );
+    }, [shedId, shedName, capacity]);
 
     if (!isOpen) return null;
 
@@ -35,15 +44,13 @@ const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess,
                 farm_id: farmId,
                 shed_id: shedId,
                 shed_name: shedName,
-                capacity: capacity,
-                cctv_url: cctvUrl
+                capacity: capacity
             });
 
             // Reset form
             setShedId('');
             setShedName('');
             setCapacity(300);
-            setCctvUrl('');
 
             onSuccess();
             onClose();
@@ -55,31 +62,16 @@ const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess,
     };
 
     return (
-        <div className="add-farm-modal-overlay" onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-        }}>
+        <div className="add-farm-modal-overlay">
             <div className="add-farm-modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header" style={{ position: 'relative' }}>
                     <h2>Add New Shed</h2>
                     <button
                         type="button"
                         onClick={onClose}
-                        style={{
-                            position: 'absolute',
-                            right: '20px',
-                            top: '20px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#000',
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 20
-                        }}
+                        className="close-button"
                     >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 6L6 18" />
                             <path d="M6 6l12 12" />
                         </svg>
@@ -90,13 +82,15 @@ const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess,
                     <div className="modal-body">
                         {error && <div className="error-message">{error}</div>}
 
+
+
                         <div className="form-group">
-                            <label htmlFor="farmId">Farm ID</label>
+                            <label htmlFor="farmName">Farm Name</label>
                             <input
-                                id="farmId"
+                                id="farmName"
                                 type="text"
                                 className="form-input"
-                                value={farmId}
+                                value={farmName}
                                 disabled
                             />
                         </div>
@@ -135,28 +129,17 @@ const AddShedModal: React.FC<AddShedModalProps> = ({ isOpen, onClose, onSuccess,
                                 value={capacity}
                                 onChange={(e) => setCapacity(parseInt(e.target.value))}
                                 min="1"
-                                disabled // Capacity is fixed to 300
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="cctvUrl">CCTV URL</label>
-                            <input
-                                id="cctvUrl"
-                                type="text"
-                                className="form-input"
-                                placeholder="Optional"
-                                value={cctvUrl}
-                                onChange={(e) => setCctvUrl(e.target.value)}
-                            />
-                        </div>
+
                     </div>
 
                     <div className="modal-footer">
                         <button type="button" className="cancel-button" onClick={onClose} disabled={loading}>
                             Cancel
                         </button>
-                        <button type="submit" className="submit-button" disabled={loading}>
+                        <button type="submit" className="submit-button" disabled={loading || !isFormValid}>
                             {loading ? 'Creating...' : 'Create Shed'}
                         </button>
                     </div>

@@ -61,10 +61,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       // Expecting { access_token, token_type }
       if (data && data.access_token) {
-        const role = 'Farmvest admin';
+        console.log('Login API Response:', data);
+        let role = data.role || (data.user && data.user.role);
+        const name = data.name || (data.user && data.user.name) || 'Admin';
+
+        // Helper to extract role if it comes as an array (roles: [...]) or inside user object
+        const rolesArray = data.roles || (data.user && data.user.roles);
+
+        if (!role && rolesArray && Array.isArray(rolesArray)) {
+          console.log('Parsing roles array:', rolesArray);
+          // Normalize roles to uppercase for comparison
+          const r = rolesArray.map((x: string) => String(x).toUpperCase());
+
+          // Prioritize roles
+          if (r.includes('ADMIN') || r.includes('SUPER_ADMIN')) role = 'ADMIN';
+          else if (r.includes('FARMVEST_ADMIN') || r.includes('FARMVEST ADMIN')) role = 'FARMVEST ADMIN';
+          else if (r.includes('FARM_MANAGER')) role = 'FARM_MANAGER';
+          else if (r.includes('SUPERVISOR')) role = 'SUPERVISOR';
+          else if (r.includes('DOCTOR')) role = 'DOCTOR';
+          else if (r.includes('ASSISTANT_DOCTOR')) role = 'ASSISTANT_DOCTOR';
+          else role = rolesArray[0]; // Fallback to first role
+        }
+
         const session = {
           mobile,
-          role,
+          role, // Dynamic role from API
+          name,
           access_token: data.access_token,
           token_type: data.token_type || 'Bearer'
         };
@@ -74,7 +96,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError('Login failed: Invalid response from server');
       }
     } catch (e: any) {
-      console.error('Farmvest login error:', e);
       setError(e.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
@@ -119,7 +140,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {/* Logo Section */}
           <div className="flex justify-center mb-5 transform transition-transform duration-500 hover:scale-105">
             <img
-              src="/header-logo-new.png"
+              src="/farmvest-logo.png"
               alt="FarmVest Logo"
               className="h-24 object-contain"
             />

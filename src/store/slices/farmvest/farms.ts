@@ -6,39 +6,73 @@ export const fetchFarms = createAsyncThunk(
     'farmvestFarms/fetchFarms',
     async (location: string, { rejectWithValue }) => {
         try {
-            console.log(`[FarmVest] Fetching all farms to filter by location: ${location}`);
-            // Use the new getAllFarms API
-            const response = await farmvestService.getAllFarms();
+            const normalizedLocation = location ? location.toUpperCase() : 'KURNOOL';
 
-            // Log the raw response for debugging in the user's browser
-            console.log(`[FarmVest] Response for getAllFarms:`, response);
+            // specific parameters - location and large size to get "all" for that location
+            const response = await farmvestService.getAllFarms({
+                location: normalizedLocation,
+                size: 2000 // Get all farms for client-side table handling
+            });
+
+            // Log the raw response for debugging
 
             let allFarms: FarmvestFarm[] = [];
 
-            // Normalize response data
-            if (response && (response.status === 200 || response.status === "200")) {
-                allFarms = Array.isArray(response.data) ? response.data : [];
-            } else if (Array.isArray(response)) {
-                allFarms = response;
-            } else if (response && Array.isArray(response.data)) {
-                allFarms = response.data;
+            // Normalize response data with robust checks
+            if (response) {
+                if (Array.isArray(response)) {
+                    allFarms = response;
+                } else if (response && Array.isArray(response.data)) {
+                    allFarms = response.data;
+                } else if (response && Array.isArray(response.farms)) {
+                    allFarms = response.farms;
+                } else if (response && response.data && Array.isArray(response.data.farms)) {
+                    allFarms = response.data.farms;
+                } else if (response && (response.items || response.results)) {
+                    allFarms = response.items || response.results;
+                } else if (response && Array.isArray(response.payload)) {
+                    allFarms = response.payload;
+                } else if (response && (response.status === 200 || response.status === "200") && Array.isArray(response.data)) {
+                    allFarms = response.data;
+                }
             }
 
-            // Client-side filtering by location
-            // If location is provided, filter the farms. Case-insensitive comparison.
-            if (location) {
-                const normalizedLocation = location.toUpperCase();
-                return allFarms.filter(farm =>
-                    farm.location && farm.location.toUpperCase() === normalizedLocation
-                );
-            }
+            // Map and normalize data to ensure UI compatibility
+            allFarms = allFarms.map((item: any, index: number) => ({
+                id: item.id || item._id || item.farm_id || index,
+                farm_name: item.farm_name || item.name || `Farm ${index + 1}`,
+                location: item.location || normalizedLocation,
+                total_buffaloes_count: item.total_buffaloes_count || item.total_animals || item.buffalo_count || 0,
+                farm_manager_name: item.farm_manager_name || item.manager_name || (item.farm_manager?.name) || '-',
+                mobile_number: item.mobile_number || item.manager_mobile || item.manager_phone || (item.farm_manager?.mobile) || '-',
+                sheds_count: item.sheds_count || item.shed_count || item.total_sheds || 0
+            }));
 
-            // If no location specified, return all (though the thunk requires location string currently)
-            return allFarms;
+            // Fetch shed counts for each farm
+            const farmsWithShedCounts = await Promise.all(
+                allFarms.map(async (farm) => {
+                    try {
+                        const shedData = await farmvestService.getShedList(farm.id);
+                        let count = 0;
+                        if (Array.isArray(shedData)) {
+                            count = shedData.length;
+                        } else if (shedData && Array.isArray(shedData.data)) {
+                            count = shedData.data.length;
+                        } else if (shedData && typeof shedData === 'object') {
+                            if (Object.keys(shedData).length > 0) {
+                                count = Object.keys(shedData).length; // Fallback if object
+                            }
+                        }
+                        return { ...farm, sheds_count: count };
+                    } catch (error) {
+                        console.error(`Failed to fetch sheds for farm ${farm.id}`, error);
+                        return farm; // Return farm with default 0 if fetch fails
+                    }
+                })
+            );
 
-            return rejectWithValue(response?.message || `Failed to fetch farms for ${location}`);
+            return farmsWithShedCounts;
         } catch (error: any) {
-            console.error(`[FarmVest] Thunk Error for ${location}:`, error);
             return rejectWithValue(error.message || 'Failed to fetch farms');
         }
     }
@@ -48,12 +82,14 @@ interface FarmsState {
     farms: FarmvestFarm[];
     loading: boolean;
     error: string | null;
+    loadedLocation: string | null;
 }
 
 const initialState: FarmsState = {
     farms: [],
     loading: false,
     error: null,
+    loadedLocation: null,
 };
 
 const farmsSlice = createSlice({
@@ -76,6 +112,7 @@ const farmsSlice = createSlice({
             .addCase(fetchFarms.fulfilled, (state, action) => {
                 state.loading = false;
                 state.farms = Array.isArray(action.payload) ? action.payload : [];
+                state.loadedLocation = action.meta.arg || 'KURNOOL';
             })
             .addCase(fetchFarms.rejected, (state, action) => {
                 state.loading = false;

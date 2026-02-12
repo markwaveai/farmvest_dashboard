@@ -1,24 +1,24 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { fetchInvestors, clearInvestorsMessages } from '../store/slices/farmvest/investors';
-import { RootState } from '../store';
+import type { RootState } from '../store';
+import { fetchInvestors, clearInvestorErrors } from '../store/slices/farmvest/investors';
 import Snackbar from '../components/common/Snackbar';
+import { Search, Users, Briefcase, X } from 'lucide-react';
+import { farmvestService } from '../services/farmvest_api';
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
-import './Employees.css'; // Reusing Employees CSS for consistency
 
 const Investors: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    // Selectors
     const {
         investors,
         totalCount,
         loading: investorsLoading,
-        error
+        error,
     } = useAppSelector((state: RootState) => state.farmvestInvestors);
 
     // URL Search Params for Pagination
@@ -27,7 +27,10 @@ const Investors: React.FC = () => {
     const itemsPerPage = 20;
 
     // Search State
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = React.useState('');
+
+    // Animal Stats State
+    const [animalStats, setAnimalStats] = useState<Record<string, { buffaloes: number; calves: number; loading: boolean }>>({});
 
     const setCurrentPage = useCallback((page: number) => {
         setSearchParams(prev => {
@@ -37,23 +40,17 @@ const Investors: React.FC = () => {
         });
     }, [setSearchParams]);
 
-    const handleNameClick = useCallback((investor: any) => {
-        navigate(`/farmvest/investors/${investor.id}`);
-    }, [navigate]);
-
     // Custom Search Function
     const searchFn = useCallback((item: any, query: string) => {
         const lowerQuery = query.toLowerCase();
         const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase();
         const email = (item.email || '').toLowerCase();
         const phone = item.phone_number || '';
-        const mobile = item.mobile || '';
 
         return (
             fullName.includes(lowerQuery) ||
             email.includes(lowerQuery) ||
-            phone.includes(lowerQuery) ||
-            mobile.includes(lowerQuery)
+            phone.includes(lowerQuery)
         );
     }, []);
 
@@ -64,6 +61,87 @@ const Investors: React.FC = () => {
         searchQuery: activeSearchQuery,
         setSearchQuery
     } = useTableSortAndSearch(investors, { key: '', direction: 'asc' }, searchFn);
+
+    const currentItems = filteredInvestors;
+    const totalPages = Math.ceil((totalCount || filteredInvestors.length) / itemsPerPage) || 1;
+
+    // Fetch Animal Stats for current items
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (currentItems.length === 0) return;
+
+            // Identify items that need stats (not already loaded or loading)
+            const itemsToFetch = currentItems.filter(item => {
+                const id = String(item.id || item.investor_id);
+                return !animalStats[id]; // Simple check, ref removed
+            });
+
+            if (itemsToFetch.length === 0) return;
+
+            // Mark as loading clearly
+            setAnimalStats(prev => {
+                const next = { ...prev };
+                itemsToFetch.forEach(item => {
+                    const id = String(item.id || item.investor_id);
+                    next[id] = { buffaloes: 0, calves: 0, loading: true };
+                });
+                return next;
+            });
+
+            // Fetch in parallel
+            await Promise.allSettled(itemsToFetch.map(async (investor) => {
+                const investorId = investor.id || investor.investor_id;
+                const idStr = String(investorId);
+
+                try {
+                    // 1. Get all animals for investor
+                    const animalsResponse = await farmvestService.getAnimalsByInvestor(Number(investorId));
+                    const allAnimals = Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse.data || []);
+
+                    if (!allAnimals || allAnimals.length === 0) {
+                        setAnimalStats(prev => ({
+                            ...prev,
+                            [idStr]: { buffaloes: 0, calves: 0, loading: false }
+                        }));
+                        return;
+                    }
+
+                    // 2. Filter Buffaloes and Calves directly from the response
+                    // This avoids N+1 API calls for getCalves
+                    const buffaloes = allAnimals.filter((a: any) =>
+                        (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
+                    );
+
+                    // Count explicitly marked calves or rely on nested data
+                    const indepedentCalves = allAnimals.filter((a: any) =>
+                        (a.animal_type || a.type || '').toUpperCase() === 'CALF'
+                    );
+
+                    // Also check for nested associated_calves if present
+                    const nestedCalvesCount = buffaloes.reduce((acc: number, curr: any) =>
+                        acc + (curr.associated_calves?.length || 0), 0
+                    );
+
+                    // Use the larger of the two counts to catch data however it's structured
+                    const totalCalves = Math.max(indepedentCalves.length, nestedCalvesCount);
+
+                    setAnimalStats(prev => ({
+                        ...prev,
+                        [idStr]: { buffaloes: buffaloes.length, calves: totalCalves, loading: false }
+                    }));
+
+                } catch (error) {
+                    setAnimalStats(prev => ({
+                        ...prev,
+                        [idStr]: { buffaloes: 0, calves: 0, loading: false }
+                    }));
+                }
+            }));
+        };
+
+        fetchStats();
+    }, [currentItems]); // Only fetch when items change
+
 
     // Debounce Search
     useEffect(() => {
@@ -81,147 +159,155 @@ const Investors: React.FC = () => {
         };
     }, [searchTerm, activeSearchQuery, setSearchQuery, currentPage, setCurrentPage]);
 
-    // Fetch data
     useEffect(() => {
         dispatch(fetchInvestors({
             page: currentPage,
-            size: itemsPerPage
+            size: itemsPerPage,
         }));
     }, [dispatch, currentPage]);
-
-    // Client-side pagination logic if API returns all or we just want to be safe with filtered data
-    // Assuming API paginates, but search is client-side for now based on current page data or if API returns all
-    // If API returns paginated data, `investors` will only contain current page.
-    // However, `useTableSortAndSearch` filters *what is present*.
-    const currentItems = filteredInvestors;
-    const totalPages = Math.ceil((totalCount || 0) / itemsPerPage) || 1;
 
     const getSortIcon = (key: string) => {
         if (sortConfig.key !== key) return '';
         return sortConfig.direction === 'asc' ? '↑' : '↓';
     };
 
+    const handleNameClick = useCallback((investor: any) => {
+        navigate(`/farmvest/investors/${investor.id || investor.investor_id}`);
+    }, [navigate]);
+
     return (
-        <div className="employees-container">
-            <div className="employees-header p-4 border-b border-gray-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="flex items-center justify-between w-full md:w-auto gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold">Investors</h2>
-                        <p className="text-sm text-gray-500 mt-1">Manage all investors ({totalCount} total)</p>
-                    </div>
-                </div>
+        <div className="flex flex-col h-full overflow-hidden bg-[#f9fafb]">
+            <div className="flex-1 overflow-auto p-6 scrollbar-hide">
+                <div className="max-w-full mx-auto">
+                    {/* Page Header Card */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-md font-bold text-gray-800">FarmVest Investors</h1>
+                                <p className="text-xs text-gray-500 mt-1">Manage all investors (Total: {totalCount || 0})</p>
+                            </div>
 
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    {/* Search Input */}
-                    <div className="w-full md:w-auto relative">
-                        <input
-                            type="text"
-                            placeholder="Search Investors..."
-                            className="w-full md:w-80 pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <svg
-                            className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="employees-content p-4">
-                <div className="table-container relative overflow-x-auto shadow-md sm:rounded-lg">
-                    <table className="employees-table w-full text-sm text-left text-gray-500">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-center">S.No</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('first_name')}>Name {getSortIcon('first_name')}</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('email')}>Email {getSortIcon('email')}</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('mobile')}>Mobile {getSortIcon('mobile')}</th>
-                                <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('created_at')}>Joining Date {getSortIcon('created_at')}</th>
-                                <th className="px-4 py-3 cursor-pointer">Roles</th>
-                                <th className="px-4 py-3 text-center cursor-pointer" onClick={() => requestSort('is_active')}>Status {getSortIcon('is_active')}</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {investorsLoading ? (
-                                <TableSkeleton cols={7} rows={10} />
-                            ) : currentItems.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No investors found</td>
-                                </tr>
-                            ) : (
-                                currentItems.map((investor: any, index: number) => (
-                                    <tr key={investor.id || index} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-4 py-3 text-center">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                        <td
-                                            className="px-4 py-3 font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
-                                            onClick={() => handleNameClick(investor)}
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="relative flex-1 min-w-[200px]">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search by Name, Email, Phone..."
+                                        className="pl-10 pr-10 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            onClick={() => setSearchTerm('')}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                                         >
-                                            {`${investor.first_name || ''} ${investor.last_name || ''}`.trim() || '-'}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {investor.email || '-'}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {investor.mobile || investor.phone_number || '-'}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {investor.roles && investor.roles.length > 0 ? (
-                                                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                                                    {investor.roles[0].replace(/_/g, ' ')}
-                                                </span>
-                                            ) : (
-                                                <span className="text-gray-400">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${investor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {investor.is_active ? 'Active' : 'Inactive'}
-                                            </span>
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Table Content */}
+                    <div className="overflow-x-auto rounded-xl border border-gray-100">
+                        <table className="min-w-full divide-y divide-gray-100">
+                            <thead className="bg-[#f8f9fa]">
+                                <tr>
+                                    <th onClick={() => requestSort('id')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                    <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
+                                    <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                    <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Address</th>
+                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Buffaloes</th>
+                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Calves</th>
+                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Joined Date</th>
+                                    <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-50">
+                                {investorsLoading ? (
+                                    <TableSkeleton cols={9} rows={5} />
+                                ) : currentItems.length > 0 ? (
+                                    currentItems.map((investor: any, index: number) => {
+                                        const idStr = String(investor.id || investor.investor_id);
+                                        const stats = animalStats[idStr] || { buffaloes: 0, calves: 0, loading: true };
+
+                                        return (
+                                            <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div
+                                                        className="font-semibold text-blue-600 cursor-pointer hover:underline"
+                                                        onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
+                                                    >
+                                                        {`${investor.first_name || ''} ${investor.last_name || ''}`}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.email || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.phone_number || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-normal text-center text-sm text-gray-600 min-w-[200px] max-w-[300px] break-words" title={investor.address || ''}>{investor.address || '-'}</td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
+                                                    {stats.loading ? (
+                                                        <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
+                                                    ) : stats.buffaloes}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
+                                                    {stats.loading ? (
+                                                        <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
+                                                    ) : stats.calves}
+                                                </td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                                    {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${investor.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {investor.active_status ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan={9}>
+                                            <div className="flex flex-col items-center justify-center py-16 px-4">
+                                                <div className="bg-gray-50 rounded-full p-6 mb-4">
+                                                    <Users size={48} className="text-gray-300" />
+                                                </div>
+                                                <h3 className="text-lg font-bold text-gray-900 mb-1">No investors found</h3>
+                                                <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
+                                                    No investor records are available at the moment.
+                                                </p>
+                                            </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {totalPages > 1 && (
-                    <div className="mt-4">
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+
+                    {totalPages > 1 && (
+                        <div className="mt-4">
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             <Snackbar
                 message={error}
                 type={error ? 'error' : null}
-                onClose={() => dispatch(clearInvestorsMessages())}
+                onClose={() => dispatch(clearInvestorErrors())}
             />
         </div>
     );

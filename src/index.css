@@ -20,6 +20,18 @@ body {
   box-sizing: border-box;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
+}
+
 .container {
   max-width: 1280px;
   margin: 0 auto;
@@ -74,8 +86,8 @@ body {
 }
 
 .tab-button.active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: #2E7D32;
+  border-bottom-color: #2E7D32;
 }
 
 .card {
@@ -138,12 +150,12 @@ body {
 }
 
 .btn-primary {
-  background-color: #2563eb;
+  background-color: #2E7D32;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #1d4ed8;
+  background-color: #1B5E20;
 }
 
 .btn-secondary {
@@ -232,8 +244,8 @@ body {
 }
 
 .form-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
 }
 
 .form-select {
@@ -310,13 +322,25 @@ body {
   width: 1rem;
   height: 1rem;
   border: 2px solid #e5e7eb;
-  border-top-color: #2563eb;
+  border-top-color: #2E7D32;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+
+/* Shimmer Effect Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
   }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
 }

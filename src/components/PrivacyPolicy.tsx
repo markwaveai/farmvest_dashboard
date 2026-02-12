@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -101,6 +103,7 @@ const DEFAULT_CONTENT = `
 `;
 
 const PrivacyPolicy: React.FC = () => {
+    const navigate = useNavigate();
     const [content, setContent] = useState<string>(() => {
         return localStorage.getItem('privacy_policy_content_v1') || DEFAULT_CONTENT;
     });
@@ -117,7 +120,6 @@ const PrivacyPolicy: React.FC = () => {
                     setIsAdmin(true);
                 }
             } catch (e) {
-                console.error('Error parsing session', e);
             }
         }
     }, []);
@@ -131,7 +133,6 @@ const PrivacyPolicy: React.FC = () => {
         setContent(editContent);
         localStorage.setItem('privacy_policy_content_v1', editContent);
         setIsEditing(false);
-        alert('Privacy Policy updated successfully!');
     };
 
     const handleCancel = () => {
@@ -158,11 +159,21 @@ const PrivacyPolicy: React.FC = () => {
 
     return (
         <div className="privacy-container">
-            {isAdmin && !isEditing && (
-                <div className="edit-button-container">
-                    <button onClick={handleEdit} className="edit-btn"> Edit Policy</button>
-                </div>
-            )}
+            <div className="flex justify-between items-center mb-4">
+                <button
+                    onClick={() => navigate('/farmvest/user-activation')}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                    <ArrowLeft size={20} />
+                    <span className="font-medium">Back</span>
+                </button>
+
+                {isAdmin && !isEditing && (
+                    <div className="edit-button-container">
+                        <button onClick={handleEdit} className="edit-btn"> Edit Policy</button>
+                    </div>
+                )}
+            </div>
 
             {isEditing ? (
                 <>

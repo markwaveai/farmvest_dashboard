@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { farmvestService } from '../services/farmvest_api';
 import './AddFarmModal.css';
 
@@ -11,10 +11,52 @@ interface AddFarmModalProps {
 
 const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess, initialLocation }) => {
     const [farmName, setFarmName] = useState('');
-    const [location, setLocation] = useState(initialLocation);
+    // User wants "Select Location" by default, so we initialize with empty string
+    // regardless of what location filter is active on the parent page.
+    const [location, setLocation] = useState('');
     // const [totalBuffaloes, setTotalBuffaloes] = useState<number | ''>(0); // Removed as per API schema
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const isFormValid = useMemo(() => {
+        return (
+            farmName.trim().length > 0 &&
+            location.trim().length > 0
+        );
+    }, [farmName, location]);
+
+
+
+    const [locations, setLocations] = useState<string[]>([]);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            const fetchLocations = async () => {
+                try {
+                    const response = await farmvestService.getLocations();
+                    let locs: string[] = [];
+                    // Handle various response structures
+                    if (response && response.data && Array.isArray(response.data.locations)) {
+                        locs = response.data.locations;
+                    } else if (response && Array.isArray(response.locations)) {
+                        locs = response.locations;
+                    } else if (Array.isArray(response)) {
+                        locs = response;
+                    }
+
+                    if (locs.length > 0) {
+                        setLocations(locs.map(l => String(l).toUpperCase()));
+                        // Set default if current location not in list
+                        if (location && !locs.map(l => String(l).toUpperCase()).includes(location.toUpperCase())) {
+                            // keep current or default to first
+                        }
+                    }
+                } catch (err) {
+                }
+            };
+            fetchLocations();
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -36,22 +78,23 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
             });
 
             setFarmName('');
-            // setTotalBuffaloes('');
-            onSuccess(location.toUpperCase());
+            onSuccess(location);
             onClose();
         } catch (err: any) {
-            console.error('Failed to create farm:', err);
-            setError(err.response?.data?.detail || err.message || 'Failed to create farm. Please try again.');
+            // Display detailed error for debugging
+            const errorMessage = err.response?.data?.detail
+                ? (typeof err.response.data.detail === 'object' ? JSON.stringify(err.response.data.detail) : err.response.data.detail)
+                : (err.message || 'Failed to create farm. Please try again.');
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="add-farm-modal-overlay" onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-        }}>
+        <div className="add-farm-modal-overlay">
             <div className="add-farm-modal-content" onClick={(e) => e.stopPropagation()}>
+                {/* ... header ... */}
                 <div className="modal-header" style={{ position: 'relative' }}>
                     <h2>Add New Farm</h2>
                     <button
@@ -102,21 +145,28 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                 id="location"
                                 className="form-select"
                                 value={location}
-                                onChange={(e) => setLocation(e.target.value)}
+                                onChange={(e) => setLocation(e.target.value.toUpperCase())}
                             >
-                                <option value="KURNOOL">KURNOOL</option>
-                                <option value="HYDERABAD">HYDERABAD</option>
+                                <option value="" disabled>Select Location</option>
+                                {locations.length > 0 ? (
+                                    locations.map((loc, index) => (
+                                        <option key={index} value={loc}>{loc}</option>
+                                    ))
+                                ) : (
+                                    <>
+                                        <option value="KURNOOL">KURNOOL</option>
+                                        <option value="HYDERABAD">HYDERABAD</option>
+                                    </>
+                                )}
                             </select>
                         </div>
-
-
                     </div>
 
                     <div className="modal-footer">
                         <button type="button" className="cancel-button" onClick={onClose} disabled={loading}>
                             Cancel
                         </button>
-                        <button type="submit" className="submit-button" disabled={loading}>
+                        <button type="submit" className="submit-button" disabled={loading || !isFormValid}>
                             {loading ? 'Creating...' : 'Create Farm'}
                         </button>
                     </div>
