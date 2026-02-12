@@ -62,7 +62,8 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   // Determine active tab
   const currentPath = location.pathname;
   let activeTab = 'farmvest-employees';
-  if (currentPath.includes('/farmvest/employees')) activeTab = 'farmvest-employees';
+  if (currentPath.includes('/farmvest/dashboard')) activeTab = 'farmvest-dashboard';
+  else if (currentPath.includes('/farmvest/employees')) activeTab = 'farmvest-employees';
   else if (currentPath.includes('/farmvest/farms')) activeTab = 'farmvest-farms';
   else if (currentPath.includes('/farmvest/user-activation')) activeTab = 'farmvest-activation';
   else if (currentPath.includes('/farmvest/animal-onboarding')) activeTab = 'animal-onboarding';
@@ -135,6 +136,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
 
               <div className="flex flex-col justify-center">
                 <h1 className="text-lg font-bold text-white leading-tight">
+                  {activeTab === 'farmvest-dashboard' && 'Dashboard'}
                   {activeTab === 'farmvest-employees' && 'FarmVest Employees'}
                   {activeTab === 'farmvest-farms' && 'FarmVest Farms'}
                   {activeTab === 'animal-onboarding' && 'Animal Onboarding'}
@@ -151,6 +153,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'account-deletion' && 'Account Deletion'}
                 </h1>
                 <span className="text-[10px] text-gray-300 font-medium leading-none mt-0.5 md:block hidden">
+                  {activeTab === 'farmvest-dashboard' && 'Overview of revenue and assets'}
                   {activeTab === 'farmvest-employees' && 'Manage all employees'}
                   {activeTab === 'farmvest-farms' && 'Overview of all farm locations'}
                   {activeTab === 'animal-onboarding' && 'Register new animals'}
@@ -205,6 +208,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
             <img src="/farmvest-logo.png" alt="farmvest Logo" className="header-logo-sidebar" style={{ height: '35px' }} />
           </div>
           <ul className="sidebar-menu" style={{ marginTop: '10px' }}>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-dashboard' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/dashboard'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <LayoutGrid size={18} />
+                  <span className="nav-text">Dashboard</span>
+                </div>
+              </button>
+            </li>
             <li>
               <button className={`nav-item ${activeTab === 'farmvest-farms' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/farms'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>

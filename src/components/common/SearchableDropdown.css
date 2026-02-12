@@ -1,0 +1,97 @@
+.searchable-dropdown-container {
+    position: relative;
+    width: 200px;
+    /* Adjust as needed */
+    font-family: 'Inte', sans-serif;
+}
+
+.searchable-dropdown-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.searchable-dropdown-trigger:hover {
+    border-color: #D1D5DB;
+}
+
+.searchable-dropdown-trigger.disabled {
+    background-color: #F3F4F6;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.searchable-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-top: 4px;
+    z-index: 50;
+    overflow: hidden;
+    max-height: 250px;
+    /* Limit height */
+    display: flex;
+    flex-direction: column;
+}
+
+.searchable-dropdown-search {
+    padding: 8px;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.searchable-dropdown-search input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #E5E7EB;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+}
+
+.searchable-dropdown-search input:focus {
+    border-color: #0f766e;
+    /* Primary color */
+}
+
+.searchable-dropdown-list {
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+.searchable-dropdown-item {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.searchable-dropdown-item:hover {
+    background-color: #F3F4F6;
+}
+
+.searchable-dropdown-item.selected {
+    background-color: #F0FDFA;
+    /* Light teal */
+    color: #0f766e;
+    font-weight: 500;
+}
+
+.searchable-dropdown-item.no-results {
+    color: #9CA3AF;
+    font-style: italic;
+    cursor: default;
+}
