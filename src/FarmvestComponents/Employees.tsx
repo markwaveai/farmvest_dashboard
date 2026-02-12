@@ -215,15 +215,15 @@ const Employees: React.FC = () => {
                             onMouseLeave={() => setIsDropdownOpen(false)}
                         >
                             <button
-                                className={`flex items-center justify-between min-w-[120px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors max-w-[100px] ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                                className={`flex items-center justify-between min-w-[130px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
-                                <span className="truncate">
+                                <span className="flex items-center whitespace-nowrap">
                                     {formatRoleName(selectedRole)}
                                     <span className="ml-1 text-gray-500 font-normal">
                                         ({selectedRole === '' ? (globalTotalCount || totalCount) : (roleCounts[selectedRole] || 0)})
                                     </span>
                                 </span>
-                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isDropdownOpen && (
@@ -256,15 +256,15 @@ const Employees: React.FC = () => {
                             onMouseLeave={() => setIsStatusDropdownOpen(false)}
                         >
                             <button
-                                className={`flex items-center justify-between min-w-[100px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                                className={`flex items-center justify-between min-w-[120px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
-                                <span className="truncate">
+                                <span className="flex items-center whitespace-nowrap">
                                     {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
                                     <span className="ml-1 text-gray-500 font-normal">
                                         ({selectedStatus === '' ? statusCounts.active + statusCounts.inactive : (selectedStatus === '1' ? statusCounts.active : statusCounts.inactive)})
                                     </span>
                                 </span>
-                                <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isStatusDropdownOpen && (
@@ -311,17 +311,16 @@ const Employees: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-100 relative">
                         <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-3 py-2.5 text-left bg-gray-50">S.No</th>
-
+                                <th className="px-3 py-2.5 text-center bg-gray-50">S.No</th>
                                 <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">
                                     <span>Name</span>
                                 </th>
-                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Email</th>
-                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Phone</th>
-                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Joining Date</th>
-                                <th className="px-3 py-2.5 text-left bg-gray-50">Role</th>
-                                <th className="px-3 py-2.5 text-left bg-gray-50">Farm</th>
-                                <th className="px-3 py-2.5 text-left bg-gray-50">Shed</th>
+                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Email</th>
+                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Phone</th>
+                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Joining Date</th>
+                                <th className="px-3 py-2.5 text-center bg-gray-50">Role</th>
+                                <th className="px-3 py-2.5 text-center bg-gray-50">Farm</th>
+                                <th className="px-3 py-2.5 text-center bg-gray-50">Shed</th>
                                 <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Status</th>
                             </tr>
                         </thead>
@@ -331,7 +330,7 @@ const Employees: React.FC = () => {
                             ) : employees.length > 0 ? (
                                 employees.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500 font-medium">
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-500 font-medium">
                                             {(currentPage - 1) * itemsPerPage + index + 1}
                                         </td>
 
@@ -340,18 +339,18 @@ const Employees: React.FC = () => {
                                                 {`${employee.first_name || ''} ${employee.last_name || ''}`}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">{employee.email || '-'}</td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">{employee.phone_number || '-'}</td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600">
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-600">{employee.email || '-'}</td>
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-600">{employee.phone_number || '-'}</td>
+                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-600">
                                             {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN', {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             }) : '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-left">
-                                            <div className="flex gap-1 justify-start flex-wrap">
+                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs">
+                                            <div className="flex gap-1 justify-center flex-wrap">
                                                 {(selectedRole && employee.roles?.includes(selectedRole)) ? (
                                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
-                                                        {selectedRole.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                                        {formatRoleName(selectedRole)}
                                                     </span>
                                                 ) : (
                                                     employee.roles && employee.roles.length > 0 ? (
@@ -361,15 +360,15 @@ const Employees: React.FC = () => {
                                                             </span>
                                                         ))
                                                     ) : (
-                                                        <span className="text-gray-400">-</span>
+                                                        <span className="text-gray-400 mx-auto">-</span>
                                                     )
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-left text-xs text-gray-500">
+                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
                                             {employee.farm_name || employee.farm?.farm_name || '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-left text-xs text-gray-500">
+                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
                                             {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
                                         <td className="px-3 py-2 whitespace-nowrap text-center">

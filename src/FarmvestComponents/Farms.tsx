@@ -21,10 +21,10 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
     return (
         <tr className="bg-white border-b hover:bg-gray-50 transition-colors duration-150">
             <td className="px-4 py-2 text-center text-gray-400 font-medium">{sNo}</td>
-            <td className="px-4 py-2 font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
+            <td className="px-4 py-2 text-center font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
                 {farm.farm_name || '-'}
             </td>
-            <td className="px-4 py-2 text-gray-600">
+            <td className="px-4 py-2 text-center text-gray-600">
                 {farm.location || '-'}
             </td>
             <td className="px-4 py-2 text-center">
@@ -39,8 +39,8 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
                         : (farm.total_buffaloes_count || '0')}
                 </span>
             </td>
-            <td className="px-4 py-2 text-gray-600">
-                <div className="flex flex-col">
+            <td className="px-4 py-2 text-center text-gray-600">
+                <div className="flex flex-col items-center">
                     <span className="font-medium text-gray-900">{farm.farm_manager_name || farm.manager_name || (farm.farm_manager?.name) || '-'}</span>
                     <span className="text-xs text-gray-500 mt-0.5">{farm.mobile_number || farm.manager_mobile || farm.manager_phone || (farm.farm_manager?.mobile) || '-'}</span>
                 </div>
@@ -245,11 +245,11 @@ const Farms: React.FC = () => {
                             <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th className="px-4 py-2 text-center">S.no</th>
-                                    <th className="px-4 py-2 text-left">
-                                        <div className="flex items-center gap-2">Farm Name</div>
+                                    <th className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-2">Farm Name</div>
                                     </th>
-                                    <th className="px-4 py-2 text-left">
-                                        <div className="flex items-center gap-2">Location</div>
+                                    <th className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-2">Location</div>
                                     </th>
                                     <th className="px-4 py-2 text-center">
                                         <div className="flex items-center justify-center gap-2">Sheds</div>
@@ -257,8 +257,8 @@ const Farms: React.FC = () => {
                                     <th className="px-4 py-2 text-center">
                                         <div className="flex items-center justify-center gap-2">Live Count</div>
                                     </th>
-                                    <th className="px-4 py-2 text-left">
-                                        <div className="flex items-center gap-2">Farm Manager</div>
+                                    <th className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-2">Farm Manager</div>
                                     </th>
                                 </tr>
                             </thead>

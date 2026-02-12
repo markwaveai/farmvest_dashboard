@@ -217,10 +217,10 @@ const Investors: React.FC = () => {
                         <table className="min-w-full divide-y divide-gray-100">
                             <thead className="bg-[#f8f9fa]">
                                 <tr>
-                                    <th onClick={() => requestSort('id')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                    <th onClick={() => requestSort('id')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
                                     <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
-                                    <th onClick={() => requestSort('email')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
-                                    <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                    <th onClick={() => requestSort('email')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                    <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
                                     <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Address</th>
                                     <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Buffaloes</th>
                                     <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Calves</th>
@@ -238,7 +238,7 @@ const Investors: React.FC = () => {
 
                                         return (
                                             <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div
                                                         className="font-semibold text-blue-600 cursor-pointer hover:underline"
@@ -247,8 +247,8 @@ const Investors: React.FC = () => {
                                                         {`${investor.first_name || ''} ${investor.last_name || ''}`}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.email || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{investor.phone_number || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{investor.email || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{investor.phone_number || '-'}</td>
                                                 <td className="px-6 py-4 whitespace-normal text-center text-sm text-gray-600 min-w-[200px] max-w-[300px] break-words" title={investor.address || ''}>{investor.address || '-'}</td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">

@@ -534,14 +534,14 @@ const BuffaloManagement: React.FC = () => {
                             <thead>
                                 <tr>
                                     <th className="w-10"></th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Tag ID</th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Farm</th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Shed</th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Position</th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Breed</th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Gender</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Tag ID</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Farm</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Shed</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Position</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Breed</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Gender</th>
                                     <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Age (M)</th>
-                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500">Location</th>
+                                    <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Location</th>
                                     <th className="text-[10px] font-black uppercase tracking-wider text-gray-500 text-center">Status</th>
                                     <th className="w-10"></th>
                                 </tr>
@@ -562,8 +562,8 @@ const BuffaloManagement: React.FC = () => {
                                                     )
                                                 ) : null}
                                             </td>
-                                            <td>
-                                                <div className="flex items-center">
+                                            <td className="text-center">
+                                                <div className="flex items-center justify-center">
                                                     <span className="p-1.5 bg-blue-50 text-blue-600 rounded mr-2 shadow-sm border border-blue-100/50">
                                                         <Tag size={14} />
                                                     </span>
@@ -574,25 +574,25 @@ const BuffaloManagement: React.FC = () => {
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <div className="text-[11px] font-bold text-gray-600">{b.farm}</div>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <div className="text-[11px] font-bold text-gray-500">{b.shed}</div>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <div className="text-[10px] font-black text-gray-400 font-mono tracking-tighter">{b.position}</div>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <div className="text-[11px] font-bold text-gray-600">{b.breed}</div>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <div className="text-[11px] font-bold text-gray-600">{b.gender}</div>
                                             </td>
                                             <td className="text-center">
                                                 <div className="text-[11px] font-black text-gray-900">{b.age_months}</div>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <div className="text-[11px] font-bold text-gray-500">{b.location}</div>
                                             </td>
                                             <td className="text-center">
