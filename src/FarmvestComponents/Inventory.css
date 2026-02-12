@@ -22,13 +22,13 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
     transition: all 0.2s ease;
 }
 
 .summary-card:hover {
     transform: translateY(-1px);
-    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03));
+    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03));
 }
 
 .summary-icon {
@@ -70,12 +70,12 @@
     overflow: hidden;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
 }
 
 .shed-group-card:hover {
     border-color: #f59e0b;
-    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03));
+    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03));
 }
 
 .shed-card-header {
@@ -179,7 +179,7 @@
 
 .timeline-step.active {
     background: white;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
 }
 
 .timeline-step.active .period {
@@ -422,7 +422,7 @@
     border-radius: var(--card-radius, 14px);
     border: 1px solid var(--card-border, #e2e8f0);
     overflow: hidden;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
 }
 
 .detail-table {

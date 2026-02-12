@@ -2,8 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { farmvestService } from '../services/farmvest_api';
 import './FarmDetails.css';
-import { AddShedModal } from './AddShedModal';
-import { MapPin, ArrowLeft, Plus, Users, Stethoscope } from 'lucide-react';
+import { MapPin, ArrowLeft, Users, Stethoscope } from 'lucide-react';
 
 const FarmDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -76,7 +75,6 @@ const FarmDetails: React.FC = () => {
 
     // If farm name wasn't passed, we might update it if the API returned it (not guaranteed by this specific endpoint though)
 
-    const [isAddShedModalOpen, setIsAddShedModalOpen] = useState(false);
 
     const handleShedClick = (shed: any) => {
         navigate('/farmvest/unallocated-animals', {
@@ -106,16 +104,6 @@ const FarmDetails: React.FC = () => {
                     </div>
                 </div>
                 <div className="farm-header-right-actions">
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="add-shed-btn"
-                            onClick={() => {
-                                setIsAddShedModalOpen(true);
-                            }}
-                        >
-                            <Plus size={14} /> Add Shed
-                        </button>
-                    </div>
 
                     <div className="manager-details-section">
                         <div className="manager-entry">
@@ -160,7 +148,7 @@ const FarmDetails: React.FC = () => {
                 <div className="flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200 animate-fadeIn">
                     <div className="text-6xl mb-6">🏘️</div>
                     <h3 className="text-2xl font-extrabold text-gray-800">No Sheds Configured</h3>
-                    <p className="mt-3 text-gray-500 font-medium max-w-sm text-center">There are no sheds configured for this farm yet. Click "Add Shed" to get started.</p>
+                    <p className="mt-3 text-gray-500 font-medium max-w-sm text-center">There are no sheds configured for this farm yet.</p>
                 </div>
             ) : (
                 <div className="sheds-grid-container">
@@ -306,15 +294,6 @@ const FarmDetails: React.FC = () => {
                 </div>
             )}
 
-            <AddShedModal
-                isOpen={isAddShedModalOpen}
-                onClose={() => setIsAddShedModalOpen(false)}
-                onSuccess={() => {
-                    fetchSheds();
-                }}
-                farmId={parseInt(id || '0')}
-                farmName={farmName}
-            />
         </div>
     );
 };

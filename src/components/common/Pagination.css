@@ -1,22 +1,20 @@
 .pagination-container {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0;
-    margin-top: 0.25rem;
-    border-top: 1px solid #e2e8f0;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    padding: 0;
 }
 
 .pagination-btn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 6px 12px;
+    padding: 4px 10px;
     border: 1px solid #e2e8f0;
     background: white;
-    border-radius: 8px;
-    font-size: 0.875rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: #64748b;
     cursor: pointer;
@@ -41,15 +39,15 @@
 }
 
 .pagination-number {
-    min-width: 32px;
-    height: 32px;
+    min-width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     background: transparent;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: #64748b;
     cursor: pointer;

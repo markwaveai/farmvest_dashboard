@@ -10,8 +10,9 @@ const AccountDeletion: React.FC = () => {
     const [showConfirm, setShowConfirm] = useState(false);
 
     const handleDeactivate = async () => {
-        if (!mobile || mobile.length !== 10) {
-            setSnackbar({ message: 'Please enter a valid 10-digit mobile number', type: 'error' });
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!mobile || !phoneRegex.test(mobile)) {
+            setSnackbar({ message: 'Please enter a valid 10-digit mobile number starting with 6-9', type: 'error' });
             return;
         }
         setShowConfirm(true);
@@ -77,9 +78,9 @@ const AccountDeletion: React.FC = () => {
 
                     <button
                         onClick={handleDeactivate}
-                        disabled={loading || mobile.length !== 10}
+                        disabled={loading || !/^[6-9]\d{9}$/.test(mobile)}
                         className={`mt-6 w-full py-3 px-4 rounded-xl font-bold text-white shadow-sm transition-all flex items-center justify-center gap-2
-                            ${loading || mobile.length !== 10
+                            ${loading || !/^[6-9]\d{9}$/.test(mobile)
                                 ? 'bg-gray-300 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 shadow-red-100'}`}
                     >

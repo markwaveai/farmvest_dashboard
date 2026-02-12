@@ -102,14 +102,14 @@ const Inventory: React.FC = () => {
             try {
                 const res = await farmvestService.getMilkEntries({ page: 1, size: 50 });
                 setMilkEntries(res.data || []);
-            } catch {} finally { setMilkLoading(false); }
+            } catch { } finally { setMilkLoading(false); }
         };
         const fetchHealth = async () => {
             setHealthLoading(true);
             try {
                 const res = await farmvestService.getTickets({ ticket_type: 'HEALTH', page: 1, size: 20 });
                 setHealthTickets(res.data || []);
-            } catch {} finally { setHealthLoading(false); }
+            } catch { } finally { setHealthLoading(false); }
         };
         fetchMilk();
         fetchHealth();
@@ -708,11 +708,10 @@ const Inventory: React.FC = () => {
                                                     <td className="font-bold text-xs">{t.case_id}</td>
                                                     <td className="text-xs text-amber-600">{t.animal_display_id}</td>
                                                     <td>
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                            t.status === 'PENDING' ? 'bg-amber-50 text-amber-700' :
-                                                            t.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' :
-                                                            'bg-green-50 text-green-700'
-                                                        }`}>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${t.status === 'PENDING' ? 'bg-amber-50 text-amber-700' :
+                                                                t.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' :
+                                                                    'bg-green-50 text-green-700'
+                                                            }`}>
                                                             {t.status?.replace('_', ' ')}
                                                         </span>
                                                     </td>
@@ -865,7 +864,7 @@ const Inventory: React.FC = () => {
                     // Re-fetch milk entries
                     farmvestService.getMilkEntries({ page: 1, size: 50 }).then(res => {
                         setMilkEntries(res.data || []);
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }}
             />
 

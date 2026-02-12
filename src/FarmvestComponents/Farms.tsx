@@ -294,7 +294,7 @@ const Farms: React.FC = () => {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-2 flex justify-center">
+                    <div className="mt-1 flex justify-end">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

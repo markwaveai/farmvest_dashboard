@@ -448,7 +448,7 @@ const Employees: React.FC = () => {
             />
             {
                 totalPages > 1 && (
-                    <div className="flex-none mt-1">
+                    <div className="flex-none mt-1 flex justify-end">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

@@ -293,7 +293,7 @@ const Investors: React.FC = () => {
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="mt-4">
+                        <div className="mt-1 flex justify-end">
                             <Pagination
                                 currentPage={currentPage}
                                 totalPages={totalPages}

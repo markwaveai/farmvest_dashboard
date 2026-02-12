@@ -30,9 +30,11 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     };
 
     const [formData, setFormData] = useState(initialFormData);
+    const [mobileError, setMobileError] = useState('');
 
     const handleClose = () => {
         setFormData(initialFormData);
+        setMobileError('');
         onClose();
     };
 
@@ -189,6 +191,19 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
             // Numeric only and max 10 digits
             const numericValue = value.replace(/[^0-9]/g, '').slice(0, 10);
             setFormData(prev => ({ ...prev, [name]: numericValue }));
+
+            // Phone Validation Patterns
+            if (numericValue && numericValue.length > 0) {
+                if (!/^[6-9]/.test(numericValue)) {
+                    setMobileError('Mobile number must start with 6, 7, 8, or 9');
+                } else if (numericValue.length < 10) {
+                    setMobileError('Mobile number must be exactly 10 digits');
+                } else {
+                    setMobileError('');
+                }
+            } else {
+                setMobileError('');
+            }
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -198,7 +213,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         const { first_name, last_name, email, mobile, role, farm_id, shed_id, senior_doctor_id } = formData;
 
         // Basic fields
-        if (!first_name || !last_name || !email || !mobile || mobile.length !== 10 || !farm_id) {
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!first_name || !last_name || !email || !mobile || !phoneRegex.test(mobile) || !farm_id) {
             return false;
         }
 
@@ -218,8 +234,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         e.preventDefault();
 
         // Mobile Validation
-        if (formData.mobile.length !== 10) {
-            alert('Mobile number must be exactly 10 digits.');
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!phoneRegex.test(formData.mobile)) {
+            alert('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
             return;
         }
 
@@ -341,10 +358,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 value={formData.mobile}
                                 onChange={handleInputChange}
                                 placeholder="Enter mobile number"
-                                className="form-input"
+                                className={`form-input ${mobileError ? 'border-red-500' : ''}`}
                                 required
                                 maxLength={10}
                             />
+                            {mobileError && (
+                                <span className="text-[10px] text-red-500 mt-1 font-bold animate-fadeIn">
+                                    {mobileError}
+                                </span>
+                            )}
                         </div>
 
                         {/* Location Selector */}
