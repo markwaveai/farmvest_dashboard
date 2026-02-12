@@ -4,6 +4,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
 import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee, updateEmployeeStatus } from '../store/slices/farmvest/employees';
 import AddEmployeeModal from './AddEmployee/AddEmployeeModal';
+import DeleteEmployeeModal from './DeleteEmployeeModal';
 
 
 import Snackbar from '../components/common/Snackbar';
@@ -17,6 +18,8 @@ const Employees: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
 
     const [selectedRole, setSelectedRole] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -421,6 +424,7 @@ const Employees: React.FC = () => {
                                 <th className="px-3 py-2.5 text-left bg-gray-50">Farm</th>
                                 <th className="px-3 py-2.5 text-left bg-gray-50">Shed</th>
                                 <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Status {getSortIcon('active_status')}</th>
+                                <th className="px-3 py-2.5 text-center bg-gray-50">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -475,11 +479,23 @@ const Employees: React.FC = () => {
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
+                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedEmployee(employee);
+                                                    setIsDeleteModalOpen(true);
+                                                }}
+                                                className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={9}>
+                                    <td colSpan={10}>
                                         <div className="flex flex-col items-center justify-center py-16 px-4">
                                             {activeSearchQuery ? (
                                                 <>
