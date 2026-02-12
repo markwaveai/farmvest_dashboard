@@ -243,12 +243,17 @@ const FarmvestUserActivationPage = () => {
                 setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
                 setLoading(true);
 
-                // Simulate API call
-                setTimeout(() => {
+                try {
+                    if (mode === 'deactivate') {
+                        await farmvestService.requestDeactivationOtp(formData.mobile);
+                    } else {
+                        await farmvestService.requestReactivationOtp(formData.mobile);
+                    }
+
                     setLoading(false);
                     setSnackbar({
                         show: true,
-                        message: 'OTP sent successfully via whatsapp (Mock)',
+                        message: 'OTP sent successfully via WhatsApp',
                         type: 'success',
                     });
 
@@ -256,7 +261,14 @@ const FarmvestUserActivationPage = () => {
                         setSnackbar((prev) => ({ ...prev, show: false }));
                         setStep('otp');
                     }, 1000);
-                }, 1500);
+                } catch (error: any) {
+                    setLoading(false);
+                    setModalConfig({
+                        isOpen: true,
+                        type: 'error',
+                        message: error.response?.data?.message || 'Failed to send OTP. Please try again.',
+                    });
+                }
             },
         });
     };
@@ -277,7 +289,7 @@ const FarmvestUserActivationPage = () => {
 
         try {
             if (mode === 'deactivate') {
-                await farmvestService.deactivateUser(formData.mobile);
+                await farmvestService.confirmDeactivation(formData.mobile, otp);
                 setLoading(false);
                 setModalConfig({
                     isOpen: true,
@@ -285,7 +297,7 @@ const FarmvestUserActivationPage = () => {
                     message: 'Account deactivated successfully',
                 });
             } else {
-                await farmvestService.activateUser(formData.mobile);
+                await farmvestService.confirmReactivation(formData.mobile, otp);
                 setLoading(false);
                 setModalConfig({
                     isOpen: true,
@@ -298,7 +310,7 @@ const FarmvestUserActivationPage = () => {
             setModalConfig({
                 isOpen: true,
                 type: 'error',
-                message: error.response?.data?.message || 'Failed to deactivate account. Please try again.',
+                message: error.response?.data?.message || 'Failed to process request. Please check OTP and try again.',
             });
         }
     };

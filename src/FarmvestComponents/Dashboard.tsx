@@ -228,7 +228,7 @@ const Dashboard: React.FC = () => {
             />
 
             {/* Main Charts Area */}
-            <div className="charts-grid">
+            <div className="flex flex-col gap-6 mb-6">
                 {/* Revenue Trends */}
                 <div className="chart-card">
                     <div className="chart-header">
@@ -259,8 +259,8 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Secondary Charts */}
-                <div className="flex flex-col gap-6">
+                {/* Secondary Charts - Row of 3 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Feed Consumption Logic */}
                     <div className="chart-card" style={{ minHeight: 'auto', flex: 1 }}>
                         <div className="chart-header">

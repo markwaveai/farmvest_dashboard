@@ -473,5 +473,27 @@ export const farmvestService = {
     updateUserDetails: async (payload: { name?: string; email?: string; address?: string; profile?: string }) => {
         const response = await farmvestApi.put('/api/users/update_user_details/', payload);
         return response.data;
+    },
+
+    // ============ ACCOUNT ACTIVATION/DEACTIVATION (OTP FLOW) ============
+
+    requestReactivationOtp: async (mobile: string, channel: string = 'whatsapp') => {
+        const response = await axios.post(API_ENDPOINTS.requestReactivationOtp(), { mobile, channel });
+        return response.data;
+    },
+
+    confirmReactivation: async (mobile: string, otp: string) => {
+        const response = await axios.post(API_ENDPOINTS.confirmReactivation(), { mobile, otp });
+        return response.data;
+    },
+
+    requestDeactivationOtp: async (mobile: string, channel: string = 'whatsapp') => {
+        const response = await axios.post(API_ENDPOINTS.deactivateRequestOtp(), { mobile, channel });
+        return response.data;
+    },
+
+    confirmDeactivation: async (mobile: string, otp: string) => {
+        const response = await axios.post(API_ENDPOINTS.deactivateConfirm(), { mobile, otp });
+        return response.data;
     }
 };
