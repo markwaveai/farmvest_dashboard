@@ -362,5 +362,120 @@ export const farmvestService = {
         } catch (error: any) {
             return [];
         }
+    },
+
+    // ============ TICKETS ============
+
+    createTicket: async (ticketType: string, payload: any) => {
+        const response = await farmvestApi.post(`/api/ticket/?ticket_type=${ticketType}`, payload);
+        return response.data;
+    },
+
+    getTickets: async (params?: {
+        ticket_type?: string;
+        status_filter?: string;
+        transfer_direction?: string;
+        farm_id?: number;
+        shed_id?: number;
+        page?: number;
+        size?: number;
+    }) => {
+        const query = new URLSearchParams();
+        if (params?.ticket_type) query.append('ticket_type', params.ticket_type);
+        if (params?.status_filter) query.append('status_filter', params.status_filter);
+        if (params?.transfer_direction) query.append('transfer_direction', params.transfer_direction);
+        if (params?.farm_id) query.append('farm_id', params.farm_id.toString());
+        if (params?.shed_id) query.append('shed_id', params.shed_id.toString());
+        query.append('page', (params?.page || 1).toString());
+        query.append('size', (params?.size || 15).toString());
+        const response = await farmvestApi.get(`/api/ticket/get_health_tickets?${query.toString()}`);
+        return response.data;
+    },
+
+    assignTicket: async (ticketId: number, assistantId?: number) => {
+        const payload: any = { ticket_id: ticketId };
+        if (assistantId) payload.assistant_id = assistantId;
+        const response = await farmvestApi.post('/api/doctor/assign_tickets', payload);
+        return response.data;
+    },
+
+    getDoctorAssistants: async () => {
+        const response = await farmvestApi.get('/api/doctor/get_my_assistants');
+        return response.data;
+    },
+
+    // ============ MILK ============
+
+    createMilkEntry: async (payload: any) => {
+        const response = await farmvestApi.post('/api/milk/create_milk_entry', payload);
+        return response.data;
+    },
+
+    getMilkEntries: async (params?: { page?: number; size?: number }) => {
+        const query = new URLSearchParams();
+        query.append('page', (params?.page || 1).toString());
+        query.append('size', (params?.size || 15).toString());
+        const response = await farmvestApi.get(`/api/milk/milk_entries?${query.toString()}`);
+        return response.data;
+    },
+
+    getMilkReport: async (params: { report_date: string; timing?: string; page?: number; size?: number }) => {
+        const query = new URLSearchParams();
+        query.append('report_date', params.report_date);
+        if (params.timing) query.append('timing', params.timing);
+        query.append('page', (params.page || 1).toString());
+        query.append('size', (params.size || 15).toString());
+        const response = await farmvestApi.get(`/api/milk/get_milk_report?${query.toString()}`);
+        return response.data;
+    },
+
+    // ============ LEAVE REQUESTS ============
+
+    createLeaveRequest: async (payload: any) => {
+        const response = await farmvestApi.post('/api/leave_requests/create_leave_request', payload);
+        return response.data;
+    },
+
+    getLeaveRequests: async (params?: { status_filter?: string; page?: number; size?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.status_filter) query.append('status_filter', params.status_filter);
+        query.append('page', (params?.page || 1).toString());
+        query.append('size', (params?.size || 15).toString());
+        const response = await farmvestApi.get(`/api/leave_requests/leave-requests?${query.toString()}`);
+        return response.data;
+    },
+
+    updateLeaveStatus: async (leaveId: number, payload: { status: string; rejection_reason?: string }) => {
+        const response = await farmvestApi.put(`/api/leave_requests/update_leave_status/${leaveId}`, payload);
+        return response.data;
+    },
+
+    cancelLeaveRequest: async (leaveId: number) => {
+        const response = await farmvestApi.put(`/api/leave_requests/leave-requests/${leaveId}`);
+        return response.data;
+    },
+
+    // ============ FARM DETAILS ============
+
+    getFarmDetails: async (farmId: number) => {
+        const response = await farmvestApi.get(`/api/farm/farm/details?farm_id=${farmId}`);
+        return response.data;
+    },
+
+    getFarmStaff: async (farmId: number) => {
+        const response = await farmvestApi.get(`/api/farm/staff?farm_id=${farmId}`);
+        return response.data;
+    },
+
+    // ============ EMPLOYEE UPDATE ============
+
+    updateEmployee: async (payload: { user_id: number; role: string; farm_id: number; shed_id?: number }) => {
+        const response = await farmvestApi.put('/api/employee/update_employee', payload);
+        return response.data;
+    },
+
+    updateUserDetails: async (payload: { name?: string; email?: string; address?: string; profile?: string }) => {
+        const response = await farmvestApi.put('/api/users/update_user_details/', payload);
+        return response.data;
     }
 };

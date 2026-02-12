@@ -1,25 +1,41 @@
+import { remoteConfig, RemoteConfigKeys } from '../services/remoteConfigService';
+
 export const API_CONFIG = {
+  getEnvironment: () => {
+    return localStorage.getItem('farmvest_env_mode') || 'live';
+  },
   getFarmVestBaseUrl: () => {
-    //const productionUrl = 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
-    const productionUrl = 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app';
+    const mode = API_CONFIG.getEnvironment();
+
+    // Remote values
+    const liveUrl = remoteConfig.getValue(RemoteConfigKeys.LIVE_API_URL) || 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app';
+    const stagingUrl = remoteConfig.getValue(RemoteConfigKeys.STAGING_API_URL) || 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
+
+    const baseUrl = mode === 'dev' ? stagingUrl : liveUrl;
 
     // Only use CORS proxy in local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       const corsUrl = 'https://cors-612299373064.asia-south1.run.app';
-      return `${corsUrl}/${productionUrl}`;
+      return `${corsUrl}/${baseUrl}`;
     } else {
-      return productionUrl;
+      return baseUrl;
     }
   },
   getBaseUrl: () => {
-    const productionUrl = 'https://animalkart-stagging-jn6cma3vvq-el.a.run.app';
+    const mode = API_CONFIG.getEnvironment();
+
+    // Remote values for AnimalKart
+    const liveUrl = remoteConfig.getValue(RemoteConfigKeys.ANIMALKART_LIVE_URL) || 'https://animalkart-stagging-jn6cma3vvq-el.a.run.app';
+    const stagingUrl = remoteConfig.getValue(RemoteConfigKeys.ANIMALKART_STAGING_URL) || 'https://animalkart-stagging-jn6cma3vvq-el.a.run.app';
+
+    const baseUrl = mode === 'dev' ? stagingUrl : liveUrl;
 
     // Only use CORS proxy in local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       const corsUrl = 'https://cors-612299373064.asia-south1.run.app';
-      return `${corsUrl}/${productionUrl}`;
+      return `${corsUrl}/${baseUrl}`;
     } else {
-      return productionUrl;
+      return baseUrl;
     }
   }
 };

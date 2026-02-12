@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './UserTabs.css';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
-import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package, Trash2 } from 'lucide-react';
+import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package, Trash2, AlertCircle, Calendar, Milk } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -70,6 +70,9 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   else if (currentPath.includes('/farmvest/investors')) activeTab = 'farmvest-investors';
   else if (currentPath.includes('/farmvest/inventory')) activeTab = 'farmvest-inventory';
   else if (currentPath.includes('/farmvest/buffalo')) activeTab = 'farmvest-buffalo';
+  else if (currentPath.includes('/farmvest/tickets')) activeTab = 'farmvest-tickets';
+  else if (currentPath.includes('/farmvest/leave-requests')) activeTab = 'farmvest-leave';
+  else if (currentPath.includes('/farmvest/milk-production')) activeTab = 'farmvest-milk';
   else if (currentPath.includes('/support-tickets')) activeTab = 'support-tickets';
   else if (currentPath.includes('/privacy-policy')) activeTab = 'privacy';
   else if (currentPath.includes('/support')) activeTab = 'support';
@@ -139,6 +142,9 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-investors' && 'FarmVest Investors'}
                   {activeTab === 'farmvest-inventory' && 'Farm Inventory'}
                   {activeTab === 'farmvest-buffalo' && 'Buffalo Management'}
+                  {activeTab === 'farmvest-tickets' && 'Ticket Management'}
+                  {activeTab === 'farmvest-leave' && 'Leave Requests'}
+                  {activeTab === 'farmvest-milk' && 'Milk Production'}
                   {activeTab === 'farmvest-activation' && 'User Activation'}
                   {activeTab === 'support' && 'Support Tickets'}
                   {activeTab === 'privacy' && 'Privacy Policy'}
@@ -152,6 +158,9 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-investors' && 'View all registered investors'}
                   {activeTab === 'farmvest-inventory' && 'Monitor resources and supplies'}
                   {activeTab === 'farmvest-buffalo' && 'Individual asset tracking and logs'}
+                  {activeTab === 'farmvest-tickets' && 'Manage health, transfer, and vaccination tickets'}
+                  {activeTab === 'farmvest-leave' && 'Review and manage employee leave requests'}
+                  {activeTab === 'farmvest-milk' && 'Track daily milk production records'}
                   {activeTab === 'farmvest-activation' && 'Activate or deactivate users'}
                   {activeTab === 'support' && 'View and manage tickets'}
                   {activeTab === 'account-deletion' && 'Permanently delete user accounts'}
@@ -230,19 +239,46 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 </div>
               </button>
             </li>
-            {/* <li>
+            <li>
               <button className={`nav-item ${activeTab === 'farmvest-inventory' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/inventory'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <Package size={18} />
                   <span className="nav-text">Inventory</span>
                 </div>
               </button>
-            </li> */}
+            </li>
             <li>
               <button className={`nav-item ${activeTab === 'farmvest-buffalo' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/buffalo'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <Users size={18} />
                   <span className="nav-text">Buffalo</span>
+                </div>
+              </button>
+            </li>
+            <li style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <span style={{ display: 'block', padding: '4px 16px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)' }}>Operations</span>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-tickets' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/tickets'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <AlertCircle size={18} />
+                  <span className="nav-text">Tickets</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-milk' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/milk-production'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <Milk size={18} />
+                  <span className="nav-text">Milk Production</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-leave' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/leave-requests'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <Calendar size={18} />
+                  <span className="nav-text">Leave Requests</span>
                 </div>
               </button>
             </li>

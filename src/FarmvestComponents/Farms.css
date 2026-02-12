@@ -6,9 +6,7 @@
 /* Hide scrollbar for IE, Edge and Firefox */
 .hide-scrollbar {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
 }
 
 
@@ -16,23 +14,47 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: #f9fafb;
+    background: transparent;
 }
 
 .farms-header {
     background-color: white;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--card-border, #e2e8f0);
 }
 
-.farms-table th,
+.farms-table-container {
+    background: white;
+    border-radius: var(--card-radius, 14px);
+    border: 1px solid var(--card-border, #e2e8f0);
+    overflow: hidden;
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+}
+
+.farms-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.farms-table th {
+    background: #f8fafc;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    border-bottom: 1px solid var(--card-border, #e2e8f0);
+}
+
 .farms-table td {
-    border-bottom: 1px solid #f0f2f5;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    font-size: 0.8125rem;
+    color: var(--text-primary, #0f172a);
 }
 
 .farms-table tr:hover {
-    background-color: #f8f9fa;
-}
-
-.farms-table td {
-    vertical-align: middle;
+    background-color: #f8fafc;
 }

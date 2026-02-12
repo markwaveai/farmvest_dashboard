@@ -3,9 +3,10 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { RootState } from '../store';
 import { farmvestService } from '../services/farmvest_api';
-import { User, MapPin, Warehouse, ArrowLeft, Mail, Phone, Calendar, Hash } from 'lucide-react';
+import { User, MapPin, Warehouse, ArrowLeft, Mail, Phone, Calendar, Hash, Edit3 } from 'lucide-react';
 
 import TableSkeleton from '../components/common/TableSkeleton';
+import EditEmployeeModal from './EditEmployeeModal';
 import './Employees.css'; // Import CSS for animations
 
 const EmployeeDetailsPage: React.FC = () => {
@@ -18,6 +19,7 @@ const EmployeeDetailsPage: React.FC = () => {
     const [employee, setEmployee] = useState<any>(stateEmployee || null);
     const [loading, setLoading] = useState(!stateEmployee);
     const [error, setError] = useState<string | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -178,9 +180,17 @@ const EmployeeDetailsPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-sm text-gray-500 mb-1">Employee ID</p>
-                            <p className="text-xl font-mono font-bold text-gray-800">#{employee.id}</p>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowEditModal(true)}
+                                className="px-4 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-amber-600 transition-colors shadow-sm"
+                            >
+                                <Edit3 size={14} /> Edit Assignment
+                            </button>
+                            <div className="text-right">
+                                <p className="text-sm text-gray-500 mb-1">Employee ID</p>
+                                <p className="text-xl font-mono font-bold text-gray-800">#{employee.id}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -289,6 +299,29 @@ const EmployeeDetailsPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            <EditEmployeeModal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                employee={employee}
+                onSuccess={() => {
+                    // Re-fetch employee details after edit
+                    if (id) {
+                        farmvestService.getEmployeeDetailsById(id).then(data => {
+                            let result = data.data || data;
+                            if (Array.isArray(result)) result = result[0];
+                            if (result) {
+                                setEmployee({
+                                    ...result,
+                                    id: result.id || result.user_id,
+                                    farm_name: result.farm_name || result.farm?.farm_name || '',
+                                    shed_name: result.shed_name || result.shed?.shed_name || '',
+                                });
+                            }
+                        }).catch(() => {});
+                    }
+                }}
+            />
         </div>
     );
 };

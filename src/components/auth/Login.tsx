@@ -17,6 +17,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const [showEnvPrompt, setShowEnvPrompt] = useState(false);
+  const [envPassword, setEnvPassword] = useState('');
+  const currentEnv = localStorage.getItem('farmvest_env_mode') || 'live';
 
   useEffect(() => {
     const saved = window.localStorage.getItem('ak_dashboard_session');
@@ -112,6 +116,36 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }, 2000);
   };
 
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleWelcomeTap = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    const newCount = clickCount + 1;
+    if (newCount >= 5) {
+      setShowEnvPrompt(true);
+      setClickCount(0);
+    } else {
+      setClickCount(newCount);
+      timerRef.current = setTimeout(() => setClickCount(0), 2000);
+    }
+  };
+
+  const handleEnvSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (envPassword === 'dev') {
+      localStorage.setItem('farmvest_env_mode', 'dev');
+      window.location.reload();
+    } else if (envPassword === 'live') {
+      localStorage.setItem('farmvest_env_mode', 'live');
+      window.location.reload();
+    } else {
+      setError('Invalid environment password');
+      setShowEnvPrompt(false);
+      setEnvPassword('');
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white font-sans overflow-hidden">
       {/* Success Snackbar */}
@@ -148,13 +182,51 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <div className="space-y-6">
             <div className="space-y-2 text-center">
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight">
+              <h1
+                className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight cursor-pointer select-none"
+                onClick={handleWelcomeTap}
+              >
                 Welcome back
               </h1>
               <p className="text-gray-500 text-lg font-medium">
                 Sign in to manage your farm assets
               </p>
+              {currentEnv === 'dev' && (
+                <div className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full uppercase tracking-widest mt-2 border border-amber-200">
+                  Development Mode
+                </div>
+              )}
             </div>
+
+            {showEnvPrompt && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in duration-300">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-900">Environment Switch</h2>
+                    <button onClick={() => setShowEnvPrompt(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <form onSubmit={handleEnvSubmit} className="space-y-4">
+                    <p className="text-sm text-gray-500">Enter environment password (dev/live) to switch mode.</p>
+                    <input
+                      autoFocus
+                      type="password"
+                      value={envPassword}
+                      onChange={(e) => setEnvPassword(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Enter password..."
+                    />
+                    <button
+                      type="submit"
+                      className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors"
+                    >
+                      Apply Changes
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
 
             {/* Dashboard Selection Removed */}
 

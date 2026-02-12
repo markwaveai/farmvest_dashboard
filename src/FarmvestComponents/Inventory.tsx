@@ -6,6 +6,8 @@ import {
     TrendingUp, TrendingDown, ClipboardList, MapPin, Building2, LayoutGrid
 } from 'lucide-react';
 import { farmvestService } from '../services/farmvest_api';
+import { MilkEntry } from '../types/farmvest';
+import CreateMilkEntryModal from './CreateMilkEntryModal';
 import './Inventory.css';
 
 // Types
@@ -60,6 +62,11 @@ const Inventory: React.FC = () => {
     const [totalAnimalCount, setTotalAnimalCount] = useState<number>(0);
     const [allAnimals, setAllAnimals] = useState<any[]>([]);
     const [isStatsLoading, setIsStatsLoading] = useState(false);
+    const [milkEntries, setMilkEntries] = useState<MilkEntry[]>([]);
+    const [milkLoading, setMilkLoading] = useState(false);
+    const [healthTickets, setHealthTickets] = useState<any[]>([]);
+    const [healthLoading, setHealthLoading] = useState(false);
+    const [showMilkModal, setShowMilkModal] = useState(false);
 
     // Fetch Locations and Statistics
     useEffect(() => {
@@ -86,6 +93,26 @@ const Inventory: React.FC = () => {
             }
         };
         fetchInitialData();
+    }, []);
+
+    // Fetch Milk Entries and Health Tickets
+    useEffect(() => {
+        const fetchMilk = async () => {
+            setMilkLoading(true);
+            try {
+                const res = await farmvestService.getMilkEntries({ page: 1, size: 50 });
+                setMilkEntries(res.data || []);
+            } catch {} finally { setMilkLoading(false); }
+        };
+        const fetchHealth = async () => {
+            setHealthLoading(true);
+            try {
+                const res = await farmvestService.getTickets({ ticket_type: 'HEALTH', page: 1, size: 20 });
+                setHealthTickets(res.data || []);
+            } catch {} finally { setHealthLoading(false); }
+        };
+        fetchMilk();
+        fetchHealth();
     }, []);
 
     // Fetch Farms when location changes
@@ -174,24 +201,19 @@ const Inventory: React.FC = () => {
         });
     }, [allAnimals]);
 
-    const consumables: Consumable[] = [
-        { name: 'Green Fodder', openingStock: 2000, dailyConsumption: 450, currentStock: 850, reorderLevel: 500, unit: 'kg' },
-        { name: 'Concentrates', openingStock: 1500, dailyConsumption: 200, currentStock: 300, reorderLevel: 500, unit: 'kg' },
-        { name: 'Mineral Mix', openingStock: 100, dailyConsumption: 10, currentStock: 15, reorderLevel: 20, unit: 'kg' },
-        { name: 'FMD Vaccine', openingStock: 200, dailyConsumption: 0, currentStock: 45, reorderLevel: 50, unit: 'Doses' }
-    ];
+    const consumables: Consumable[] = [];
 
     const selectedShed = useMemo(() => sheds.find(s => s.id === selectedShedId), [selectedShedId]);
 
     // Summary Statistics
     const totalBuffaloes = totalAnimalCount || sheds.reduce((sum, s) => sum + s.buffaloes.length, 0);
-    const totalMilk = sheds.reduce((sum, s) => sum + s.totalMilkToday, 0);
-    const totalCameras = sheds.reduce((sum, s) => sum + s.cameras, 0);
-    const activeCameras = Math.floor(totalCameras * 0.98); // Mocking 98% active
-    const totalFeedStock = consumables
-        .filter(c => c.unit === 'kg')
-        .reduce((sum, c) => sum + c.currentStock, 0);
-    const lowStockCount = consumables.filter(c => c.currentStock <= c.reorderLevel).length;
+    const totalMilk = milkEntries.length > 0
+        ? milkEntries.reduce((sum, e) => sum + (e.quantity || 0), 0)
+        : sheds.reduce((sum, s) => sum + s.totalMilkToday, 0);
+    const totalCameras = shedsList.length || sheds.length;
+    const activeCameras = totalCameras;
+    const totalFeedStock = 0;
+    const lowStockCount = 0;
 
     const filteredSheds = useMemo(() => {
         return sheds.filter(shed => {
@@ -269,8 +291,8 @@ const Inventory: React.FC = () => {
                         <Database size={20} />
                     </div>
                     <div className="summary-info">
-                        <h3>Feed Stock</h3>
-                        <p>{totalFeedStock.toLocaleString()} kg</p>
+                        <h3>Sheds</h3>
+                        <p>{sheds.length}</p>
                     </div>
                 </div>
                 <div className="summary-card">
@@ -278,17 +300,17 @@ const Inventory: React.FC = () => {
                         <AlertTriangle size={20} />
                     </div>
                     <div className="summary-info">
-                        <h3>Low Stock</h3>
-                        <p>{lowStockCount} Items</p>
+                        <h3>Health Tickets</h3>
+                        <p>{healthTickets.length}</p>
                     </div>
                 </div>
                 <div className="summary-card">
                     <div className="summary-icon bg-purple-50 text-purple-600">
-                        <Camera size={20} />
+                        <Activity size={20} />
                     </div>
                     <div className="summary-info">
-                        <h3>Active Cameras</h3>
-                        <p>{activeCameras} / {totalCameras}</p>
+                        <h3>Milk Entries</h3>
+                        <p>{milkEntries.length}</p>
                     </div>
                 </div>
             </div>
@@ -451,53 +473,12 @@ const Inventory: React.FC = () => {
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                     <Database size={16} /> Feed & Consumables Stock
                 </h2>
-                <div className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                    PREDICTIVE FORECASTING ON
-                </div>
             </div>
 
-            <div className="detail-table-container">
-                <table className="detail-table">
-                    <thead>
-                        <tr>
-                            <th>Item Name</th>
-                            <th>Current Stock</th>
-                            <th>Daily Usage</th>
-                            <th>Days Left</th>
-                            <th>Next Refill</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {consumables.map((c, i) => {
-                            const daysLeft = Math.floor(c.currentStock / (c.dailyConsumption || 1));
-                            const refillDate = new Date();
-                            refillDate.setDate(refillDate.getDate() + daysLeft);
-
-                            return (
-                                <tr key={i}>
-                                    <td className="font-bold">{c.name}</td>
-                                    <td>{c.currentStock.toLocaleString()} {c.unit}</td>
-                                    <td className="text-gray-500">{c.dailyConsumption} {c.unit} / day</td>
-                                    <td className={`font-bold ${daysLeft < 3 ? 'text-red-500' : 'text-blue-600'}`}>
-                                        {daysLeft} Days
-                                    </td>
-                                    <td className="text-xs font-medium text-gray-500">
-                                        {refillDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                    </td>
-                                    <td>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${c.currentStock <= c.reorderLevel
-                                            ? 'bg-red-50 text-red-600'
-                                            : 'bg-green-50 text-green-600'
-                                            }`}>
-                                            {c.currentStock <= c.reorderLevel ? 'REORDER' : 'OPTIMAL'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+            <div className="py-8 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
+                <Database size={40} className="mx-auto mb-3 opacity-15" />
+                <p className="font-bold text-gray-500">No Feed Data Available</p>
+                <p className="text-xs mt-1">Feed tracking and consumable inventory integration is pending</p>
             </div>
         </div>
     );
@@ -648,11 +629,111 @@ const Inventory: React.FC = () => {
                         </div>
                     )}
 
-                    {(activeTab === 'milk' || activeTab === 'feed' || activeTab === 'health') && (
+                    {activeTab === 'milk' && (
+                        <div>
+                            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-700">Recent Milk Entries</h3>
+                                <button
+                                    onClick={() => setShowMilkModal(true)}
+                                    className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-amber-600"
+                                >
+                                    <Plus size={12} /> Add Entry
+                                </button>
+                            </div>
+                            {milkLoading ? (
+                                <div className="p-8 text-center text-gray-400 text-sm">Loading milk data...</div>
+                            ) : milkEntries.length === 0 ? (
+                                <div className="p-8 text-center text-gray-400">
+                                    <Milk size={32} className="mx-auto mb-2 opacity-20" />
+                                    <p className="text-sm font-medium">No milk entries recorded yet</p>
+                                </div>
+                            ) : (
+                                <div className="detail-table-container">
+                                    <table className="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Timing</th>
+                                                <th>Quantity</th>
+                                                <th>Animal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {milkEntries.slice(0, 15).map(entry => (
+                                                <tr key={entry.id}>
+                                                    <td className="text-xs">{entry.start_date ? new Date(entry.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}</td>
+                                                    <td>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${entry.timing === 'MORNING' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}>
+                                                            {entry.timing}
+                                                        </span>
+                                                    </td>
+                                                    <td className="font-bold">{entry.quantity} L</td>
+                                                    <td className="text-xs text-gray-500">{entry.animal_id || 'Shed-level'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'health' && (
+                        <div>
+                            <div className="p-4 border-b border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-700">Active Health Tickets</h3>
+                            </div>
+                            {healthLoading ? (
+                                <div className="p-8 text-center text-gray-400 text-sm">Loading health data...</div>
+                            ) : healthTickets.length === 0 ? (
+                                <div className="p-8 text-center text-gray-400">
+                                    <Activity size={32} className="mx-auto mb-2 opacity-20" />
+                                    <p className="text-sm font-medium">No health tickets found</p>
+                                </div>
+                            ) : (
+                                <div className="detail-table-container">
+                                    <table className="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Case ID</th>
+                                                <th>Animal</th>
+                                                <th>Status</th>
+                                                <th>Priority</th>
+                                                <th>Created</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {healthTickets.map((t: any) => (
+                                                <tr key={t.id}>
+                                                    <td className="font-bold text-xs">{t.case_id}</td>
+                                                    <td className="text-xs text-amber-600">{t.animal_display_id}</td>
+                                                    <td>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                            t.status === 'PENDING' ? 'bg-amber-50 text-amber-700' :
+                                                            t.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' :
+                                                            'bg-green-50 text-green-700'
+                                                        }`}>
+                                                            {t.status?.replace('_', ' ')}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-xs font-bold">{t.priority}</td>
+                                                    <td className="text-xs text-gray-400">
+                                                        {t.created_at ? new Date(t.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'feed' && (
                         <div className="py-12 text-center text-gray-400">
-                            <TrendingUp size={48} className="mx-auto mb-4 opacity-20" />
-                            <p className="font-medium">Metrics visualization coming soon</p>
-                            <p className="text-xs">Real-time charts and logs integration in progress</p>
+                            <Database size={48} className="mx-auto mb-4 opacity-20" />
+                            <p className="font-medium">No feed data available</p>
+                            <p className="text-xs mt-1">Feed tracking integration pending</p>
                         </div>
                     )}
                 </div>
@@ -775,6 +856,18 @@ const Inventory: React.FC = () => {
             </div>
 
             {view === 'dashboard' ? renderDashboard() : renderDetail()}
+
+            <CreateMilkEntryModal
+                isOpen={showMilkModal}
+                onClose={() => setShowMilkModal(false)}
+                onSuccess={() => {
+                    setShowMilkModal(false);
+                    // Re-fetch milk entries
+                    farmvestService.getMilkEntries({ page: 1, size: 50 }).then(res => {
+                        setMilkEntries(res.data || []);
+                    }).catch(() => {});
+                }}
+            />
 
             {/* Buffalo Detail Drawer */}
             {selectedBuffalo && (

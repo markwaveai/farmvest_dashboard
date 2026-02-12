@@ -107,6 +107,20 @@ export const deleteEmployee = createAsyncThunk(
 
 
 
+export const updateEmployee = createAsyncThunk(
+    'farmvestEmployees/updateEmployee',
+    async (payload: { user_id: number; role: string; farm_id: number; shed_id?: number }, { rejectWithValue, dispatch }) => {
+        try {
+            const response = await farmvestService.updateEmployee(payload);
+            dispatch(fetchEmployees(undefined));
+            dispatch(fetchRoleCounts());
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to update employee');
+        }
+    }
+);
+
 export const updateEmployeeStatus = createAsyncThunk(
     'farmvestEmployees/updateEmployeeStatus',
     async ({ mobile, status }: { mobile: string; status: boolean }, { rejectWithValue, dispatch }) => {
@@ -210,6 +224,7 @@ interface EmployeesState {
     loading: boolean;
     createLoading: boolean;
     deleteLoading: boolean;
+    updateLoading: boolean;
     error: string | null;
     successMessage: string | null;
     roleCounts: Record<string, number>;
@@ -225,6 +240,7 @@ const initialState: EmployeesState = {
     loading: false,
     createLoading: false,
     deleteLoading: false,
+    updateLoading: false,
     error: null,
     successMessage: null,
     roleCounts: {},
@@ -324,6 +340,20 @@ const employeesSlice = createSlice({
             .addCase(updateEmployeeStatus.rejected, (state, action) => {
                 state.updateStatusLoading = null;
                 state.error = action.payload as string;
+            })
+            // Update Employee Assignment
+            .addCase(updateEmployee.pending, (state) => {
+                state.updateLoading = true;
+                state.error = null;
+                state.successMessage = null;
+            })
+            .addCase(updateEmployee.fulfilled, (state, action) => {
+                state.updateLoading = false;
+                state.successMessage = action.payload?.message || 'Employee updated successfully';
+            })
+            .addCase(updateEmployee.rejected, (state, action) => {
+                state.updateLoading = false;
+                state.error = typeof action.payload === 'string' ? action.payload : JSON.stringify(action.payload);
             });
     },
 

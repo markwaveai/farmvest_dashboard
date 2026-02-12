@@ -29,6 +29,9 @@ const FarmVestInvestors = React.lazy(() => import('./FarmvestComponents/Investor
 const FarmVestInvestorDetails = React.lazy(() => import('./FarmvestComponents/InvestorDetailsPage'));
 const FarmVestInventory = React.lazy(() => import('./FarmvestComponents/Inventory'));
 const FarmVestBuffalo = React.lazy(() => import('./FarmvestComponents/Buffalo'));
+const FarmVestTickets = React.lazy(() => import('./FarmvestComponents/Tickets'));
+const FarmVestLeaveRequests = React.lazy(() => import('./FarmvestComponents/LeaveRequests'));
+const FarmVestMilkProduction = React.lazy(() => import('./FarmvestComponents/MilkProduction'));
 const FarmVestAccountDeletion = React.lazy(() => import('./FarmvestComponents/AccountDeletion'));
 
 interface Session {
@@ -39,7 +42,19 @@ interface Session {
   currentLoginTime?: string;
 }
 
+import { remoteConfig } from './services/remoteConfigService';
+
 function App() {
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  useEffect(() => {
+    const initApp = async () => {
+      await remoteConfig.fetchConfig();
+      setConfigLoaded(true);
+    };
+    initApp();
+  }, []);
+
   const [session, setSession] = useState<Session | null>(() => {
     const saved = window.localStorage.getItem('ak_dashboard_session');
     if (saved) {
@@ -270,6 +285,30 @@ function App() {
           <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
             <React.Suspense fallback={<UsersPageSkeleton />}>
               <FarmVestBuffalo />
+            </React.Suspense>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/farmvest/tickets" element={
+          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+            <React.Suspense fallback={<UsersPageSkeleton />}>
+              <FarmVestTickets />
+            </React.Suspense>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/farmvest/leave-requests" element={
+          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+            <React.Suspense fallback={<UsersPageSkeleton />}>
+              <FarmVestLeaveRequests />
+            </React.Suspense>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/farmvest/milk-production" element={
+          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+            <React.Suspense fallback={<UsersPageSkeleton />}>
+              <FarmVestMilkProduction />
             </React.Suspense>
           </ProtectedRoute>
         } />

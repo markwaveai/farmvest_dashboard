@@ -8,6 +8,8 @@ import { productsReducer, ProductsState } from './slices/productsSlice';
 import { employeesReducer } from './slices/farmvest/employees';
 import { farmsReducer } from './slices/farmvest/farms';
 import { investorsReducer } from './slices/farmvest/investors';
+import { ticketsReducer } from './slices/farmvest/tickets';
+import { leaveRequestsReducer } from './slices/farmvest/leaveRequests';
 
 export const store = configureStore({
     reducer: {
@@ -19,6 +21,8 @@ export const store = configureStore({
         farmvestEmployees: employeesReducer,
         farmvestFarms: farmsReducer,
         farmvestInvestors: investorsReducer,
+        farmvestTickets: ticketsReducer,
+        farmvestLeaveRequests: leaveRequestsReducer,
     },
 });
 
@@ -31,6 +35,8 @@ export interface RootState {
     farmvestEmployees: ReturnType<typeof employeesReducer>;
     farmvestFarms: ReturnType<typeof farmsReducer>;
     farmvestInvestors: ReturnType<typeof investorsReducer>;
+    farmvestTickets: ReturnType<typeof ticketsReducer>;
+    farmvestLeaveRequests: ReturnType<typeof leaveRequestsReducer>;
 }
 
 export type AppDispatch = typeof store.dispatch;

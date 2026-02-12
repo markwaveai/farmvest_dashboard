@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 import { compressImage } from '../utils/imageUtils';
 
 const firebaseConfig = {
@@ -15,6 +16,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
+const db = getFirestore(app);
 
 /**
  * Uploads a file to Firebase Storage in the specified folder.
@@ -54,4 +56,4 @@ export async function uploadToFirebase(file: File): Promise<string> {
     }
 }
 
-export { storage };
+export { storage, db };

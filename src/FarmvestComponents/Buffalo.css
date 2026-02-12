@@ -1,22 +1,22 @@
 .buffalo-page {
-    padding: 16px;
+    padding: 0;
 }
 
 .buffalo-stat-card {
     background: white;
     padding: 20px;
-    border-radius: 16px;
-    border: 1px solid #f1f5f9;
+    border-radius: var(--card-radius, 14px);
+    border: 1px solid var(--card-border, #e2e8f0);
     display: flex;
     align-items: center;
     gap: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    transition: all 0.2s ease;
 }
 
 .buffalo-stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03));
 }
 
 .stat-icon {
@@ -54,7 +54,7 @@
 .filter-pill {
     padding: 6px 16px;
     background: white;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--card-border, #e2e8f0);
     border-radius: 999px;
     font-size: 12px;
     font-weight: 700;
@@ -79,9 +79,9 @@
 /* Registry Table */
 .registry-container {
     background: white;
-    border-radius: 12px;
-    border: 1px solid #f1f5f9;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-radius: var(--card-radius, 14px);
+    border: 1px solid var(--card-border, #e2e8f0);
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
     overflow-x: auto;
 }
 
@@ -92,24 +92,26 @@
 
 .registry-table th {
     background: #f8fafc;
-    padding: 10px 16px;
+    padding: 12px 16px;
     text-align: left;
-    font-size: 10px;
-    font-weight: 800;
+    font-size: 0.6875rem;
+    font-weight: 700;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--card-border, #e2e8f0);
 }
 
 .registry-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #f8fafc;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
     cursor: pointer;
+    font-size: 0.8125rem;
+    color: var(--text-primary, #0f172a);
 }
 
 .registry-table tr:hover td {
-    background: #f0fdf4;
+    background: #f8fafc;
 }
 
 .registry-table tr:last-child td {
@@ -123,9 +125,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 1000;
+    background: rgba(15, 23, 42, 0.4);
     backdrop-filter: blur(4px);
+    z-index: 1000;
     display: flex;
     justify-content: flex-end;
 }
@@ -160,8 +162,8 @@
 .drawer-section {
     background: white;
     padding: 20px;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--card-radius, 14px);
+    border: 1px solid var(--card-border, #e2e8f0);
     margin-bottom: 20px;
 }
 
@@ -193,6 +195,6 @@
     }
 
     .buffalo-page {
-        padding: 16px;
+        padding: 0;
     }
 }
