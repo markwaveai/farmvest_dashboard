@@ -2,32 +2,41 @@
 
 set -e
 
-if [ -z "$1" ]; then
-  echo "Usage: ./release.sh 1.0.7"
-  exit 1
+# Get latest tag (if exists)
+LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+if [ -z "$LATEST_TAG" ]; then
+  NEW_VERSION="1.0.0"
+else
+  # Remove 'v' prefix
+  VERSION=${LATEST_TAG#v}
+
+  IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+  PATCH=$((PATCH + 1))
+
+  NEW_VERSION="$MAJOR.$MINOR.$PATCH"
 fi
 
-VERSION=$1
-TAG="v$VERSION"
+TAG="v$NEW_VERSION"
 
-# Check if working tree is clean
+echo "🔢 New version will be: $NEW_VERSION"
+
+# Check clean working directory
 if [[ -n $(git status --porcelain) ]]; then
   echo "❌ You have uncommitted changes. Commit them first."
   exit 1
 fi
 
-# Check if tag already exists
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo "❌ Tag $TAG already exists."
-  exit 1
-fi
-
+# Push latest branch
 echo "🚀 Pushing latest code..."
 git push origin HEAD
 
-echo "🏷 Creating tag $TAG..."
-git tag -a "$TAG" -m "Release $VERSION"
+# Create new tag
+echo "🏷 Creating tag $TAG"
+git tag -a "$TAG" -m "Release $NEW_VERSION"
 
+# Push tag
 echo "📤 Pushing tag..."
 git push origin "$TAG"
 
