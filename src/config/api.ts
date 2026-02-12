@@ -11,7 +11,10 @@ export const API_CONFIG = {
     const liveUrl = remoteConfig.getValue(RemoteConfigKeys.LIVE_API_URL) || 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app';
     const stagingUrl = remoteConfig.getValue(RemoteConfigKeys.STAGING_API_URL) || 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
 
-    const baseUrl = mode === 'dev' ? stagingUrl : liveUrl;
+    let baseUrl = mode === 'dev' ? stagingUrl : liveUrl;
+
+    // Ensure baseUrl doesn't end with /api or / to avoid double /api in endpoints
+    baseUrl = baseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
     // Only use CORS proxy in local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
