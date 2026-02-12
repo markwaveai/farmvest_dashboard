@@ -170,7 +170,13 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
           </div>
 
           {/* Right: Status + Profile */}
-          <div className="header-right">
+          <div className="header-right flex items-center">
+            {localStorage.getItem('farmvest_env_mode') === 'dev' && (
+              <div className="status-pill bg-amber-100 border border-amber-200 px-4 py-1.5 rounded-full flex items-center gap-2 mr-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse"></div>
+                <span className="text-sm font-bold text-amber-700">Dev_mode</span>
+              </div>
+            )}
             <div className="status-pill bg-green-100 border border-green-200 px-4 py-1.5 rounded-full flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-green-600 animate-pulse"></div>
               <span className="text-sm font-bold text-green-700">Online</span>

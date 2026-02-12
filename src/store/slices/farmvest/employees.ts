@@ -51,10 +51,12 @@ export const fetchEmployees = createAsyncThunk(
                 });
 
                 // Extract total count if available
+                // Prioritize the user-specified structure: "pagination": { "total_items": 5, ... }
+                const pagination = response.pagination || response.data?.pagination;
+
                 const totalCount =
-                    response.pagination?.total_items ||
-                    response.pagination?.total_count ||
-                    response.data?.pagination?.total_items ||
+                    pagination?.total_items ||
+                    pagination?.total_count ||
                     response.total_users ||
                     response.total ||
                     response.count ||
@@ -277,12 +279,19 @@ const employeesSlice = createSlice({
             .addCase(fetchEmployees.fulfilled, (state, action) => {
                 state.loading = false;
                 // Handle both array (old fallback) and object with employees/totalCount return
-                if (action.payload && 'totalCount' in action.payload) {
-                    state.employees = action.payload.employees;
-                    state.totalCount = action.payload.totalCount;
+                // Cast payload to any to avoid TypeScript inference issues with complex union types in thunks
+                const payload = action.payload as any;
+
+                if (payload && 'employees' in payload) {
+                    state.employees = payload.employees;
+                    state.totalCount = payload.totalCount || payload.employees.length;
+                } else if (Array.isArray(payload)) {
+                    state.employees = payload;
+                    state.totalCount = payload.length;
                 } else {
-                    state.employees = action.payload as unknown as FarmvestEmployee[];
-                    state.totalCount = (action.payload as unknown as FarmvestEmployee[]).length;
+                    // Fallback
+                    state.employees = [];
+                    state.totalCount = 0;
                 }
             })
             .addCase(fetchEmployees.rejected, (state, action) => {

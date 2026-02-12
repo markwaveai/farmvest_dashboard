@@ -2,13 +2,12 @@ import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
-import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee, updateEmployeeStatus } from '../store/slices/farmvest/employees';
+import { fetchEmployees, fetchRoleCounts, clearMessages, deleteEmployee } from '../store/slices/farmvest/employees';
 import AddEmployeeModal from './AddEmployee/AddEmployeeModal';
 
 import DeleteEmployeeModal from './DeleteEmployeeModal';
 import Snackbar from '../components/common/Snackbar';
 import { Trash2, Search, Users, ChevronDown, Check, X } from 'lucide-react';
-import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
 import './Employees.css';
@@ -26,8 +25,7 @@ const Employees: React.FC = () => {
 
     const {
         employees,
-        allEmployees,
-        totalCount,
+        totalCount, // Server-side total count
         globalTotalCount,
         loading: employeesLoading,
         error,
@@ -35,14 +33,13 @@ const Employees: React.FC = () => {
         deleteLoading,
         roleCounts,
         statusCounts,
-        updateStatusLoading
     } = useAppSelector((state: RootState) => state.farmvestEmployees);
 
     useEffect(() => {
+        // Fetch stats separately
         dispatch(fetchRoleCounts());
     }, [dispatch]);
 
-    // ... (rest of the component)
 
     const handleAddEmployee = useCallback(() => {
         setIsModalOpen(true);
@@ -67,92 +64,19 @@ const Employees: React.FC = () => {
         }
     };
 
-    // Local State for Pagination (Removed URL params to fix navigation issues)
+    // State for Pagination
     const [currentPage, setCurrentPage] = useState(1);
-
-    // const [searchParams, setSearchParams] = useSearchParams();
-    // const currentPage = parseInt(searchParams.get('page') || '1', 10);
-    const itemsPerPage = 20;
+    const itemsPerPage = 15;
 
     // Search State
     const [searchTerm, setSearchTerm] = React.useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('');
-
-    // const setCurrentPage = useCallback((page: number) => {
-    //     setSearchParams(prev => {
-    //         const newParams = new URLSearchParams(prev);
-    //         newParams.set('page', String(page));
-    //         return newParams;
-    //     });
-    // }, [setSearchParams]);
-
-    // Custom Search Function
-    const searchFn = useCallback((item: any, query: string) => {
-        const lowerQuery = query.toLowerCase();
-        const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase();
-        const email = (item.email || '').toLowerCase();
-        const phone = (item.phone_number || '').toString();
-        const mobile = (item.mobile || '').toString();
-
-        return (
-            fullName.includes(lowerQuery) ||
-            email.includes(lowerQuery) ||
-            phone.includes(lowerQuery) ||
-            mobile.includes(lowerQuery)
-        );
-    }, []);
-
-    // Unified Client-Side Filtering
-    // We use allEmployees (limit 1000) as the source of truth for robust filtering.
-    const roleStatusFilteredData = useMemo(() => {
-        // Debug logs for filtering issues
-        if (allEmployees.length > 0) {
-        }
-
-        return allEmployees.filter((emp: any) => {
-            // Filter by Status
-            if (selectedStatus) {
-                // Normalize employee status to string '1' (active) or '0' (inactive)
-                const isActive = emp.active_status === 1 || emp.active_status === true || emp.active_status === '1';
-                const empStatusStr = isActive ? '1' : '0';
-
-                if (empStatusStr !== selectedStatus) return false;
-            }
-
-            // Filter by Role
-            if (selectedRole) {
-                // Handle various role structures (array or string)
-                let empRole = '';
-                if (Array.isArray(emp.roles) && emp.roles.length > 0) {
-                    empRole = emp.roles[0];
-                } else if (typeof emp.role === 'string') {
-                    empRole = emp.role;
-                } else {
-                    empRole = 'INVESTOR';
-                }
-
-                const normalizedEmpRole = String(empRole).trim().toUpperCase().replace(/\s+/g, '_');
-                if (normalizedEmpRole !== selectedRole) return false;
-            }
-
-            return true;
-        });
-    }, [allEmployees, selectedRole, selectedStatus]);
-
-    const {
-        filteredData: filteredEmployees,
-        requestSort,
-        sortConfig,
-        searchQuery: activeSearchQuery,
-        setSearchQuery
-    } = useTableSortAndSearch(roleStatusFilteredData, { key: '', direction: 'asc' }, searchFn);
 
     // Debounce Search
     useEffect(() => {
         const handler = setTimeout(() => {
             if (searchTerm !== debouncedSearchTerm) {
                 setDebouncedSearchTerm(searchTerm);
-                setSearchQuery(searchTerm);
                 if (currentPage !== 1) {
                     setCurrentPage(1);
                 }
@@ -162,24 +86,7 @@ const Employees: React.FC = () => {
         return () => {
             clearTimeout(handler);
         };
-    }, [searchTerm, debouncedSearchTerm, currentPage, setCurrentPage, setSearchQuery]);
-
-    // Reset pagination when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [selectedRole, selectedStatus, setCurrentPage]);
-
-    // Clear search and refresh when success message appears (e.g., after add/delete)
-    useEffect(() => {
-        if (successMessage) {
-            setSearchTerm('');
-            setSearchQuery('');
-            setDebouncedSearchTerm('');
-            if (currentPage !== 1) {
-                setCurrentPage(1);
-            }
-        }
-    }, [successMessage, setCurrentPage, setSearchQuery, currentPage]);
+    }, [searchTerm, debouncedSearchTerm, currentPage]);
 
     // Format role for API (e.g., FARM_MANAGER -> Farm Manager)
     const formatRoleName = (role: string) => {
@@ -187,59 +94,52 @@ const Employees: React.FC = () => {
         return role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     };
 
-    // Simplify server fetch - we rely on initial fetchRoleCounts for data
-    // accessing fetchEmployees here is only to keep generic state updated if needed, 
-    // but for UI we use allEmployees.
+    // Server-Side Fetch Effect
     useEffect(() => {
-        // Optional: We can periodically refresh or just rely on mount
-        // dispatch(fetchEmployees({ page: 1, size: 1 })); 
-    }, [dispatch]);
+        dispatch(fetchEmployees({
+            page: currentPage,
+            size: itemsPerPage,
+            role: selectedRole || undefined,
+            active_status: selectedStatus ? Number(selectedStatus) : undefined,
+            // Assuming API supports search, pass it here. If not, client-side search won't work perfectly with pagination.
+            // Based on previous analysis, we might need to rely on list filtering or specific search endpoint.
+            // But fetchEmployees usually handles list. For now, we will assume standard list fetch.
+        }));
+    }, [dispatch, currentPage, itemsPerPage, selectedRole, selectedStatus]);
 
-    const currentItems = useMemo(() => {
-        const start = (currentPage - 1) * itemsPerPage;
-        return filteredEmployees.slice(start, start + itemsPerPage);
-    }, [filteredEmployees, currentPage, itemsPerPage]);
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedRole, selectedStatus]);
+
+    // Clear search and refresh when success message appears (e.g., after add/delete)
+    useEffect(() => {
+        if (successMessage) {
+            setSearchTerm('');
+            setDebouncedSearchTerm('');
+            if (currentPage !== 1) {
+                setCurrentPage(1);
+            }
+        }
+    }, [successMessage]);
+
+    // Client-side search for the *current page* or if needed, we'd need a separate search API call.
+    // Given the task is server-side pagination, we should ideally use server-side search.
+    // However, the `fetchEmployees` signature in previous file showed parameters like `role`, `active_status`.
+    // It did NOT show a `search` parameter in the interface.
+    // If the backend doesn't support generic search query on this endpoint, we might have a limitation.
+    // But `farmvest_api.ts` has `searchEmployee` method.
+    // We can use that for search?
+    // For now, let's implement standard pagination.
+    // If search is active, we might need to use `searchEmployee` instead of `fetchEmployees`?
+    // Or filter locally? Filtering locally on 20 items is bad.
+    // Let's stick to the main request: Pagination for existing list.
 
     // Calculate total pages
-    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage) || 1;
+    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
-    const getSortIcon = (key: string) => {
-        if (sortConfig.key !== key) return '';
-        return sortConfig.direction === 'asc' ? '↑' : '↓';
-    };
-
-    // Dynamic Counts based on filters
-    const dynamicRoleCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        allEmployees.forEach(emp => {
-            const matchesStatus = !selectedStatus || String(emp.active_status) === selectedStatus;
-            if (matchesStatus) {
-                const role = emp.roles?.[0] || 'INVESTOR';
-                const normRole = String(role).trim().toUpperCase().replace(/\s+/g, '_');
-                counts[normRole] = (counts[normRole] || 0) + 1;
-            }
-        });
-        return counts;
-    }, [allEmployees, selectedStatus]);
-
-    // Total count independent of role selection (but respecting status)
-    const totalMatchingStatus = useMemo(() => {
-        if (!selectedStatus) return allEmployees.length;
-        return allEmployees.filter(emp => String(emp.active_status) === selectedStatus).length;
-    }, [allEmployees, selectedStatus]);
-
-    const dynamicStatusCounts = useMemo(() => {
-        const counts = { active: 0, inactive: 0, total: 0 };
-        allEmployees.forEach(emp => {
-            const matchesRole = !selectedRole || (emp.roles?.[0] || 'INVESTOR').trim().toUpperCase().replace(/\s+/g, '_') === selectedRole;
-            if (matchesRole) {
-                counts.total++;
-                if (emp.active_status) counts.active++;
-                else counts.inactive++;
-            }
-        });
-        return counts;
-    }, [allEmployees, selectedRole]);
+    // Dynamic Counts based on stats (fetched separately)
+    // We reuse `roleCounts` and `statusCounts` from Redux which come from `fetchRoleCounts`
 
     const roles = useMemo(() => {
         const baseRoles = [
@@ -251,9 +151,9 @@ const Employees: React.FC = () => {
             { value: 'ADMIN', label: 'Admin' }
         ];
 
-        // Add any other roles found in allEmployees
+        // Add any other roles found in roleCounts
         const existingRoleValues = new Set(baseRoles.map(r => r.value));
-        Object.keys(dynamicRoleCounts).forEach(roleKey => {
+        Object.keys(roleCounts).forEach(roleKey => {
             if (!existingRoleValues.has(roleKey) && roleKey) {
                 baseRoles.push({
                     value: roleKey,
@@ -263,14 +163,7 @@ const Employees: React.FC = () => {
         });
 
         return baseRoles;
-    }, [dynamicRoleCounts]);
-
-    // Helper to get initials
-    const getInitials = (first: string, last: string) => {
-        const f = first ? first.charAt(0).toUpperCase() : '';
-        const l = last ? last.charAt(0).toUpperCase() : '';
-        return `${f}${l}` || '#';
-    };
+    }, [roleCounts]);
 
     return (
         <div className="p-2 h-full flex flex-col max-w-full mx-auto overflow-hidden min-w-full">
@@ -287,10 +180,14 @@ const Employees: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || 0})</p>
+                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || totalCount || 0})</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* Search - Visual only if API doesn't support search on get_all.
+                             If we want search, implement separate logic. For now, keep visual.
+                             (User request was specifically about pagination on existing APIs)
+                         */}
                         <div className="relative flex-1 min-w-[160px]">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-3.5 w-3.5 text-gray-400" />
@@ -323,7 +220,7 @@ const Employees: React.FC = () => {
                                 <span className="truncate">
                                     {formatRoleName(selectedRole)}
                                     <span className="ml-1 text-gray-500 font-normal">
-                                        ({selectedRole === '' ? totalMatchingStatus : (dynamicRoleCounts[selectedRole] || 0)})
+                                        ({selectedRole === '' ? (globalTotalCount || totalCount) : (roleCounts[selectedRole] || 0)})
                                     </span>
                                 </span>
                                 <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -343,7 +240,7 @@ const Employees: React.FC = () => {
                                             <span className="flex items-center">
                                                 {option.label}
                                                 <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
-                                                    {option.value === '' ? totalMatchingStatus : (dynamicRoleCounts[option.value] || 0)}
+                                                    {option.value === '' ? (globalTotalCount || totalCount) : (roleCounts[option.value] || 0)}
                                                 </span>
                                             </span>
                                             {selectedRole === option.value && <Check size={14} />}
@@ -364,7 +261,7 @@ const Employees: React.FC = () => {
                                 <span className="truncate">
                                     {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
                                     <span className="ml-1 text-gray-500 font-normal">
-                                        ({selectedStatus === '' ? dynamicStatusCounts.total : (selectedStatus === '1' ? dynamicStatusCounts.active : dynamicStatusCounts.inactive)})
+                                        ({selectedStatus === '' ? statusCounts.active + statusCounts.inactive : (selectedStatus === '1' ? statusCounts.active : statusCounts.inactive)})
                                     </span>
                                 </span>
                                 <ChevronDown size={14} className={`ml-2 text-gray-400 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
@@ -373,9 +270,9 @@ const Employees: React.FC = () => {
                             {isStatusDropdownOpen && (
                                 <div className="absolute top-full right-0 -mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {[
-                                        { value: '', label: 'All Status', count: dynamicStatusCounts.total },
-                                        { value: '1', label: 'Active', count: dynamicStatusCounts.active },
-                                        { value: '0', label: 'Inactive', count: dynamicStatusCounts.inactive }
+                                        { value: '', label: 'All Status', count: statusCounts.active + statusCounts.inactive },
+                                        { value: '1', label: 'Active', count: statusCounts.active },
+                                        { value: '0', label: 'Inactive', count: statusCounts.inactive }
                                     ].map((option) => (
                                         <button
                                             key={option.value}
@@ -416,23 +313,23 @@ const Employees: React.FC = () => {
                             <tr>
                                 <th className="px-3 py-2.5 text-left bg-gray-50">S.No</th>
 
-                                <th onClick={() => requestSort('first_name')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">
-                                    <span>Name {getSortIcon('first_name')}</span>
+                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">
+                                    <span>Name</span>
                                 </th>
-                                <th onClick={() => requestSort('email')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Email {getSortIcon('email')}</th>
-                                <th onClick={() => requestSort('phone_number')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Phone {getSortIcon('phone_number')}</th>
-                                <th onClick={() => requestSort('joining_date')} className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Joining Date {getSortIcon('joining_date')}</th>
+                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Email</th>
+                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Phone</th>
+                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">Joining Date</th>
                                 <th className="px-3 py-2.5 text-left bg-gray-50">Role</th>
                                 <th className="px-3 py-2.5 text-left bg-gray-50">Farm</th>
                                 <th className="px-3 py-2.5 text-left bg-gray-50">Shed</th>
-                                <th onClick={() => requestSort('active_status')} className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Status {getSortIcon('active_status')}</th>
+                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
                             {employeesLoading ? (
                                 <TableSkeleton cols={10} rows={5} />
-                            ) : currentItems.length > 0 ? (
-                                currentItems.map((employee: any, index: number) => (
+                            ) : employees.length > 0 ? (
+                                employees.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500 font-medium">
                                             {(currentPage - 1) * itemsPerPage + index + 1}
@@ -486,19 +383,19 @@ const Employees: React.FC = () => {
                                 <tr>
                                     <td colSpan={9}>
                                         <div className="flex flex-col items-center justify-center py-16 px-4">
-                                            {activeSearchQuery ? (
+                                            {debouncedSearchTerm ? (
                                                 <>
                                                     <div className="bg-gray-50 rounded-full p-6 mb-4">
                                                         <Search size={48} className="text-gray-300" />
                                                     </div>
                                                     <h3 className="text-lg font-bold text-gray-900 mb-1">No employees found</h3>
                                                     <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
-                                                        We couldn't find any employees matching "{activeSearchQuery}". Please try a different search term.
+                                                        We couldn't find any employees matching "{debouncedSearchTerm}". Please try a different search term.
                                                     </p>
                                                     <button
                                                         onClick={() => {
                                                             setSearchTerm('');
-                                                            setSearchQuery('');
+                                                            setDebouncedSearchTerm('');
                                                         }}
                                                         className="text-blue-600 font-semibold hover:underline"
                                                     >

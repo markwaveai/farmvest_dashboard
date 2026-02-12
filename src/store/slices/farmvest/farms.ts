@@ -4,36 +4,68 @@ import { FarmvestFarm } from '../../../types/farmvest';
 
 export const fetchFarms = createAsyncThunk(
     'farmvestFarms/fetchFarms',
-    async (location: string, { rejectWithValue }) => {
+    async (params: { location?: string; page?: number; size?: number; search?: string } | string, { rejectWithValue }) => {
         try {
-            const normalizedLocation = location ? location.toUpperCase() : 'KURNOOL';
+            // value normalization handling string or object input
+            const location = typeof params === 'string' ? params : params?.location;
+            const page = typeof params === 'object' ? params.page || 1 : 1;
+            const size = typeof params === 'object' ? params.size || 15 : 15;
+            const search = typeof params === 'object' ? params.search : '';
 
-            // specific parameters - location and large size to get "all" for that location
-            const response = await farmvestService.getAllFarms({
-                location: normalizedLocation,
-                size: 2000 // Get all farms for client-side table handling
-            });
+            // Default to 'ALL' if no location provided
+            const normalizedLocation = location ? location.toUpperCase() : 'ALL';
 
-            // Log the raw response for debugging
+            // Build params object
+            const apiParams: any = {
+                size: size,
+                page: page
+            };
+
+            // Only add location if it's not 'ALL'
+            if (normalizedLocation !== 'ALL') {
+                apiParams.location = normalizedLocation;
+            }
+
+            // The API doesn't seemingly support 'search' param for get_all_farms based on previous view, 
+            // but we can add it if API supports it. For now, we will rely on location/page/size.
+            // If the user wants search, we might need a separate search endpoint or CLIENT SIDE search if the API doesn't support it.
+            // User request implies API pagination, so likely search might be client side OR api needs update. 
+            // Assuming standard pagination for now.
+
+            const response = await farmvestService.getAllFarms(apiParams);
 
             let allFarms: FarmvestFarm[] = [];
+            let totalCount = 0;
 
             // Normalize response data with robust checks
             if (response) {
+                // Check for pagination object at root or inside data
+                const pagination = response.pagination || (response.data && response.data.pagination);
+                if (pagination && pagination.total_items) {
+                    totalCount = pagination.total_items;
+                }
+
                 if (Array.isArray(response)) {
                     allFarms = response;
+                    if (!totalCount) totalCount = response.length;
                 } else if (response && Array.isArray(response.data)) {
                     allFarms = response.data;
+                    if (!totalCount) totalCount = response.total || response.total_count || response.count || response.data.length;
                 } else if (response && Array.isArray(response.farms)) {
                     allFarms = response.farms;
+                    if (!totalCount) totalCount = response.total || response.count || response.farms.length;
                 } else if (response && response.data && Array.isArray(response.data.farms)) {
                     allFarms = response.data.farms;
+                    if (!totalCount) totalCount = response.data.total || response.data.count || response.data.farms.length;
                 } else if (response && (response.items || response.results)) {
                     allFarms = response.items || response.results;
+                    if (!totalCount) totalCount = response.total || response.count || allFarms.length;
                 } else if (response && Array.isArray(response.payload)) {
                     allFarms = response.payload;
+                    if (!totalCount) totalCount = response.total || response.payload.length;
                 } else if (response && (response.status === 200 || response.status === "200") && Array.isArray(response.data)) {
                     allFarms = response.data;
+                    if (!totalCount) totalCount = response.total || response.data.length;
                 }
             }
 
@@ -48,7 +80,9 @@ export const fetchFarms = createAsyncThunk(
                 sheds_count: item.sheds_count || item.shed_count || item.total_sheds || 0
             }));
 
-            // Fetch shed counts for each farm
+            // Fetch shed counts for each farm (still needed? if API provides it, we skip. Code showed we fetch it)
+            // To optimize, maybe we shouldn't fetch sheds for ALL farms if paginated? 
+            // We'll keep it for now but it might be slow for page size 20.
             const farmsWithShedCounts = await Promise.all(
                 allFarms.map(async (farm) => {
                     try {
@@ -71,7 +105,7 @@ export const fetchFarms = createAsyncThunk(
                 })
             );
 
-            return farmsWithShedCounts;
+            return { farms: farmsWithShedCounts, totalCount, location: normalizedLocation };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch farms');
         }
@@ -83,6 +117,7 @@ interface FarmsState {
     loading: boolean;
     error: string | null;
     loadedLocation: string | null;
+    totalCount: number;
 }
 
 const initialState: FarmsState = {
@@ -90,6 +125,7 @@ const initialState: FarmsState = {
     loading: false,
     error: null,
     loadedLocation: null,
+    totalCount: 0
 };
 
 const farmsSlice = createSlice({
@@ -111,13 +147,15 @@ const farmsSlice = createSlice({
             })
             .addCase(fetchFarms.fulfilled, (state, action) => {
                 state.loading = false;
-                state.farms = Array.isArray(action.payload) ? action.payload : [];
-                state.loadedLocation = action.meta.arg || 'KURNOOL';
+                state.farms = action.payload.farms;
+                state.totalCount = action.payload.totalCount;
+                state.loadedLocation = action.payload.location;
             })
             .addCase(fetchFarms.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
                 state.farms = [];
+                state.totalCount = 0;
             });
     },
 });

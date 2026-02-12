@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
 import { fetchFarms } from '../store/slices/farmvest/farms';
-import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
 import { farmvestService } from '../services/farmvest_api';
@@ -14,7 +13,6 @@ import CustomDropdown from '../components/common/CustomDropdown';
 // Memoized table row with defensive checks
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
     if (!farm) return null;
-    // Debug logging to inspect structure
 
     // Safely calculate serial number
     const pageNum = isNaN(currentPage) ? 1 : currentPage;
@@ -54,16 +52,19 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
 const Farms: React.FC = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+
+    // Select data from Redux
     const farms = useAppSelector((state: RootState) => state.farmvestFarms?.farms || []);
     const farmsLoading = useAppSelector((state: RootState) => !!state.farmvestFarms?.loading);
     const farmsError = useAppSelector((state: RootState) => state.farmvestFarms?.error);
+    const totalCount = useAppSelector((state: RootState) => state.farmvestFarms?.totalCount || 0);
 
     // URL Search Params for Pagination and Location
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Derived location from URL or default to Kurnool
+    // Derived location from URL or default to ALL
     const location = useMemo(() => {
-        return searchParams.get('location') ? searchParams.get('location')!.toUpperCase() : 'KURNOOL';
+        return searchParams.get('location') ? searchParams.get('location')!.toUpperCase() : 'ALL';
     }, [searchParams]);
 
     // Defensive parsing of currentPage
@@ -72,10 +73,11 @@ const Farms: React.FC = () => {
         return isNaN(page) || page < 1 ? 1 : page;
     }, [searchParams]);
 
-    const itemsPerPage = 20;
+    const itemsPerPage = 15;
 
     // Local State for search
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [isAddFarmModalOpen, setIsAddFarmModalOpen] = useState(false);
     const [availableLocations, setAvailableLocations] = useState<string[]>([]);
 
@@ -112,22 +114,32 @@ const Farms: React.FC = () => {
         navigate(`/farmvest/farms/${farm.id}`, { state: { farm } });
     }, [navigate]);
 
-    const loadedLocation = useAppSelector((state: RootState) => state.farmvestFarms?.loadedLocation);
-
-    // Effect: Trigger fetch when location changes
+    // Debounce search term
     useEffect(() => {
-        // Only fetch if location changed or we don't have data for this location
-        if (location !== loadedLocation) {
-            dispatch(fetchFarms(location));
-        }
-    }, [dispatch, location, loadedLocation]);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Effect: Trigger fetch when location, page, or search changes
+    useEffect(() => {
+        dispatch(fetchFarms({
+            location,
+            page: currentPage,
+            size: itemsPerPage,
+            search: debouncedSearch
+        }));
+    }, [dispatch, location, currentPage, debouncedSearch]);
 
     // Transform locations for CustomDropdown
     const locationOptions = useMemo(() => {
+        const allOption = { value: 'ALL', label: 'ALL LOCATIONS' };
         if (availableLocations.length > 0) {
-            return availableLocations.map(loc => ({ value: loc, label: loc }));
+            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc }))];
         }
         return [
+            allOption,
             { value: 'KURNOOL', label: 'KURNOOL' },
             { value: 'HYDERABAD', label: 'HYDERABAD' }
         ];
@@ -146,69 +158,17 @@ const Farms: React.FC = () => {
     // Handle pagination
     const setCurrentPage = useCallback((page: number) => {
         setSearchParams(prev => {
+            console.log("Setting page:", page);
             const newParams = new URLSearchParams(prev);
             newParams.set('page', String(page));
             return newParams;
         });
     }, [setSearchParams]);
 
-    // Custom Search Function (Memoized)
-    const searchFn = useCallback((item: any, query: string) => {
-        if (!item) return false;
-        const lowerQuery = query.toLowerCase();
-
-        // Safely access and convert properties to strings for searching
-        const farmName = String(item.farm_name || '').toLowerCase();
-        const farmLocation = String(item.location || '').toLowerCase();
-
-        // Also search by manager name and mobile as they are displayed in the table
-        const managerName = String(item.farm_manager_name || item.manager_name || item.farm_manager?.name || '').toLowerCase();
-        const mobile = String(item.mobile_number || item.manager_mobile || item.manager_phone || item.farm_manager?.mobile || '').toLowerCase();
-
-        return farmName.includes(lowerQuery) ||
-            farmLocation.includes(lowerQuery) ||
-            managerName.includes(lowerQuery) ||
-            mobile.includes(lowerQuery);
-    }, []);
-
-    const {
-        filteredData: filteredFarms,
-        requestSort,
-        sortConfig,
-        searchQuery: activeSearchQuery,
-        setSearchQuery
-    } = useTableSortAndSearch(farms, { key: '', direction: 'asc' }, searchFn);
-
-    // Debounce Search updates
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            if (searchTerm !== activeSearchQuery) {
-                setSearchQuery(searchTerm);
-                if (currentPage !== 1) setCurrentPage(1);
-            }
-        }, 500);
-        return () => clearTimeout(handler);
-    }, [searchTerm, activeSearchQuery, setSearchQuery, currentPage, setCurrentPage]);
-
     // Pagination metrics
     const totalPages = useMemo(() => {
-        const count = filteredFarms?.length || 0;
-        return Math.max(1, Math.ceil(count / itemsPerPage));
-    }, [filteredFarms, itemsPerPage]);
-
-    const currentItems = useMemo(() => {
-        if (!Array.isArray(filteredFarms)) return [];
-        const last = currentPage * itemsPerPage;
-        const first = last - itemsPerPage;
-        return filteredFarms.slice(Math.max(0, first), last);
-    }, [filteredFarms, currentPage, itemsPerPage]);
-
-    // Page Clamping: Prevent being on a page that no longer exists
-    useEffect(() => {
-        if (!farmsLoading && currentPage > totalPages && totalPages > 0) {
-            setCurrentPage(totalPages);
-        }
-    }, [totalPages, currentPage, setCurrentPage, farmsLoading]);
+        return Math.max(1, Math.ceil(totalCount / itemsPerPage));
+    }, [totalCount, itemsPerPage]);
 
     return (
         <div className="farms-container h-full flex flex-col overflow-hidden animate-fadeIn">
@@ -216,7 +176,7 @@ const Farms: React.FC = () => {
                 <div>
                     <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
                     <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
-                        <span>{location} Operations • {filteredFarms.length} Farms Loaded</span>
+                        <span>{location} Operations • {totalCount} Farms Found</span>
                     </div>
                 </div>
 
@@ -230,9 +190,11 @@ const Farms: React.FC = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2 group-focus-within:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                        {!searchTerm && (
+                            <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2 group-focus-within:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        )}
                         {searchTerm && (
                             <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-gray-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
@@ -270,7 +232,7 @@ const Farms: React.FC = () => {
                         </div>
                         <button
                             className="px-5 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg active:scale-95 ml-4"
-                            onClick={() => dispatch(fetchFarms(location))}
+                            onClick={() => dispatch(fetchFarms({ location, page: currentPage, size: itemsPerPage }))}
                         >
                             RE-SYNC API
                         </button>
@@ -303,7 +265,7 @@ const Farms: React.FC = () => {
                             <tbody className="divide-y divide-gray-50">
                                 {farmsLoading ? (
                                     <TableSkeleton cols={6} rows={10} />
-                                ) : (currentItems.length === 0 && !farmsError) ? (
+                                ) : (farms.length === 0 && !farmsError) ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 text-center h-full align-middle">
                                             <div className="flex flex-col items-center justify-center h-full pb-12">
@@ -314,7 +276,7 @@ const Farms: React.FC = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    currentItems.map((farm: any, index: number) => (
+                                    farms.map((farm: any, index: number) => (
                                         <FarmRow
                                             key={`${farm?.id || 'farm'}-${index}`}
                                             farm={farm}
@@ -355,7 +317,8 @@ const Farms: React.FC = () => {
                             return next;
                         });
                     } else {
-                        dispatch(fetchFarms(location));
+                        // Refresh current page
+                        dispatch(fetchFarms({ location, page: currentPage, size: itemsPerPage }));
                     }
                 }}
             />

@@ -20,6 +20,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [clickCount, setClickCount] = useState(0);
   const [showEnvPrompt, setShowEnvPrompt] = useState(false);
   const [envPassword, setEnvPassword] = useState('');
+  const [showModeSelection, setShowModeSelection] = useState(false);
   const currentEnv = localStorage.getItem('farmvest_env_mode') || 'live';
 
   useEffect(() => {
@@ -134,16 +135,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleEnvSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (envPassword === '5963') {
-      localStorage.setItem('farmvest_env_mode', 'dev');
-      window.location.reload();
-    } else if (envPassword === 'live') {
-      localStorage.setItem('farmvest_env_mode', 'live');
-      window.location.reload();
+      setShowModeSelection(true);
+      setError(null);
     } else {
       setError('Invalid environment password');
       setShowEnvPrompt(false);
       setEnvPassword('');
     }
+  };
+
+  const handleModeSelect = (mode: 'dev' | 'live') => {
+    localStorage.setItem('farmvest_env_mode', mode);
+    window.location.reload();
   };
 
   return (
@@ -202,28 +205,52 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in duration-300">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Environment Switch</h2>
-                    <button onClick={() => setShowEnvPrompt(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {showModeSelection ? 'Select Environment' : 'Environment Switch'}
+                    </h2>
+                    <button onClick={() => { setShowEnvPrompt(false); setShowModeSelection(false); setEnvPassword(''); }} className="p-2 hover:bg-gray-100 rounded-full">
                       <X size={20} />
                     </button>
                   </div>
-                  <form onSubmit={handleEnvSubmit} className="space-y-4">
-                    <p className="text-sm text-gray-500">Enter security code to switch environment mode.</p>
-                    <input
-                      autoFocus
-                      type="password"
-                      value={envPassword}
-                      onChange={(e) => setEnvPassword(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="Enter password..."
-                    />
-                    <button
-                      type="submit"
-                      className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors"
-                    >
-                      Apply Changes
-                    </button>
-                  </form>
+
+                  {!showModeSelection ? (
+                    <form onSubmit={handleEnvSubmit} className="space-y-4">
+                      <p className="text-sm text-gray-500">Enter security code to switch environment mode.</p>
+                      <input
+                        autoFocus
+                        type="password"
+                        value={envPassword}
+                        onChange={(e) => setEnvPassword(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Enter password..."
+                      />
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors"
+                      >
+                        Verify
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500 mb-4">Choose the environment mode you want to switch to.</p>
+                      <button
+                        onClick={() => handleModeSelect('dev')}
+                        className="w-full py-4 px-6 rounded-xl text-base font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <LayoutDashboard size={20} />
+                        Dev_mode
+                      </button>
+
+                      <button
+                        onClick={() => handleModeSelect('live')}
+                        className="w-full py-4 px-6 rounded-xl text-base font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <TreePine size={20} />
+                        Live
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

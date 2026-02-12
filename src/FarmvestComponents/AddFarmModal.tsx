@@ -10,23 +10,20 @@ interface AddFarmModalProps {
 }
 
 const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess, initialLocation }) => {
-    const [farmName, setFarmName] = useState('');
-    // User wants "Select Location" by default, so we initialize with empty string
-    // regardless of what location filter is active on the parent page.
     const [location, setLocation] = useState('');
-    // const [totalBuffaloes, setTotalBuffaloes] = useState<number | ''>(0); // Removed as per API schema
+    const [shedCount, setShedCount] = useState<number>(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const isFormValid = useMemo(() => {
         return (
-            farmName.trim().length > 0 &&
-            location.trim().length > 0
+            location.trim().length > 0 &&
+            shedCount > 0
         );
-    }, [farmName, location]);
+    }, [location, shedCount]);
 
 
-
+    // Fetch locations logic...
     const [locations, setLocations] = useState<string[]>([]);
 
     React.useEffect(() => {
@@ -63,8 +60,8 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!farmName || !location) {
-            setError('Please fill in all fields');
+        if (!location || shedCount < 1) {
+            setError('Please fill in all fields correctly');
             return;
         }
 
@@ -73,11 +70,12 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
         try {
             await farmvestService.createFarm({
-                farm_name: farmName,
-                location: location.toUpperCase()
+                location: location.toUpperCase(),
+                shed_count: Number(shedCount),
+                is_test: false
             });
 
-            setFarmName('');
+            setShedCount(1);
             onSuccess(location);
             onClose();
         } catch (err: any) {
@@ -127,19 +125,6 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                         {error && <div className="error-message">{error}</div>}
 
                         <div className="form-group">
-                            <label htmlFor="farmName">Farm Name</label>
-                            <input
-                                id="farmName"
-                                type="text"
-                                className="form-input"
-                                placeholder="e.g. River Side Farm"
-                                value={farmName}
-                                onChange={(e) => setFarmName(e.target.value)}
-                                autoFocus
-                            />
-                        </div>
-
-                        <div className="form-group">
                             <label htmlFor="location">Location</label>
                             <select
                                 id="location"
@@ -159,6 +144,19 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                     </>
                                 )}
                             </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="shedCount">Shed Count</label>
+                            <input
+                                id="shedCount"
+                                type="number"
+                                min="1"
+                                className="form-input"
+                                placeholder="e.g. 1"
+                                value={shedCount}
+                                onChange={(e) => setShedCount(parseInt(e.target.value) || 0)}
+                            />
                         </div>
                     </div>
 

@@ -243,13 +243,9 @@ export const farmvestService = {
             throw error;
         }
     },
-    createFarm: async (farmData: { farm_name: string; location: string }) => {
-        try {
-            const response = await farmvestApi.post('/api/farm/farm', farmData);
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
+    // Create Farm
+    createFarm: (farmData: { location: string; shed_count: number; is_test: boolean }) => {
+        return farmvestApi.post('/api/farm/farm', farmData);
     },
     createShed: async (shedData: { farm_id: number; shed_id: string; shed_name: string; capacity: number; cctv_url?: string }) => {
         try {
