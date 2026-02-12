@@ -3,7 +3,7 @@ import { farmvestService } from '../../../services/farmvest_api';
 
 export const fetchInvestors = createAsyncThunk(
     'farmvestInvestors/fetchInvestors',
-    async (params: { page?: number; size?: number } | undefined, { rejectWithValue }) => {
+    async (params: { page?: number; size?: number; active_status?: number } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getAllInvestors(params);
 

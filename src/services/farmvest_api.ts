@@ -77,12 +77,16 @@ export const farmvestService = {
             throw error;
         }
     },
-    getAllInvestors: async (params?: { page?: number; size?: number }) => {
+    getAllInvestors: async (params?: { page?: number; size?: number; active_status?: number }) => {
         try {
-            const { page = 1, size = 5000 } = params || {};
+            const { page = 1, size = 5000, active_status } = params || {};
             // Build URL using the config endpoint + query params
             const baseUrl = API_ENDPOINTS.getAllInvestors();
-            const url = `${baseUrl}?page=${page}&size=${size}`;
+            let url = `${baseUrl}?page=${page}&size=${size}`;
+
+            if (active_status !== undefined) {
+                url += `&active_status=${active_status}`;
+            }
 
             const response = await farmvestApi.get(url);
             return response.data;

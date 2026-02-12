@@ -283,7 +283,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <input
                     type="tel"
                     value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setMobile(val);
+                    }}
                     disabled={step === 'enterOtp'}
                     className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent transition-all duration-200 text-lg"
                     placeholder="Enter mobile number"
@@ -302,7 +305,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <input
                       type="text"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOtp(val);
+                      }}
                       className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent transition-all duration-200 tracking-[0.5em] text-center text-xl font-bold"
                       placeholder="••••••"
                       maxLength={6}
@@ -316,7 +322,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 {step === 'enterMobile' ? (
                   <button
                     onClick={sendOtp}
-                    disabled={loading}
+                    disabled={loading || mobile.length !== 10}
                     className={`w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white transition-all duration-300 shadow-[0_10px_30px_rgba(79,70,229,0.3)] hover:shadow-[0_20px_40px_rgba(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-blue-600`}
                   >
                     {loading ? (
@@ -330,7 +336,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <div className="space-y-4">
                     <button
                       onClick={verifyOtp}
-                      disabled={loading}
+                      disabled={loading || otp.length !== 6}
                       className="w-full flex justify-center py-4 px-6 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-emerald-600 to-green-500 hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all duration-300 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest"
                     >
                       {loading ? 'Verifying...' : 'Enter OTP'}

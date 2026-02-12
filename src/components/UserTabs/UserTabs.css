@@ -481,7 +481,7 @@
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    padding: 24px;
+    padding: 12px 20px;
     background-color: var(--bg-page);
   }
 

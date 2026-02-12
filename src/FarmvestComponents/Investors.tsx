@@ -4,7 +4,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
 import { fetchInvestors, clearInvestorErrors } from '../store/slices/farmvest/investors';
 import Snackbar from '../components/common/Snackbar';
-import { Search, Users, Briefcase, X } from 'lucide-react';
+import { Search, Users, Briefcase, X, ChevronDown, Check } from 'lucide-react';
 import { farmvestService } from '../services/farmvest_api';
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
@@ -26,8 +26,10 @@ const Investors: React.FC = () => {
     const currentPage = parseInt(searchParams.get('page') || '1', 10);
     const itemsPerPage = 20;
 
-    // Search State
+    // Search & Filter State
     const [searchTerm, setSearchTerm] = React.useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
     // Animal Stats State
     const [animalStats, setAnimalStats] = useState<Record<string, { buffaloes: number; calves: number; loading: boolean }>>({});
@@ -159,12 +161,20 @@ const Investors: React.FC = () => {
         };
     }, [searchTerm, activeSearchQuery, setSearchQuery, currentPage, setCurrentPage]);
 
+    // Reset pagination when status changes
+    useEffect(() => {
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        }
+    }, [selectedStatus, setCurrentPage]);
+
     useEffect(() => {
         dispatch(fetchInvestors({
             page: currentPage,
             size: itemsPerPage,
+            active_status: selectedStatus !== '' ? Number(selectedStatus) : undefined
         }));
-    }, [dispatch, currentPage]);
+    }, [dispatch, currentPage, selectedStatus]);
 
     const getSortIcon = (key: string) => {
         if (sortConfig.key !== key) return '';
@@ -195,7 +205,7 @@ const Investors: React.FC = () => {
                                     <input
                                         type="text"
                                         placeholder="Search by Name, Email, Phone..."
-                                        className="pl-10 pr-10 py-2.5 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                        className="pl-10 pr-10 py-2 w-full border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -206,6 +216,43 @@ const Investors: React.FC = () => {
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
+                                    )}
+                                </div>
+
+                                <div
+                                    className="relative"
+                                    onMouseEnter={() => setIsStatusDropdownOpen(true)}
+                                    onMouseLeave={() => setIsStatusDropdownOpen(false)}
+                                >
+                                    <button
+                                        className={`flex items-center justify-between min-w-[140px] py-2 px-3 rounded-lg text-sm font-medium focus:outline-none transition-all ${selectedStatus !== '' ? 'bg-orange-50 border border-orange-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                                    >
+                                        <span>
+                                            {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
+                                        </span>
+                                        <ChevronDown size={16} className={`ml-2 text-gray-400 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isStatusDropdownOpen && (
+                                        <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50">
+                                            {[
+                                                { value: '', label: 'All Status' },
+                                                { value: '1', label: 'Active' },
+                                                { value: '0', label: 'Inactive' }
+                                            ].map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    onClick={() => {
+                                                        setSelectedStatus(option.value);
+                                                        setIsStatusDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
+                                                >
+                                                    {option.label}
+                                                    {selectedStatus === option.value && <Check size={14} />}
+                                                </button>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -293,7 +340,7 @@ const Investors: React.FC = () => {
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="mt-1 flex justify-end">
+                        <div className="mt-0 flex justify-end">
                             <Pagination
                                 currentPage={currentPage}
                                 totalPages={totalPages}
