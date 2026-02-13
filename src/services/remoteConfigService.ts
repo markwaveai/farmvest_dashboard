@@ -23,13 +23,13 @@ class RemoteConfigService {
 
     async fetchConfig(): Promise<void> {
         try {
-            console.log("Fetching remote config from Firestore...");
+
             const docRef = doc(db, "app_settings", "farmvest_config");
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
                 this.config = docSnap.data();
-                console.log("Remote config fetched successfully:", this.config);
+
                 this.updateLocalStorage();
             } else {
                 console.warn("No such document in app_settings/farmvest_config!");

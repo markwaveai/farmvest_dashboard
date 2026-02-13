@@ -165,7 +165,7 @@ const UnallocatedAnimals: React.FC = () => {
 
                 // Debug Log for List
                 if (idx < 3) {
-                    console.log('UnallocatedList Debug:', { id: a.id, rawRole, a });
+
                 }
 
                 if (String(rawRole).toLowerCase().includes('buffalo')) {
@@ -335,7 +335,7 @@ const UnallocatedAnimals: React.FC = () => {
 
                         // Debug log for first few items to verify structure
                         if (Math.random() < 0.01) {
-                            console.log('UnallocatedAnimals Debug:', { label: standardLabel, role, img, animal, p });
+
                         }
 
                         if (String(role).toLowerCase().includes('buffalo')) {

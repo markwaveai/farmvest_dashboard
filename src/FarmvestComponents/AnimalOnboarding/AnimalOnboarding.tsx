@@ -77,8 +77,10 @@ const AnimalOnboarding: React.FC = () => {
 
     // API Data States
     const [farms, setFarms] = useState<Farm[]>([]);
+    const [locations, setLocations] = useState<string[]>([]);
+    const [selectedLocation, setSelectedLocation] = useState<string>('');
+    const [selectedFarmName, setSelectedFarmName] = useState<string>('');
     const [selectedFarmId, setSelectedFarmId] = useState<number | string>('');
-
 
     const [animals, setAnimals] = useState<AnimalDetail[]>([]);
     const [toastVisible, setToastVisible] = useState(false);
@@ -891,24 +893,65 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="farm-select-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <CustomDropdown
-                                    options={farms.map(f => ({
-                                        value: f.farm_id,
-                                        label: `${f.farm_name} - ${f.location}`
-                                    }))}
-                                    value={selectedFarmId}
-                                    onChange={(val) => {
-                                        setSelectedFarmId(val);
-                                        if (val) {
-                                            localStorage.setItem('fv_selected_farm_id', String(val));
-                                        } else {
-                                            localStorage.removeItem('fv_selected_farm_id');
-                                        }
-                                    }}
-                                    placeholder="Select Farm Location"
-                                    className="farm-onboarding-dropdown"
-                                />
+                            <div className="farm-selection-group" style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '15px',
+                                width: '100%',
+                                marginBottom: '20px'
+                            }}>
+                                <div className="farm-field">
+                                    <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Location</label>
+                                    <CustomDropdown
+                                        options={locations.map(loc => ({ value: loc, label: loc }))}
+                                        value={selectedLocation}
+                                        onChange={(val) => {
+                                            setSelectedLocation(String(val));
+                                            setSelectedFarmName('');
+                                            setSelectedFarmId('');
+                                        }}
+                                        placeholder="Select Location"
+                                    />
+                                </div>
+
+                                <div className="farm-field">
+                                    <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Farm Name</label>
+                                    <CustomDropdown
+                                        options={farms
+                                            .filter(f => f.location === selectedLocation)
+                                            .map(f => ({ value: f.farm_name, label: f.farm_name }))}
+                                        value={selectedFarmName}
+                                        onChange={(val) => {
+                                            setSelectedFarmName(String(val));
+                                            const farm = farms.find(f => f.location === selectedLocation && f.farm_name === val);
+                                            if (farm) {
+                                                setSelectedFarmId(farm.farm_id);
+                                                localStorage.setItem('fv_selected_farm_id', String(farm.farm_id));
+                                            } else {
+                                                setSelectedFarmId('');
+                                            }
+                                        }}
+                                        placeholder="Select Farm"
+                                        disabled={!selectedLocation}
+                                    />
+                                </div>
+
+                                <div className="farm-field">
+                                    <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Farm ID</label>
+                                    <div style={{
+                                        padding: '12px',
+                                        background: '#F3F4F6',
+                                        borderRadius: '8px',
+                                        fontSize: '14px',
+                                        color: '#374151',
+                                        border: '1px solid #E5E7EB',
+                                        height: '45px',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}>
+                                        {selectedFarmId || 'Select a farm'}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1380,7 +1423,7 @@ const AnimalOnboarding: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

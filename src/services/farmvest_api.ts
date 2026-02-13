@@ -255,6 +255,22 @@ export const farmvestService = {
     createFarm: (farmData: { location: string; shed_count: number; is_test: boolean }) => {
         return farmvestApi.post('/api/farm/farm', farmData);
     },
+    updateFarm: async (farmId: number, farmData: { farm_name?: string; location?: string; shed_count?: number; is_test?: boolean }) => {
+        try {
+            const response = await farmvestApi.put(`/api/farm/update/${farmId}`, farmData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    deleteFarm: async (farmId: number) => {
+        try {
+            const response = await farmvestApi.delete(`/api/farm/delete/${farmId}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
     createShed: async (shedData: { farm_id: number; shed_id: string; shed_name: string; capacity: number; cctv_url?: string }) => {
         try {
             const response = await farmvestApi.post('/api/shed/create_shed', shedData);

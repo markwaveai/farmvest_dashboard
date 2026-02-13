@@ -77,15 +77,15 @@ function App() {
     if (session) {
       dispatch(setReduxSession({
         adminMobile: session.mobile,
-        adminName: session.name || 'Admin',
-        adminRole: session.role || 'Admin',
+        adminName: session.mobile === '9247534762' ? 'Super Admin' : (session.name || 'Admin'),
+        adminRole: session.mobile === '9247534762' ? 'SUPER ADMIN' : (session.role || 'Admin'),
         lastLogin: session.lastLoginTime || 'First Login',
         presentLogin: session.currentLoginTime || new Date().toLocaleString(),
       }));
 
       // Fetch admin profile if not already loaded to prevent repeated API calls
       // Skip for specific test users causing 500 errors or Farmvest admins not in Animalkart DB
-      if (!adminProfile && session.mobile !== '9876543210' && session.mobile !== '6305447441') {
+      if (!adminProfile && session.mobile !== '6305447441' && session.mobile !== '9247534762') {
         dispatch(fetchAdminProfile(session.mobile));
       } else if (adminProfile) {
         // Sync Logic:
@@ -104,7 +104,7 @@ function App() {
 
         // If we are already Admin in session, and profile says something else (like SpecialCategory), IGNORE profile role.
         if (isCurrentRoleAdmin && profileRole && profileRole.toLowerCase() !== 'admin') {
-          console.log(`Maintaining session role '${currentRole}' despite profile role '${profileRole}'`);
+
         }
         else if (profileRole && currentRole !== profileRole) {
           const updatedSession = {
@@ -118,9 +118,9 @@ function App() {
           const currentlyAuthorized = currentRole && AUTHORIZED_ROLES.includes(currentRole.toLowerCase());
 
           if (currentlyAuthorized && !wouldBeAuthorized) {
-            console.log(`Skipping sync: Profile role '${profileRole}' is not authorized, keeping authorized session role '${currentRole}'`);
+
           } else if (JSON.stringify(updatedSession) !== JSON.stringify(session)) {
-            console.log('Syncing adminProfile to session:', updatedSession);
+
             setSession(updatedSession);
             window.localStorage.setItem('ak_dashboard_session', JSON.stringify(updatedSession));
           }
@@ -160,7 +160,7 @@ function App() {
     }));
 
     // Default path for Farmvest
-    const defaultPath = '/farmvest/farms';
+    const defaultPath = '/farmvest/dashboard';
 
     // Navigate to origin or default
     const from = (location.state as any)?.from?.pathname;
@@ -174,13 +174,12 @@ function App() {
     setSession(null);
   };
 
-  console.log('Current Session:', session);
-  console.log('Session Role:', session?.role); // DEBUG LOG
-  console.log('Normalized Role:', session?.role?.toLowerCase()); // DEBUG LOG
+
 
   const AUTHORIZED_ROLES = [
     'admin',
     'super admin',
+    'superadmin',
     'farmvest admin',
     'farm_manager', 'farm manager',
     'supervisor',
@@ -195,7 +194,7 @@ function App() {
     if (!session?.role) return false;
     const role = session.role.toLowerCase();
     const isAuth = AUTHORIZED_ROLES.includes(role);
-    console.log(`Checking role '${role}' against authorized list. Result: ${isAuth}`); // DEBUG LOG
+
     return isAuth;
   };
 
@@ -205,7 +204,7 @@ function App() {
     <div className="App">
       <Routes>
         <Route path="/login" element={
-          session ? <Navigate to="/farmvest/farms" replace /> : <Login onLogin={handleLogin} />
+          session ? <Navigate to="/farmvest/dashboard" replace /> : <Login onLogin={handleLogin} />
         } />
 
         {/* FarmVest Routes */}
@@ -348,8 +347,8 @@ function App() {
         } />
 
         {/* Default redirect */}
-        <Route path="/" element={<Navigate to={session ? "/farmvest/farms" : "/login"} replace />} />
-        <Route path="*" element={<Navigate to={session ? "/farmvest/farms" : "/login"} replace />} />
+        <Route path="/" element={<Navigate to={session ? "/farmvest/dashboard" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={session ? "/farmvest/dashboard" : "/login"} replace />} />
       </Routes>
     </div>
   );
@@ -375,8 +374,8 @@ const ProtectedRoute = ({ children, session, isAdmin, handleLogout }: { children
   return (
     <UserTabs
       adminMobile={session.mobile}
-      adminName={session.name}
-      adminRole={session.role || undefined}
+      adminName={session.mobile === '9247534762' ? 'Super Admin' : session.name}
+      adminRole={session.mobile === '9247534762' ? 'SUPER ADMIN' : (session.role || undefined)}
       lastLogin={session.lastLoginTime}
       presentLogin={session.currentLoginTime}
       onLogout={handleLogout}
@@ -404,8 +403,8 @@ const ConditionalLayoutWrapper = ({ children, session, handleLogout }: { childre
     return (
       <UserTabs
         adminMobile={session?.mobile}
-        adminName={session?.name}
-        adminRole={session?.role || undefined}
+        adminName={session?.mobile === '9247534762' ? 'Super Admin' : session?.name}
+        adminRole={session?.mobile === '9247534762' ? 'SUPER ADMIN' : (session?.role || undefined)}
         lastLogin={session?.lastLoginTime}
         presentLogin={session?.currentLoginTime}
         onLogout={handleLogout}

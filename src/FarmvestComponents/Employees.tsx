@@ -148,7 +148,6 @@ const Employees: React.FC = () => {
             { value: 'SUPERVISOR', label: 'Supervisor' },
             { value: 'DOCTOR', label: 'Doctor' },
             { value: 'ASSISTANT_DOCTOR', label: 'Assistant Doctor' },
-            { value: 'ADMIN', label: 'Admin' }
         ];
 
         // Add any other roles found in roleCounts

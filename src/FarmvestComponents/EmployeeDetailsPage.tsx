@@ -8,6 +8,8 @@ import { User, MapPin, Warehouse, ArrowLeft, Mail, Phone, Calendar, Hash } from 
 import TableSkeleton from '../components/common/TableSkeleton';
 import EditEmployeeModal from './EditEmployeeModal';
 import './Employees.css'; // Import CSS for animations
+// Force re-compilation after manual file creation
+
 
 const EmployeeDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -149,7 +151,7 @@ const EmployeeDetailsPage: React.FC = () => {
     const isActive = employee.active_status === 1 || employee.is_active === true || employee.active_status === true;
 
     return (
-        <div className="p-6 max-w-full mx-auto">
+        <div className="p-4 w-full min-w-full max-w-full mx-auto">
             <button
                 onClick={handleBack}
                 className="flex items-center text-gray-600 mb-6 hover:text-blue-600 transition-colors font-medium"
@@ -217,9 +219,14 @@ const EmployeeDetailsPage: React.FC = () => {
 
                         {/* Assignment Details */}
                         <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow lg:col-span-2 animate-slide-up-fade-3">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                <MapPin className="w-5 h-5 text-gray-400" />
-                                Assignment Information
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-2">
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-gray-400" />
+                                    Assignment Information
+                                </div>
+                                {displayRole === 'ADMIN' && (
+                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full uppercase tracking-tighter">Not Applicable for Admin</span>
+                                )}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-green-50/50 rounded-lg p-4 border border-green-100">

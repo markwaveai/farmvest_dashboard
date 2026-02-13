@@ -26,15 +26,35 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         farm_id: '',
         shed_id: '',
         senior_doctor_id: '',
+        doctor_id: '',
         is_test: false
     };
 
     const [formData, setFormData] = useState(initialFormData);
     const [mobileError, setMobileError] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+    const validateEmail = (email: string) => {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) return 'Email is required';
+        if (!regex.test(email)) return 'Please enter a valid email address';
+        return '';
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        if (name === 'email') {
+            setEmailError(validateEmail(formData.email));
+        }
+    };
     const handleClose = () => {
         setFormData(initialFormData);
         setMobileError('');
+        setEmailError('');
+        setTouched({});
+        setSubmitError('');
         onClose();
     };
 
@@ -45,6 +65,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     const [shedsLoading, setShedsLoading] = useState(false);
     const [doctors, setDoctors] = useState<any[]>([]);
     const [doctorsLoading, setDoctorsLoading] = useState(false);
+    const [submitError, setSubmitError] = useState('');
 
     useEffect(() => {
         if (!isOpen) return;
@@ -81,29 +102,28 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     setFarmsLoading(false);
                     return;
                 }
-                // Use getAllFarms with large size to get everything, then filter locally
-                // Or we could trust the API to filter by location if we updated it to use params
-                const response = await farmvestService.getAllFarms({ size: 1000 });
+                // Fetch farms filtered by location directly from API
+                const response = await farmvestService.getAllFarms({
+                    location: formData.location,
+                    sort_by: 2,
+                    page: 1,
+                    size: 100
+                });
 
-                let allFarms: any[] = [];
+                let farmList: any[] = [];
                 if (response && (response.status === 200 || response.status === "200")) {
-                    allFarms = Array.isArray(response.data) ? response.data : [];
+                    farmList = Array.isArray(response.data) ? response.data : [];
                 } else if (Array.isArray(response)) {
-                    allFarms = response;
+                    farmList = response;
                 } else if (response && Array.isArray(response.data)) {
-                    allFarms = response.data;
+                    farmList = response.data;
+                } else if (response && Array.isArray(response.farms)) {
+                    farmList = response.farms;
                 }
 
-                // Client-side filter (case-insensitive)
-                const targetLoc = formData.location.toUpperCase();
-                const filteredFarms = allFarms.filter((farm: any) =>
-                    farm.location && String(farm.location).toUpperCase() === targetLoc
-                );
-
-                setFarms(filteredFarms);
+                setFarms(farmList);
 
                 // Reset farm_id when location changes
-                // Only reset if the current farm_id is not valid for the new location (prevent loop if needed, but simple reset is safer for UX)
                 setFormData(prev => ({ ...prev, farm_id: '', shed_id: '' }));
                 setSheds([]);
             } catch (error) {
@@ -115,6 +135,28 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
 
         fetchFarmsByLocation();
     }, [formData.location, isOpen]);
+
+    const [fetchingDocId, setFetchingDocId] = useState(false);
+
+    const fetchDoctorId = async (userId: string) => {
+        setFetchingDocId(true);
+        try {
+            const response = await farmvestService.getEmployeeDetailsById(userId);
+            const details = response.data || response;
+            if (details && details.doctor_details && details.doctor_details.length > 0) {
+                const docId = details.doctor_details[0].doctor_id;
+                setFormData(prev => ({ ...prev, doctor_id: String(docId) }));
+            } else if (details && details.user_id) {
+                // Fallback or if already a doctor object
+                const docId = (details.doctor_details && details.doctor_details[0]?.doctor_id) || details.doctor_id;
+                if (docId) setFormData(prev => ({ ...prev, doctor_id: String(docId) }));
+            }
+        } catch (error) {
+            console.error("Failed to fetch doctor details", error);
+        } finally {
+            setFetchingDocId(false);
+        }
+    };
 
     // Fetch sheds based on farm_id
     useEffect(() => {
@@ -171,7 +213,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     docList = response.data.employees;
                 }
 
-                setDoctors(docList);
+                // Map to ensure we have business IDs (user_id) for the value
+                const mappedDocs = docList.map(doc => ({
+                    ...doc,
+                    // Use user_id (business ID) if available, otherwise fallback
+                    business_id: doc.user_id || doc.id || doc.employee_id
+                }));
+
+                setDoctors(mappedDocs);
             } catch (error) {
                 setDoctors([]);
             } finally {
@@ -204,9 +253,29 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
             } else {
                 setMobileError('');
             }
+        } else if (name === 'role') {
+            setFormData(prev => ({ ...prev, [name]: value }));
+            if (value === 'ADMIN') {
+                // Keep location/farm if they exist, just clear role-specific sub-selections
+                setFormData(prev => ({ ...prev, senior_doctor_id: '' }));
+            } else if (value !== 'ASSISTANT_DOCTOR') {
+                setFormData(prev => ({ ...prev, senior_doctor_id: '' }));
+            }
+        } else if (name === 'first_name' || name === 'last_name') {
+            // Remove numbers
+            const textValue = value.replace(/[0-9]/g, '');
+            setFormData(prev => ({ ...prev, [name]: textValue }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
+            if (name === 'email' && touched.email) {
+                setEmailError(validateEmail(value));
+            }
+            if (name === 'senior_doctor_id') {
+                if (value) fetchDoctorId(value);
+                else setFormData(prev => ({ ...prev, doctor_id: '' }));
+            }
         }
+        setSubmitError('');
     };
 
     const isFormValid = React.useMemo(() => {
@@ -214,9 +283,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
 
         // Basic fields
         const phoneRegex = /^[6-9]\d{9}$/;
-        if (!first_name || !last_name || !email || !mobile || !phoneRegex.test(mobile) || !farm_id) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!first_name || !last_name || !email || !emailRegex.test(email) || !mobile || !phoneRegex.test(mobile)) {
             return false;
         }
+
+        // Admin role doesn't require farm or location
+        if (role === 'ADMIN') return true;
+
+        // Other roles require farm_id
+        if (!farm_id) return false;
 
         // Role specific
         if (role === 'SUPERVISOR') {
@@ -236,60 +312,64 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         // Mobile Validation
         const phoneRegex = /^[6-9]\d{9}$/;
         if (!phoneRegex.test(formData.mobile)) {
-            alert('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
+            setSubmitError('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
             return;
         }
 
-        // 1. Mandatory base payload
+        // 1. EXACT payload structure as requested
         const payload: any = {
             email: formData.email,
-            farm_id: Number(formData.farm_id),
+            farm_id: Number(formData.farm_id) || 0,
             first_name: formData.first_name,
             last_name: formData.last_name,
+            is_test: !!formData.is_test,
             mobile: formData.mobile,
-            roles: [formData.role], // Send UPPER_SNAKE_CASE directly
-            is_test: formData.is_test
+            roles: [formData.role],
+            shed_id: Number(formData.shed_id) || 0,
         };
 
-        // 2. Add shed_id logic
-        // For Farm Level roles (Doctor, Manager), we send explicit 0 to indicate "Whole Farm" (bypassing backend crash if field missing)
-        const farmLevelRoles = ['DOCTOR', 'ASSISTANT_DOCTOR', 'FARM_MANAGER'];
-
-        if (formData.shed_id) {
-            payload.shed_id = Number(formData.shed_id);
-        } else if (farmLevelRoles.includes(formData.role)) {
-            // "Total farm will be allocated" -> Use ID 0 to represent Farm Level (no specific shed)
-            payload.shed_id = 0;
-        }
-
-        // 3. Add senior_doctor_id for Assistant Doctors
-        if (formData.role === 'ASSISTANT_DOCTOR') {
-            if (!formData.senior_doctor_id) {
-                alert('Please select a Senior Doctor for the Assistant Doctor.');
-                return;
-            }
+        // Only send senior_doctor_id if it is a valid ID (> 0)
+        // This avoids backend crashes caused by passing 0 or null to strict lookups
+        if (formData.senior_doctor_id && formData.senior_doctor_id !== '0') {
             payload.senior_doctor_id = Number(formData.senior_doctor_id);
+            if (formData.doctor_id) {
+                payload.doctor_id = Number(formData.doctor_id);
+            }
         }
 
         // 3. Dispatch the creation action
         const result = await dispatch(createEmployee(payload));
 
         if (createEmployee.fulfilled.match(result)) {
+            setSubmitError('');
             // Success handshake
             setTimeout(() => {
                 handleClose();
             }, 500);
         } else {
-            // Debug access to error
-
             const errorPayload = result.payload as any;
-            let errorMessage = 'Error Creating Employee:\n';
+            let errorMessage = '';
+
             if (errorPayload && errorPayload.detail) {
-                errorMessage += JSON.stringify(errorPayload.detail, null, 2);
+                if (Array.isArray(errorPayload.detail)) {
+                    errorMessage = errorPayload.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+                } else if (typeof errorPayload.detail === 'string') {
+                    errorMessage = errorPayload.detail;
+                } else {
+                    errorMessage = JSON.stringify(errorPayload.detail);
+                }
+            } else if (typeof errorPayload === 'string') {
+                errorMessage = errorPayload;
             } else {
-                errorMessage += result.error?.message || 'Unknown Error';
+                errorMessage = result.error?.message || 'A server error occurred';
             }
-            alert(errorMessage);
+
+            // Cleanup the message for the user: remove technical FastAPI crash details
+            if (errorMessage.includes('HTTPException')) {
+                errorMessage = 'Server validation failed. Please ensure the Email/Mobile are unique and all fields are correct.';
+            }
+
+            setSubmitError(errorMessage);
         }
     };
 
@@ -312,6 +392,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     </button>
                 </div>
 
+                {submitError && (
+                    <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+                        <div className="text-red-600 text-sm font-medium">
+                            {submitError}
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="modal-body">
                     <div className="form-grid">
                         <div className="form-group">
@@ -321,10 +409,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 name="first_name"
                                 value={formData.first_name}
                                 onChange={handleInputChange}
+                                onBlur={handleBlur}
                                 required
                                 placeholder="Enter first name"
-                                className="form-input"
+                                className={`form-input ${touched.first_name && !formData.first_name ? 'border-red-500' : ''}`}
                             />
+                            {touched.first_name && !formData.first_name && (
+                                <span className="text-[10px] text-red-500 mt-1 font-bold">First name is required</span>
+                            )}
                         </div>
                         <div className="form-group">
                             <label><User size={14} /> Last Name *</label>
@@ -333,10 +425,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 name="last_name"
                                 value={formData.last_name}
                                 onChange={handleInputChange}
+                                onBlur={handleBlur}
                                 required
                                 placeholder="Enter last name"
-                                className="form-input"
+                                className={`form-input ${touched.last_name && !formData.last_name ? 'border-red-500' : ''}`}
                             />
+                            {touched.last_name && !formData.last_name && (
+                                <span className="text-[10px] text-red-500 mt-1 font-bold">Last name is required</span>
+                            )}
                         </div>
                         <div className="form-group">
                             <label><Mail size={14} /> Email Address *</label>
@@ -345,10 +441,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 name="email"
                                 value={formData.email}
                                 onChange={handleInputChange}
+                                onBlur={handleBlur}
                                 required
                                 placeholder="e.g. employee@farmvest.com"
-                                className="form-input"
+                                className={`form-input ${(touched.email && emailError) ? 'border-red-500' : ''}`}
                             />
+                            {touched.email && emailError && (
+                                <span className="text-[10px] text-red-500 mt-1 font-bold">{emailError}</span>
+                            )}
                         </div>
                         <div className="form-group">
                             <label><Phone size={14} /> Mobile Number *</label>
@@ -357,8 +457,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 name="mobile"
                                 value={formData.mobile}
                                 onChange={handleInputChange}
+                                onBlur={handleBlur}
                                 placeholder="Enter mobile number"
-                                className={`form-input ${mobileError ? 'border-red-500' : ''}`}
+                                className={`form-input ${mobileError || (touched.mobile && !formData.mobile) ? 'border-red-500' : ''}`}
                                 required
                                 maxLength={10}
                             />
@@ -369,9 +470,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             )}
                         </div>
 
-                        {/* Location Selector */}
                         <div className="form-group">
-                            <label><MapPin size={14} /> Location</label>
+                            <label><MapPin size={14} /> Location {formData.role === 'ADMIN' && '(Optional)'}</label>
                             <select
                                 name="location"
                                 value={formData.location}
@@ -392,22 +492,27 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             </select>
                         </div>
 
-                        {/* Farm Selector - Loads dynamically based on location */}
                         <div className="form-group">
-                            <label><Landmark size={14} /> Select Farm *</label>
+                            <label><Landmark size={14} /> Select Farm {formData.role === 'ADMIN' ? '(Optional)' : '*'}</label>
                             <div className="relative">
                                 <CustomDropdown
                                     placeholder={farmsLoading ? 'Loading farms...' : 'Choose a farm...'}
                                     value={formData.farm_id}
                                     options={farms.map(farm => ({
-                                        value: farm.id,
+                                        value: farm.farm_id || farm.id,
                                         label: farm.farm_name
                                     }))}
                                     onChange={(val) => setFormData(prev => ({ ...prev, farm_id: val }))}
                                     disabled={farmsLoading}
                                 />
+                                {formData.farm_id && (
+                                    <div className="mt-2 text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center animate-fadeIn">
+                                        <span className="uppercase tracking-wider">Generated Farm ID:</span>
+                                        <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">#{formData.farm_id}</span>
+                                    </div>
+                                )}
                                 {farmsLoading && (
-                                    <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                                    <div className="absolute right-8 top-5 transform -translate-y-1/2">
                                         <Loader2 size={16} className="animate-spin text-blue-500" />
                                     </div>
                                 )}
@@ -445,7 +550,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                     >
                                         <option value="">{shedsLoading ? 'Loading sheds...' : 'Choose a shed...'}</option>
                                         {sheds.map(shed => (
-                                            <option key={shed.shed_id || shed.id} value={shed.id}>
+                                            <option key={shed.shed_id || shed.id} value={shed.shed_id || shed.id}>
                                                 {shed.shed_name} {shed.shed_id ? `(${shed.shed_id})` : ''}
                                             </option>
                                         ))}
@@ -474,7 +579,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                     >
                                         <option value="">{doctorsLoading ? 'Loading doctors...' : 'Choose a doctor...'}</option>
                                         {doctors.map(doc => (
-                                            <option key={doc.id} value={doc.id}>
+                                            <option key={doc.business_id || doc.id} value={doc.business_id}>
                                                 {doc.first_name} {doc.last_name} ({doc.mobile})
                                             </option>
                                         ))}
@@ -485,6 +590,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         </div>
                                     )}
                                 </div>
+                                {formData.doctor_id && (
+                                    <div className="mt-2 text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center animate-fadeIn">
+                                        <span className="uppercase tracking-wider">Generated Doctor ID:</span>
+                                        <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-mono">#{formData.doctor_id}</span>
+                                    </div>
+                                )}
+                                {fetchingDocId && (
+                                    <div className="mt-1 text-[10px] text-blue-500 flex items-center gap-1">
+                                        <Loader2 size={10} className="animate-spin" />
+                                        <span>Fetching business identity...</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 

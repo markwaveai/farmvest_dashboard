@@ -10,7 +10,6 @@ import AddFarmModal from './AddFarmModal';
 import './Farms.css';
 import CustomDropdown from '../components/common/CustomDropdown';
 
-// Memoized table row with defensive checks
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
     if (!farm) return null;
 
@@ -58,6 +57,10 @@ const Farms: React.FC = () => {
     const farmsLoading = useAppSelector((state: RootState) => !!state.farmvestFarms?.loading);
     const farmsError = useAppSelector((state: RootState) => state.farmvestFarms?.error);
     const totalCount = useAppSelector((state: RootState) => state.farmvestFarms?.totalCount || 0);
+
+    // Auth Role check
+    const adminRole = useAppSelector((state: RootState) => state.auth.adminRole);
+    const isAdmin = adminRole?.toUpperCase() === 'ADMIN' || adminRole?.toUpperCase() === 'SUPER ADMIN';
 
     // URL Search Params for Pagination and Location
     const [searchParams, setSearchParams] = useSearchParams();
@@ -158,7 +161,7 @@ const Farms: React.FC = () => {
     // Handle pagination
     const setCurrentPage = useCallback((page: number) => {
         setSearchParams(prev => {
-            console.log("Setting page:", page);
+
             const newParams = new URLSearchParams(prev);
             newParams.set('page', String(page));
             return newParams;
