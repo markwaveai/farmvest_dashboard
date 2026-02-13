@@ -26,11 +26,12 @@ export const fetchFarms = createAsyncThunk(
                 apiParams.location = normalizedLocation;
             }
 
-            // The API doesn't seemingly support 'search' param for get_all_farms based on previous view, 
-            // but we can add it if API supports it. For now, we will rely on location/page/size.
-            // If the user wants search, we might need a separate search endpoint or CLIENT SIDE search if the API doesn't support it.
-            // User request implies API pagination, so likely search might be client side OR api needs update. 
-            // Assuming standard pagination for now.
+            // Client-side search handling for Farms
+            // API might ignore 'search', so if search is present, we fetch MORE items and filter locally
+            if (search) {
+                apiParams.size = 10000; // Fetch all for filtering
+                apiParams.page = 1;
+            }
 
             const response = await farmvestService.getAllFarms(apiParams);
 
@@ -79,6 +80,18 @@ export const fetchFarms = createAsyncThunk(
                 mobile_number: item.mobile_number || item.manager_mobile || item.manager_phone || (item.farm_manager?.mobile) || '-',
                 sheds_count: item.sheds_count || item.shed_count || item.total_sheds || 0
             }));
+
+            // Filter by search term if present
+            if (search) {
+                const lowerSearch = search.toLowerCase();
+                allFarms = allFarms.filter((farm: any) =>
+                    (farm.farm_name && farm.farm_name.toLowerCase().includes(lowerSearch)) ||
+                    (farm.location && farm.location.toLowerCase().includes(lowerSearch)) ||
+                    (farm.farm_manager_name && farm.farm_manager_name.toLowerCase().includes(lowerSearch))
+                );
+                // Update total count after filtering
+                totalCount = allFarms.length;
+            }
 
             // Fetch shed counts for each farm (still needed? if API provides it, we skip. Code showed we fetch it)
             // To optimize, maybe we shouldn't fetch sheds for ALL farms if paginated? 

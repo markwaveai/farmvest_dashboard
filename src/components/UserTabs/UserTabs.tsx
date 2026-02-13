@@ -232,22 +232,22 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 </div>
               </button>
             </li>
-            <li>
+            {/* <li>
               <button className={`nav-item ${activeTab === 'animal-onboarding' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/animal-onboarding'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <PawPrint size={18} />
                   <span className="nav-text">Animal Onboarding</span>
                 </div>
               </button>
-            </li>
-            <li>
+            </li> */}
+            {/* <li>
               <button className={`nav-item ${activeTab === 'unallocated-animals' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/unallocated-animals'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <LayoutGrid size={18} />
                   <span className="nav-text">Unallocated Animals</span>
                 </div>
               </button>
-            </li>
+            </li> */}
             <li>
               <button className={`nav-item ${activeTab === 'farmvest-investors' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/investors'); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>

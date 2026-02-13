@@ -226,8 +226,8 @@ const Investors: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-[#f9fafb]">
-            <div className="flex-1 overflow-auto p-6 scrollbar-hide">
-                <div className="max-w-full mx-auto">
+            <div className="flex-1 flex flex-col overflow-hidden p-6">
+                <div className="max-w-full mx-auto w-full flex flex-col h-full">
                     {/* Page Header Card */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -317,83 +317,86 @@ const Investors: React.FC = () => {
                     </div>
 
                     {/* Table Content */}
-                    <div className="overflow-x-auto rounded-xl border border-gray-100">
-                        <table className="min-w-full divide-y divide-gray-100">
-                            <thead className="bg-[#f8f9fa]">
-                                <tr>
-                                    <th onClick={() => requestSort('id')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
-                                    <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
-                                    <th onClick={() => requestSort('email')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
-                                    <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
-                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Address</th>
-                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Buffaloes</th>
-                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Calves</th>
-                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Joined Date</th>
-                                    <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-50">
-                                {investorsLoading ? (
-                                    <TableSkeleton cols={9} rows={5} />
-                                ) : currentItems.length > 0 ? (
-                                    currentItems.map((investor: any, index: number) => {
-                                        const idStr = String(investor.id || investor.investor_id);
-                                        const stats = animalStats[idStr] || { buffaloes: 0, calves: 0, loading: true };
-
-                                        return (
-                                            <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div
-                                                        className="font-semibold text-blue-600 cursor-pointer hover:underline"
-                                                        onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
-                                                    >
-                                                        {`${investor.first_name || ''} ${investor.last_name || ''}`}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{investor.email || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{investor.phone_number || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-normal text-center text-sm text-gray-600 min-w-[200px] max-w-[300px] break-words" title={investor.address || ''}>{investor.address || '-'}</td>
-
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
-                                                    {stats.loading ? (
-                                                        <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
-                                                    ) : stats.buffaloes}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
-                                                    {stats.loading ? (
-                                                        <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
-                                                    ) : stats.calves}
-                                                </td>
-
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                    {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${investor.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                        {investor.active_status ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
-                                ) : (
+                    {/* Table Content */}
+                    <div className="flex-1 overflow-hidden rounded-xl border border-gray-100 flex flex-col bg-white">
+                        <div className="overflow-auto flex-1">
+                            <table className="min-w-full divide-y divide-gray-100">
+                                <thead className="bg-[#f8f9fa] sticky top-0 z-10">
                                     <tr>
-                                        <td colSpan={9}>
-                                            <div className="flex flex-col items-center justify-center py-16 px-4">
-                                                <div className="bg-gray-50 rounded-full p-6 mb-4">
-                                                    <Users size={48} className="text-gray-300" />
-                                                </div>
-                                                <h3 className="text-lg font-bold text-gray-900 mb-1">No investors found</h3>
-                                                <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
-                                                    No investor records are available at the moment.
-                                                </p>
-                                            </div>
-                                        </td>
+                                        <th onClick={() => requestSort('id')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">S.No {getSortIcon('id')}</th>
+                                        <th onClick={() => requestSort('first_name')} className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Name {getSortIcon('first_name')}</th>
+                                        <th onClick={() => requestSort('email')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Email {getSortIcon('email')}</th>
+                                        <th onClick={() => requestSort('phone_number')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Phone {getSortIcon('phone_number')}</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Address</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Buffaloes</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Calves</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">Joined Date</th>
+                                        <th onClick={() => requestSort('active_status')} className="px-6 py-4 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider cursor-pointer">Status {getSortIcon('active_status')}</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-50">
+                                    {investorsLoading ? (
+                                        <TableSkeleton cols={9} rows={5} />
+                                    ) : currentItems.length > 0 ? (
+                                        currentItems.map((investor: any, index: number) => {
+                                            const idStr = String(investor.id || investor.investor_id);
+                                            const stats = animalStats[idStr] || { buffaloes: 0, calves: 0, loading: true };
+
+                                            return (
+                                                <tr key={investor.id || index} className="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50" onClick={() => handleNameClick(investor)}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div
+                                                            className="font-semibold text-blue-600 cursor-pointer hover:underline"
+                                                            onClick={(e) => { e.stopPropagation(); handleNameClick(investor); }}
+                                                        >
+                                                            {`${investor.first_name || ''} ${investor.last_name || ''}`}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{investor.email || '-'}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">{investor.phone_number || '-'}</td>
+                                                    <td className="px-6 py-4 whitespace-normal text-center text-sm text-gray-600 min-w-[200px] max-w-[300px] break-words" title={investor.address || ''}>{investor.address || '-'}</td>
+
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
+                                                        {stats.loading ? (
+                                                            <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
+                                                        ) : stats.buffaloes}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
+                                                        {stats.loading ? (
+                                                            <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-200 border-t-amber-500 animate-spin"></span>
+                                                        ) : stats.calves}
+                                                    </td>
+
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                                        {investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${investor.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {investor.active_status ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={9}>
+                                                <div className="flex flex-col items-center justify-center py-16 px-4">
+                                                    <div className="bg-gray-50 rounded-full p-6 mb-4">
+                                                        <Users size={48} className="text-gray-300" />
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-1">No investors found</h3>
+                                                    <p className="text-gray-500 text-sm mb-6 max-w-sm text-center">
+                                                        No investor records are available at the moment.
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     {totalPages > 1 && (

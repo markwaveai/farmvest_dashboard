@@ -101,11 +101,11 @@ const Employees: React.FC = () => {
             size: itemsPerPage,
             role: selectedRole || undefined,
             active_status: selectedStatus ? Number(selectedStatus) : undefined,
-            // Assuming API supports search, pass it here. If not, client-side search won't work perfectly with pagination.
+            search: debouncedSearchTerm,
             // Based on previous analysis, we might need to rely on list filtering or specific search endpoint.
             // But fetchEmployees usually handles list. For now, we will assume standard list fetch.
         }));
-    }, [dispatch, currentPage, itemsPerPage, selectedRole, selectedStatus]);
+    }, [dispatch, currentPage, itemsPerPage, selectedRole, selectedStatus, debouncedSearchTerm]);
 
     // Reset pagination when filters change
     useEffect(() => {
@@ -166,7 +166,7 @@ const Employees: React.FC = () => {
     }, [roleCounts]);
 
     return (
-        <div className="p-2 h-full flex flex-col max-w-full mx-auto overflow-hidden min-w-full">
+        <div className="h-full flex flex-col gap-4 max-w-full mx-auto overflow-hidden min-w-full">
             {/* Backdrop for Dropdown */}
             {isDropdownOpen && (
                 <div
@@ -176,7 +176,7 @@ const Employees: React.FC = () => {
             )}
 
             {/* Page Header Card - Fixed Height */}
-            <div className="flex-none bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mb-3">
+            <div className="flex-none bg-white border-b border-gray-100 p-3 shadow-sm">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
@@ -448,7 +448,7 @@ const Employees: React.FC = () => {
             />
             {
                 totalPages > 1 && (
-                    <div className="flex-none mt-0 flex justify-end">
+                    <div className="flex-none mt-2 px-4 pb-2 flex justify-end">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

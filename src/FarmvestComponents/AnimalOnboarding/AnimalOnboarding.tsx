@@ -49,6 +49,7 @@ interface AnimalDetail {
     index: number;
     status: 'Pending' | 'Completed';
     isUploading?: boolean;
+    tagNumber?: number; // New field for Buffaloes
 }
 
 interface Farm {
@@ -81,6 +82,7 @@ const AnimalOnboarding: React.FC = () => {
 
     const [animals, setAnimals] = useState<AnimalDetail[]>([]);
     const [toastVisible, setToastVisible] = useState(false);
+    // Removed startTagNumber as we use random generation now
 
     // Calf Modal State
     const [activeParentId, setActiveParentId] = useState<number | null>(null);
@@ -114,12 +116,6 @@ const AnimalOnboarding: React.FC = () => {
     const handleMobileChange = (val: string) => {
         setMobile(val);
         if (val.length > 0) {
-            const lowerVal = val.toLowerCase();
-            const filtered = allMembers.filter(member =>
-                (member.displayName?.toLowerCase().includes(lowerVal)) ||
-                (member.mobile?.includes(val))
-            );
-            setFilteredMembers(filtered.slice(0, 10)); // Show top 10 matches
             setShowDropdown(true);
         } else {
             setShowDropdown(false);
@@ -132,56 +128,158 @@ const AnimalOnboarding: React.FC = () => {
         setShowDropdown(false);
     };
 
+    // Dynamic Search Effect
+    useEffect(() => {
+        const performSearch = async () => {
+            if (!mobile || mobile.trim() === '') {
+                setFilteredMembers([]);
+                return;
+            }
+
+            // 1. Local Search
+            const lowerVal = mobile.toLowerCase();
+            const localMatches = allMembers.filter(member =>
+                (member.displayName?.toLowerCase().includes(lowerVal)) ||
+                (member.mobile?.includes(mobile))
+            );
+
+            setFilteredMembers(localMatches.slice(0, 10));
+
+            // 2. Remote Search (for In-Transit/New Users not in local list)
+            // Check if we have an exact match locally. If not, and it looks like a valid mobile, try fetching.
+            const exactMatch = localMatches.find(m => m.mobile === mobile);
+
+            if (!exactMatch && /^\d{10}$/.test(mobile)) {
+                try {
+                    const result = await farmvestService.getPaidOrders(mobile);
+
+                    if (result && result.user) {
+                        const u = result.user;
+                        const remoteUser = {
+                            displayName: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown Investor',
+                            mobile: u.mobile || u.mobile_number || u.phone_number || '', // Ensure phone_number is mapped
+                            id: u.id || u.investor_id || 0,
+                            type: 'investor',
+                            ...u
+                        };
+
+                        // Update lists
+                        setAllMembers(prev => {
+                            // Avoid duplicates
+                            if (prev.some(m => m.mobile === remoteUser.mobile)) return prev;
+                            return [...prev, remoteUser];
+                        });
+
+                        // The effect will re-run because allMembers changed, and catch it in Local Search next time.
+                    }
+                } catch (e) {
+                    // Silent catch for remote search
+                }
+            }
+        };
+
+        const timeoutId = setTimeout(performSearch, 1000); // 1000ms debounce as requested
+        return () => clearTimeout(timeoutId);
+    }, [mobile, allMembers]);
+
     // Fetch initial data on load
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const [farmData, investorData] = await Promise.all([
-                    farmvestService.getAllFarms({ size: 1000 }), // Fetch all farms
-                    farmvestService.getAllInvestors({ size: 5000 })
-                ]);
-
-                // Parse Farms
-                let farmList: Farm[] = [];
-                if (Array.isArray(farmData)) {
-                    farmList = farmData;
-                } else if (farmData && Array.isArray(farmData.farms)) {
-                    farmList = farmData.farms;
-                } else if (farmData && Array.isArray(farmData.data)) {
-                    farmList = farmData.data;
-                }
-                const normalizedFarms = farmList.map((f: any) => ({
-                    farm_id: f.farm_id || f.id || 0,
-                    farm_name: f.farm_name || f.name || 'Unknown Farm',
-                    location: f.location || ''
-                }));
-                setFarms(normalizedFarms);
-
-                // Parse Investors
-                let investorList: any[] = [];
-                if (Array.isArray(investorData)) {
-                    investorList = investorData;
-                } else if (investorData.data && Array.isArray(investorData.data)) {
-                    investorList = investorData.data;
-                } else if (investorData.investors && Array.isArray(investorData.investors)) {
-                    investorList = investorData.investors;
+                // Fetch Farms
+                try {
+                    const farmData = await farmvestService.getAllFarms({ size: 1000 });
+                    let farmList: Farm[] = [];
+                    if (Array.isArray(farmData)) {
+                        farmList = farmData;
+                    } else if (farmData && Array.isArray(farmData.farms)) {
+                        farmList = farmData.farms;
+                    } else if (farmData && Array.isArray(farmData.data)) {
+                        farmList = farmData.data;
+                    }
+                    const normalizedFarms = farmList.map((f: any) => ({
+                        farm_id: f.farm_id || f.id || 0,
+                        farm_name: f.farm_name || f.name || 'Unknown Farm',
+                        location: f.location || ''
+                    }));
+                    setFarms(normalizedFarms);
+                } catch (farmError) {
                 }
 
-                // Unified Member List Normalization (Investors Only)
-                const normalizedInvestors = investorList.map((inv: any) => ({
-                    ...inv,
-                    displayName: inv.full_name || `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || 'Unknown Investor',
-                    mobile: inv.mobile || inv.mobile_number || inv.phone_number || '', // Ensure phone_number is mapped
-                    id: inv.id || inv.investor_id || 0,
-                    type: 'investor'
-                }));
+                // Fetch Investors
+                const allFetchedMembers: any[] = [];
 
-                const combined = [...normalizedInvestors];
-                setAllMembers(combined);
+                try {
+                    // 1. Fetch Existing Investors
+                    const investorData = await farmvestService.getAllInvestors({ size: 1000, page: 1 });
+
+                    let investorList: any[] = [];
+                    if (Array.isArray(investorData)) {
+                        investorList = investorData;
+                    } else if (investorData && investorData.data && Array.isArray(investorData.data)) {
+                        investorList = investorData.data;
+                    } else if (investorData && investorData.users && Array.isArray(investorData.users)) {
+                        investorList = investorData.users;
+                    } else if (investorData && investorData.investors && Array.isArray(investorData.investors)) {
+                        investorList = investorData.investors;
+                    }
+
+                    const normalizedInvestors = investorList.map((inv: any) => ({
+                        ...inv,
+                        displayName: inv.full_name || `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || 'Unknown Investor',
+                        mobile: inv.mobile || inv.mobile_number || inv.phone_number || '',
+                        id: inv.id || inv.investor_id || 0,
+                        type: 'investor'
+                    }));
+                    allFetchedMembers.push(...normalizedInvestors);
+
+                    // 2. Fetch In-Transit Orders (Pending Users)
+                    // Passing empty string to hopefully get all pending orders?
+                    // Verify if API supports this, otherwise we might need a different endpoint.
+                    const transitData = await farmvestService.getPaidOrders('');
+
+                    if (transitData && Array.isArray(transitData.orders)) {
+                        // The API structure for getPaidOrders might return { user, orders } OR distinct structure for bulk?
+                        // Actually getPaidOrders is usually for a *single* user.
+                        // If we pass empty string, does it return ALL orders?
+                        // If not, we can't easily autocomplete *everyone*.
+                        // But if it works, great.
+
+                        // Assuming it might fail or return just one wrapper.
+                        // If the API returns a list of orders with user details embedded, we extract them.
+                        // Based on getPaidOrders return type: { user: ..., orders: ... }
+                        // This suggests it's per-user.
+                        // But let's check the logs.
+                        if (transitData.user) {
+                            const u = transitData.user;
+                            const normalizedTransitUser = {
+                                displayName: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown Investor',
+                                mobile: u.mobile || u.mobile_number || u.phone_number || '',
+                                id: u.id || u.investor_id || 0,
+                                type: 'investor',
+                                ...u
+                            };
+                            // Add only if not already present (e.g., by mobile number)
+                            if (!allFetchedMembers.some(member => member.mobile === normalizedTransitUser.mobile)) {
+                                allFetchedMembers.push(normalizedTransitUser);
+                            }
+                        }
+                    }
+
+                    // If getPaidOrders returns null user when empty, we might need 'getInTransitOrders' from API_ENDPOINTS directly if it supports GET list.
+                    // API_ENDPOINTS.getInTransitOrders is used by getPaidOrders as POST.
+
+                } catch (investorError) {
+                }
+
+                setAllMembers(allFetchedMembers);
 
             } catch (error) {
             }
         };
+
+        // Removed fetchTagCount as we use random generation
+
         fetchInitialData();
     }, []);
 
@@ -271,11 +369,16 @@ const AnimalOnboarding: React.FC = () => {
             const bIds = selectedOrder.buffaloIds || [];
 
             // 1. Initialize Buffaloes
+            let idCounter = 100000;
+            let currentTagNumber = 10000;
             for (let i = 0; i < bCount; i++) {
                 const buffaloId = Date.now() + i;
+                const uid = (++idCounter).toString(); // 100001, 100002...
+                const randomTagNum = Math.floor(10000 + Math.random() * 90000); // 10000-99999
+
                 newAnimals.push({
                     id: buffaloId,
-                    uid: bIds[i] || crypto.randomUUID(), // Use ID from list if available
+                    uid: bIds[i] || uid, // Use ID from list if available, else sequential
                     type: 'Buffalo',
                     rfidTag: '',
                     earTag: '',
@@ -283,7 +386,8 @@ const AnimalOnboarding: React.FC = () => {
                     photos: [],
                     videos: [],
                     index: i + 1,
-                    status: 'Pending'
+                    status: 'Pending',
+                    tagNumber: undefined // Wait for autofill
                 });
             }
 
@@ -292,10 +396,11 @@ const AnimalOnboarding: React.FC = () => {
                 // Distribute calves among buffaloes (e.g., if 2 B and 2 C, each B gets 1 C)
                 // If more calves than buffaloes, some buffaloes get multiple
                 const parentBuffalo = newAnimals[i % bCount];
+                const uid = (++idCounter).toString(); // Sequential continuation
 
                 newAnimals.push({
                     id: Date.now() + 1000 + i,
-                    uid: crypto.randomUUID(),
+                    uid: uid,
                     type: 'Calf',
                     rfidTag: '',
                     earTag: '',
@@ -416,20 +521,28 @@ const AnimalOnboarding: React.FC = () => {
                 const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
                 const rfidTag = `RFID-${randomSuffix}-${animal.index.toString().padStart(3, '0')}`;
                 const earTag = `ET-${randomSuffix}-${animal.index.toString().padStart(4, '0')}`;
+                // Generate Neckband ID for both Buffalo and Calf
+                // Match user request: NB-123 (shorter format)
+                const shortRandom = Math.floor(Math.random() * 9000 + 1000).toString();
+                const neckbandId = `NB-${shortRandom}`;
                 const age = isBuffalo ? '36' : '6';
 
                 let parentId = animal.parentBuffaloId;
                 if (!isBuffalo && buffaloes.length > 0) {
-                    parentId = buffaloes[0].id;
+                    parentId = animal.parentBuffaloId || buffaloes[0].id;
                 }
+
+                const randomTagNum = Math.floor(10000 + Math.random() * 90000); // 10000-99999
 
                 return {
                     ...animal,
                     rfidTag,
                     earTag,
+                    neckbandId, // Auto-fill this
                     age,
                     parentBuffaloId: parentId,
-                    status: 'Completed'
+                    status: 'Completed',
+                    tagNumber: animal.tagNumber || randomTagNum // Use existing if set, or random
                 };
             });
         });
@@ -447,8 +560,9 @@ const AnimalOnboarding: React.FC = () => {
         if (!selectedFarmId || selectedFarmId === 'Show all farms') return false;
 
         const incompleteAnimals = animals.filter(a => {
-            if (!a.rfidTag || !a.earTag || !a.age) return true;
+            if (!a.rfidTag || !a.earTag || !a.age || !a.neckbandId) return true;
             if (a.type === 'Calf' && !a.parentBuffaloId) return true;
+            if (a.type === 'Buffalo' && a.photos.length === 0) return true;
             return false;
         });
 
@@ -462,13 +576,19 @@ const AnimalOnboarding: React.FC = () => {
         }
 
         const incompleteAnimals = animals.filter(a => {
-            if (!a.rfidTag || !a.earTag || !a.age) return true;
+            if (!a.rfidTag || !a.earTag || !a.age || !a.neckbandId) return true;
             if (a.type === 'Calf' && !a.parentBuffaloId) return true;
+            if (a.type === 'Buffalo' && a.photos.length === 0) return true;
             return false;
         });
 
         if (incompleteAnimals.length > 0) {
-            alert(`Please complete RFID, Ear Tag, and Age for all animals.`);
+            const missingImages = incompleteAnimals.some(a => a.type === 'Buffalo' && a.photos.length === 0);
+            if (missingImages) {
+                alert('Please upload at least one image for every Buffalo.');
+            } else {
+                alert(`Please complete RFID, Ear Tag, Age, and Neckband ID for all animals.`);
+            }
             return;
         }
 
@@ -484,6 +604,16 @@ const AnimalOnboarding: React.FC = () => {
                 return 'RFID-' + clean.substring(5);
             }
             return `RFID-${clean}`;
+        };
+
+        const formatNeckband = (id: string | undefined) => {
+            if (!id || !id.trim()) return null;
+            let clean = id.trim();
+            if (/^nb/i.test(clean)) {
+                clean = clean.replace(/^nb-?/i, '');
+            }
+            if (!clean) return null;
+            return `NB-${clean}`;
         };
 
         const getParentUid = (parentId: number | undefined) => {
@@ -521,6 +651,7 @@ const AnimalOnboarding: React.FC = () => {
                 animals: animals.map(a => {
                     const isBuffalo = a.type === 'Buffalo';
                     const formattedRfid = formatRfid(a.rfidTag);
+                    const formattedNeckband = formatNeckband(a.neckbandId);
 
                     if (isBuffalo) {
                         return {
@@ -528,14 +659,15 @@ const AnimalOnboarding: React.FC = () => {
                             animal_type: "BUFFALO",
                             rfid_tag: formattedRfid,
                             ear_tag: a.earTag,
-                            neckband_id: a.neckbandId || "",
+                            neckband_id: formattedNeckband, // Sends NB-XXX or null
                             age_months: parseInt(a.age) || 0,
                             health_status: "HEALTHY",
                             images: a.photos.length > 0 ? a.photos : [],
                             videos: a.videos.length > 0 ? a.videos : [],
                             status: "high_yield",
                             breed_id: "MURRAH-001",
-                            breed_name: "Murrah Buffalo"
+                            breed_name: "Murrah Buffalo",
+                            tag_number: a.tagNumber // Include tag_number for Buffalo
                         };
                     } else {
                         return {
@@ -543,7 +675,7 @@ const AnimalOnboarding: React.FC = () => {
                             animal_type: "CALF",
                             rfid_tag: formattedRfid,
                             ear_tag: a.earTag,
-                            neckband_id: a.neckbandId || "",
+                            neckband_id: formattedNeckband, // Sends NB-XXX or null
                             age_months: parseInt(a.age) || 0,
                             health_status: "HEALTHY",
                             images: a.photos.length > 0 ? a.photos : [],
@@ -806,6 +938,19 @@ const AnimalOnboarding: React.FC = () => {
 
                                     <div className="animal-form-grid">
                                         <div className="form-group">
+                                            <label>Tag Number</label>
+                                            <div className="input-with-icon">
+                                                <Tag size={18} className="input-icon" />
+                                                <input
+                                                    type="number"
+                                                    value={animal.tagNumber || ''}
+                                                    onChange={(e) => handleAnimalChange(animal.id, 'tagNumber', parseInt(e.target.value))}
+                                                    // readOnly removed to allow editing
+                                                    style={{ backgroundColor: 'white' }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
                                             <label>RFID Tag <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                             <div className="input-with-icon">
                                                 <QrCode size={18} className="input-icon" />
@@ -842,7 +987,7 @@ const AnimalOnboarding: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="form-group">
-                                            <label>Neckband ID (Optional)</label>
+                                            <label>Neckband ID </label>
                                             <div className="input-with-icon">
                                                 <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
                                                 <input

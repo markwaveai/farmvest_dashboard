@@ -4,25 +4,90 @@ import { FarmvestEmployee } from '../../../types/farmvest';
 
 export const fetchEmployees = createAsyncThunk(
     'farmvestEmployees/fetchEmployees',
-    async (params: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number } | undefined, { rejectWithValue }) => {
+    async (params: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number; search?: string } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getEmployees(params);
 
             let rawData: any[] = [];
 
-            // Extract the array from various possible structures
-            if (Array.isArray(response)) {
-                rawData = response;
-            } else if (response && Array.isArray(response.data)) {
-                rawData = response.data;
-            } else if (response && (response.users || response.employees)) {
-                rawData = response.users || response.employees;
-            } else if (response && response.data && (Array.isArray(response.data.employees) || Array.isArray(response.data.users))) {
-                rawData = response.data.employees || response.data.users;
+            if (params?.search) {
+                // Client-side search strategy (more robust than searchEmployee if endpoint is flaky)
+                // Fetch ALL employees and filter locally
+                // Use a large size to get everyone
+                const searchParams = { ...params, size: 10000, page: 1 };
+                // Remove search param from API call to avoid backend filtering if we want to filter locally
+                // But keep role/active_status filters
+                const response = await farmvestService.getEmployees(searchParams);
+
+                // Extract array
+                let allEmployees: any[] = [];
+                if (Array.isArray(response)) {
+                    allEmployees = response;
+                } else if (response && Array.isArray(response.data)) {
+                    allEmployees = response.data;
+                } else if (response && (response.users || response.employees)) {
+                    allEmployees = response.users || response.employees;
+                } else if (response && response.data && (Array.isArray(response.data.employees) || Array.isArray(response.data.users))) {
+                    allEmployees = response.data.employees || response.data.users;
+                }
+
+                // Filter locally
+                const lowerSearch = params.search.toLowerCase();
+                rawData = allEmployees.filter((item: any) => {
+                    const firstName = item.first_name || '';
+                    const lastName = item.last_name || '';
+                    const fullName = `${firstName} ${lastName}`.toLowerCase();
+                    const email = item.email || '';
+                    const mobile = item.mobile || item.phone_number || '';
+
+                    return fullName.includes(lowerSearch) ||
+                        email.toLowerCase().includes(lowerSearch) ||
+                        mobile.includes(lowerSearch);
+                });
+
+                // CRITICAL: Update totalCount to reflect filtered results
+                // This ensures pagination and "No results" logic work correctly
+                // We return immediately for search case to avoid the generic status check failing on empty lists
+                const mappedData = rawData.map((item: any, index: number) => {
+                    const rawStatus = item.is_active !== undefined ? item.is_active : item.active_status;
+                    const isActive = Number(rawStatus) ? 1 : 0;
+                    return {
+                        ...item,
+                        id: item.id || item.user_id || item.employee_id || item.emp_id || item.employee_code || item.investor_id || item.user?.id || item.data?.id || index,
+                        first_name: item.first_name || '',
+                        last_name: item.last_name || '',
+                        email: item.email || '',
+                        mobile: item.mobile || item.phone_number || '',
+                        phone_number: item.mobile || item.phone_number || '',
+                        roles: item.roles || ['Investor'],
+                        is_active: isActive,
+                        active_status: isActive,
+                        joining_date: item.created_at || item.joining_date || '',
+                        farm_name: item.farm_name || item.farm?.farm_name || item.farm?.name || (item.farm_details ? item.farm_details.farm_name : '') || item.farm_id || item.farm?.id || '',
+                        shed_name: item.shed_name || item.shed?.shed_name || item.shed?.name || (item.shed_details ? item.shed_details.shed_name : '') || item.shed_id || item.shed?.id || ''
+                    };
+                });
+
+                return { employees: mappedData, totalCount: mappedData.length };
             } else {
-                // Fallback: check if status is 200 and data exists but hasn't been caught yet
-                if (response && response.status === 200 && Array.isArray(response.data)) {
+                // Regular fetch
+                const response = await farmvestService.getEmployees(params);
+
+
+                // Extract the array from various possible structures
+                if (Array.isArray(response)) {
+                    rawData = response;
+                } else if (response && Array.isArray(response.data)) {
                     rawData = response.data;
+                } else if (response && (response.users || response.employees)) {
+                    rawData = response.users || response.employees;
+                } else if (response && response.data && (Array.isArray(response.data.employees) || Array.isArray(response.data.users))) {
+                    rawData = response.data.employees || response.data.users;
+                } else {
+                    // Fallback: check if status is 200 and data exists but hasn't been caught yet
+                    if (response && response.status === 200 && Array.isArray(response.data)) {
+                        rawData = response.data;
+                    }
                 }
             }
 

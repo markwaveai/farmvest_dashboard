@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { RootState } from '../store';
 import { farmvestService } from '../services/farmvest_api';
-import { User, MapPin, Warehouse, ArrowLeft, Mail, Phone, Calendar, Hash, Edit3 } from 'lucide-react';
+import { User, MapPin, Warehouse, ArrowLeft, Mail, Phone, Calendar, Hash } from 'lucide-react';
 
 import TableSkeleton from '../components/common/TableSkeleton';
 import EditEmployeeModal from './EditEmployeeModal';
@@ -181,12 +181,7 @@ const EmployeeDetailsPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setShowEditModal(true)}
-                                className="px-4 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-amber-600 transition-colors shadow-sm"
-                            >
-                                <Edit3 size={14} /> Edit Assignment
-                            </button>
+
                             <div className="text-right">
                                 <p className="text-sm text-gray-500 mb-1">Employee ID</p>
                                 <p className="text-xl font-mono font-bold text-gray-800">#{employee.id}</p>
@@ -318,7 +313,7 @@ const EmployeeDetailsPage: React.FC = () => {
                                     shed_name: result.shed_name || result.shed?.shed_name || '',
                                 });
                             }
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
                 }}
             />

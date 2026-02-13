@@ -171,7 +171,7 @@ const Farms: React.FC = () => {
     }, [totalCount, itemsPerPage]);
 
     return (
-        <div className="farms-container h-full flex flex-col overflow-hidden animate-fadeIn">
+        <div className="farms-container h-full flex flex-col gap-4 overflow-hidden animate-fadeIn">
             <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
                     <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
@@ -220,7 +220,7 @@ const Farms: React.FC = () => {
                 </div>
             </div>
 
-            <div className="farms-content p-2 flex-1 flex flex-col min-h-0">
+            <div className="farms-content flex-1 flex flex-col min-h-0">
                 {farmsError && (
                     <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg flex items-center shadow-md animate-shake">
                         <div className="p-2 bg-red-100 rounded-lg mr-4">
@@ -294,7 +294,7 @@ const Farms: React.FC = () => {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-0 flex justify-end">
+                    <div className="mt-4 px-4 pb-4 flex justify-end">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}

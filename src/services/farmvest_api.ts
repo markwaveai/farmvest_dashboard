@@ -62,13 +62,16 @@ export const farmvestService = {
             throw error;
         }
     },
-    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number; farm_id?: number }) => {
+    getEmployees: async (params?: { role?: string; active_status?: number; sort_by?: number; page?: number; size?: number; farm_id?: number; search?: string }) => {
         try {
             const { role, active_status, sort_by = 1, page = 1, size = 20, farm_id } = params || {};
             let query = `?sort_by=${sort_by}&page=${page}&size=${size}`;
             if (role) query += `&role=${role}`;
             if (active_status !== undefined && active_status !== null && active_status.toString() !== '') query += `&is_active=${active_status}`;
             if (farm_id) query += `&farm_id=${farm_id}`;
+            // Add search param if provided (assuming API supports 'search' or 'q')
+            // Based on other methods, typically 'search' or 'query'. Let's try 'search'.
+            if (params?.search) query += `&search=${encodeURIComponent(params.search)}`;
 
             const url = `/api/employee/get_all_employees${query}`;
             const response = await farmvestApi.get(url);
@@ -110,7 +113,7 @@ export const farmvestService = {
             throw error;
         }
     },
-    getAllFarms: async (params?: { location?: string, sort_by?: number, page?: number, size?: number }) => {
+    getAllFarms: async (params?: { location?: string, sort_by?: number, page?: number, size?: number, search?: string }) => {
         try {
             let url = '/api/farm/get_all_farms';
             if (params) {
@@ -119,6 +122,7 @@ export const farmvestService = {
                 if (params.sort_by) query.append('sort_by', params.sort_by.toString());
                 if (params.page) query.append('page', params.page.toString());
                 if (params.size) query.append('size', params.size.toString());
+                if (params.search) query.append('search', params.search);
                 url += `?${query.toString()}`;
             }
             const response = await farmvestApi.get(url);
@@ -347,6 +351,17 @@ export const farmvestService = {
             throw error;
         }
     },
+    // ============ ANIMALS ============
+    // Added getTotalAnimals for Tag Number generation
+    getTotalAnimalCount: async () => {
+        try {
+            const response = await farmvestApi.get(API_ENDPOINTS.getTotalAnimals());
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     getAnimalsByInvestor: async (investorId: number) => {
         try {
             const response = await farmvestApi.get(`/api/investors/animals?investor_id=${investorId}`);
@@ -355,6 +370,8 @@ export const farmvestService = {
             throw error;
         }
     },
+
+    // getAnimalsByInvestor was duplicated here by mistake. Removing this block.
     getCalves: async (animalId: string) => {
         try {
             const response = await farmvestApi.get(`/api/animal/get_calves?animal_id=${animalId}`);
