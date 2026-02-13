@@ -84,10 +84,8 @@ function App() {
       }));
 
       // Fetch admin profile if not already loaded to prevent repeated API calls
-      // Skip for specific test user causing 500 errors or Farmvest admins not in Animalkart DB
-      // Fetch admin profile if not already loaded to prevent repeated API calls
-      // Skip for specific test user causing 500 errors or Farmvest admins not in Animalkart DB
-      if (!adminProfile && session.mobile !== '9876543210') {
+      // Skip for specific test users causing 500 errors or Farmvest admins not in Animalkart DB
+      if (!adminProfile && session.mobile !== '9876543210' && session.mobile !== '6305447441') {
         dispatch(fetchAdminProfile(session.mobile));
       } else if (adminProfile) {
         // Sync Logic:

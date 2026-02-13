@@ -34,16 +34,34 @@ const InvestorDetailsPage: React.FC = () => {
                 // For this implementation, I will fetch the full list effectively or rely on a "getInvestor" if it existed.
                 // Since I saw getAllInvestors, I will use that for now to find the user.
 
-                const response = await farmvestService.getAllInvestors({ page: 1, size: 1000 }); // Temporary hack to find user
+                const response = await farmvestService.getAllInvestors({ page: 1, size: 5000 }); // Wider search
                 let foundInvestor = null;
-                const list = Array.isArray(response) ? response : (response.data || response.users || []);
+
+                let list: any[] = [];
+                if (Array.isArray(response)) {
+                    list = response;
+                } else if (response && Array.isArray(response.data)) {
+                    list = response.data;
+                } else if (response && response.data) {
+                    list = response.data.investors || response.data.users || response.data.data || (Array.isArray(response.data) ? response.data : []);
+                } else if (response && (response.users || response.investors)) {
+                    list = response.users || response.investors;
+                }
 
                 foundInvestor = list.find((inv: any) =>
-                    String(inv.id) === id || String(inv.investor_id) === id
+                    String(inv.id) === id || String(inv.investor_id) === id || String(inv.user_id) === id
                 );
 
                 if (foundInvestor) {
-                    setInvestor(foundInvestor);
+                    // Map to normalized structure if needed
+                    const mapped = {
+                        ...foundInvestor,
+                        first_name: foundInvestor.first_name || foundInvestor.name?.split(' ')[0] || '',
+                        last_name: foundInvestor.last_name || foundInvestor.name?.split(' ').slice(1).join(' ') || '',
+                        mobile: foundInvestor.mobile || foundInvestor.phone_number || '',
+                        active_status: foundInvestor.active_status !== undefined ? foundInvestor.active_status : (foundInvestor.is_active !== undefined ? foundInvestor.is_active : true)
+                    };
+                    setInvestor(mapped);
                 }
 
                 // Fetch Animals
@@ -54,9 +72,11 @@ const InvestorDetailsPage: React.FC = () => {
                 // Client-side processing: Separating Buffaloes and Calves
                 if (allAnimals.length > 0) {
                     // Filter for Buffaloes
-                    const buffaloes = allAnimals.filter((a: any) =>
-                        (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
-                    );
+                    const buffaloes = allAnimals.filter((a: any) => {
+                        const type = (a.animal_type || a.type || '').toUpperCase();
+                        const isCalf = a.is_calf === true || a.is_calf === 1 || String(a.is_calf).toLowerCase() === 'true';
+                        return (type === 'BUFFALO' || type === 'ADULT') && !isCalf;
+                    });
 
                     // Fetch calves for each buffalo
                     const enrichedBuffaloes = await Promise.all(buffaloes.map(async (buffalo: any) => {

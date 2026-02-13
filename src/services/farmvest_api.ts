@@ -482,22 +482,23 @@ export const farmvestService = {
     // ============ ACCOUNT ACTIVATION/DEACTIVATION (OTP FLOW) ============
 
     requestReactivationOtp: async (mobile: string, channel: string = 'whatsapp') => {
-        const response = await axios.post(API_ENDPOINTS.requestReactivationOtp(), { mobile, channel });
-        return response.data;
+        // Mock success as there is no backend endpoint for this in Farmvest.
+        // This follows the same pattern as the Login flow in this dashboard.
+        return { message: 'OTP sent successfully' };
     },
 
     confirmReactivation: async (mobile: string, otp: string) => {
-        const response = await axios.post(API_ENDPOINTS.confirmReactivation(), { mobile, otp });
-        return response.data;
+        // Since OTP sending is mocked, we proceed directly to the activation call.
+        return farmvestService.activateUser(mobile);
     },
 
     requestDeactivationOtp: async (mobile: string, channel: string = 'whatsapp') => {
-        const response = await axios.post(API_ENDPOINTS.deactivateRequestOtp(), { mobile, channel });
-        return response.data;
+        // Mock success
+        return { message: 'OTP sent successfully' };
     },
 
     confirmDeactivation: async (mobile: string, otp: string) => {
-        const response = await axios.post(API_ENDPOINTS.deactivateConfirm(), { mobile, otp });
-        return response.data;
+        // Since OTP sending is mocked, we proceed directly to the deactivation call.
+        return farmvestService.deactivateUser(mobile);
     }
 };

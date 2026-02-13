@@ -70,10 +70,6 @@ export const API_ENDPOINTS = {
   uploadProductImage: (id: string) => `${API_CONFIG.getBaseUrl()}/products/${id}/images`,
   getOrderStatus: () => `${API_CONFIG.getBaseUrl()}/order-tracking/stages`,
   updateOrderStatus: () => `${API_CONFIG.getBaseUrl()}/order-tracking/update-status`,
-  deactivateRequestOtp: () => `${API_CONFIG.getBaseUrl()}/users/deactivate/request-otp`,
-  deactivateConfirm: () => `${API_CONFIG.getBaseUrl()}/users/deactivate/confirm`,
-  requestReactivationOtp: () => `${API_CONFIG.getBaseUrl()}/users/reactivate/request-otp`,
-  confirmReactivation: () => `${API_CONFIG.getBaseUrl()}/users/reactivate/confirm`,
   markInTransit: () => `${API_CONFIG.getBaseUrl()}/order-tracking/intransit`,
   getInTransitOrders: () => `${API_CONFIG.getBaseUrl()}/order-tracking/intransit`,
 

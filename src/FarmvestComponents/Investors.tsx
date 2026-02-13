@@ -1,8 +1,8 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import type { RootState } from '../store';
-import { fetchInvestors, clearInvestorErrors } from '../store/slices/farmvest/investors';
+import { fetchInvestors, fetchInvestorStats, clearInvestorErrors } from '../store/slices/farmvest/investors';
 import Snackbar from '../components/common/Snackbar';
 import { Search, Users, Briefcase, X, ChevronDown, Check } from 'lucide-react';
 import { farmvestService } from '../services/farmvest_api';
@@ -16,9 +16,11 @@ const Investors: React.FC = () => {
 
     const {
         investors,
-        totalCount,
+        allInvestors,
+        totalCount: storeTotalCount,
         loading: investorsLoading,
         error,
+        statusCounts,
     } = useAppSelector((state: RootState) => state.farmvestInvestors);
 
     // URL Search Params for Pagination
@@ -56,16 +58,31 @@ const Investors: React.FC = () => {
         );
     }, []);
 
+    // Filter by Status LOCALLY (Fallback if backend filtering is unreliable)
+    const statusFilteredInvestors = useMemo(() => {
+        if (!allInvestors || allInvestors.length === 0) return investors;
+        if (selectedStatus === '') return allInvestors;
+
+        const statusValue = Number(selectedStatus);
+        return allInvestors.filter(inv => inv.active_status === statusValue);
+    }, [allInvestors, investors, selectedStatus]);
+
     const {
-        filteredData: filteredInvestors,
+        filteredData: searchedInvestors,
         requestSort,
         sortConfig,
         searchQuery: activeSearchQuery,
         setSearchQuery
-    } = useTableSortAndSearch(investors, { key: '', direction: 'asc' }, searchFn);
+    } = useTableSortAndSearch(statusFilteredInvestors, { key: '', direction: 'asc' }, searchFn);
 
-    const currentItems = filteredInvestors;
-    const totalPages = Math.ceil((totalCount || filteredInvestors.length) / itemsPerPage) || 1;
+    // Final data for the current page (Local Pagination)
+    const currentItems = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return searchedInvestors.slice(start, start + itemsPerPage);
+    }, [searchedInvestors, currentPage, itemsPerPage]);
+
+    const totalCount = searchedInvestors.length;
+    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
     // Fetch Animal Stats for current items
     useEffect(() => {
@@ -92,7 +109,7 @@ const Investors: React.FC = () => {
 
             // Fetch in parallel
             await Promise.allSettled(itemsToFetch.map(async (investor) => {
-                const investorId = investor.id || investor.investor_id;
+                const investorId = investor.investor_id || investor.id;
                 const idStr = String(investorId);
 
                 try {
@@ -108,24 +125,41 @@ const Investors: React.FC = () => {
                         return;
                     }
 
-                    // 2. Filter Buffaloes and Calves directly from the response
-                    // This avoids N+1 API calls for getCalves
-                    const buffaloes = allAnimals.filter((a: any) =>
-                        (a.animal_type || a.type || '').toUpperCase() === 'BUFFALO'
+                    // 2. Filter Buffaloes and Calves robustly
+                    const buffaloes = allAnimals.filter((a: any) => {
+                        const type = (a.animal_type || a.type || '').toUpperCase();
+                        const isCalf = a.is_calf === true || a.is_calf === 1 || String(a.is_calf).toLowerCase() === 'true';
+                        return (type === 'BUFFALO' || type === 'ADULT') && !isCalf;
+                    });
+
+                    const indepedentCalves = allAnimals.filter((a: any) => {
+                        const type = (a.animal_type || a.type || '').toUpperCase();
+                        const isCalf = a.is_calf === true || a.is_calf === 1 || String(a.is_calf).toLowerCase() === 'true';
+                        return type === 'CALF' || type === 'BABY' || isCalf;
+                    });
+
+                    // 3. Fetch linked calves for each buffalo to ensure completeness
+                    const linkedCalvesResults = await Promise.allSettled(
+                        buffaloes.map((b: any) => {
+                            const aId = b.animal_id || b.id || b.rfid_tag_number || b.rfid;
+                            return farmvestService.getCalves(String(aId));
+                        })
                     );
 
-                    // Count explicitly marked calves or rely on nested data
-                    const indepedentCalves = allAnimals.filter((a: any) =>
-                        (a.animal_type || a.type || '').toUpperCase() === 'CALF'
-                    );
+                    let linkedCalvesCount = 0;
+                    (linkedCalvesResults as any[]).forEach((res: any, idx: number) => {
+                        if (res.status === 'fulfilled') {
+                            const cData = Array.isArray(res.value) ? res.value : (res.value.data || []);
+                            linkedCalvesCount += cData.length;
+                        } else {
+                            // Fallback to pre-loaded if fetch fails
+                            linkedCalvesCount += (buffaloes[idx]?.associated_calves?.length || 0);
+                        }
+                    });
 
-                    // Also check for nested associated_calves if present
-                    const nestedCalvesCount = buffaloes.reduce((acc: number, curr: any) =>
-                        acc + (curr.associated_calves?.length || 0), 0
-                    );
-
-                    // Use the larger of the two counts to catch data however it's structured
-                    const totalCalves = Math.max(indepedentCalves.length, nestedCalvesCount);
+                    // Aggregation logic: Independent calves might be different from linked ones (e.g. unallocated)
+                    // If independent list is empty, use linked count. Otherwise take the more exhaustive one.
+                    const totalCalves = Math.max(indepedentCalves.length, linkedCalvesCount);
 
                     setAnimalStats(prev => ({
                         ...prev,
@@ -161,6 +195,11 @@ const Investors: React.FC = () => {
         };
     }, [searchTerm, activeSearchQuery, setSearchQuery, currentPage, setCurrentPage]);
 
+    // Dispatch stats on mount
+    useEffect(() => {
+        dispatch(fetchInvestorStats());
+    }, [dispatch]);
+
     // Reset pagination when status changes
     useEffect(() => {
         if (currentPage !== 1) {
@@ -174,7 +213,7 @@ const Investors: React.FC = () => {
             size: itemsPerPage,
             active_status: selectedStatus !== '' ? Number(selectedStatus) : undefined
         }));
-    }, [dispatch, currentPage, selectedStatus]);
+    }, [dispatch, itemsPerPage, selectedStatus]);
 
     const getSortIcon = (key: string) => {
         if (sortConfig.key !== key) return '';
@@ -194,7 +233,12 @@ const Investors: React.FC = () => {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                                 <h1 className="text-md font-bold text-gray-800">FarmVest Investors</h1>
-                                <p className="text-xs text-gray-500 mt-1">Manage all investors (Total: {totalCount || 0})</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {statusCounts.active + statusCounts.inactive > 0
+                                        ? `Manage all investors (Total: ${statusCounts.active + statusCounts.inactive} | Active: ${statusCounts.active} | Inactive: ${statusCounts.inactive})`
+                                        : `Manage all investors (Total: 0)`
+                                    }
+                                </p>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3">
@@ -227,8 +271,13 @@ const Investors: React.FC = () => {
                                     <button
                                         className={`flex items-center justify-between min-w-[140px] py-2 px-3 rounded-lg text-sm font-medium focus:outline-none transition-all ${selectedStatus !== '' ? 'bg-orange-50 border border-orange-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                                     >
-                                        <span>
+                                        <span className="flex items-center gap-1">
                                             {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
+                                            {statusCounts.active + statusCounts.inactive > 0 && (
+                                                <span className="text-gray-500 font-normal">
+                                                    ({selectedStatus === '' ? (statusCounts.active + statusCounts.inactive) : (selectedStatus === '1' ? statusCounts.active : statusCounts.inactive)})
+                                                </span>
+                                            )}
                                         </span>
                                         <ChevronDown size={16} className={`ml-2 text-gray-400 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
@@ -236,19 +285,27 @@ const Investors: React.FC = () => {
                                     {isStatusDropdownOpen && (
                                         <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50">
                                             {[
-                                                { value: '', label: 'All Status' },
-                                                { value: '1', label: 'Active' },
-                                                { value: '0', label: 'Inactive' }
+                                                { value: '', label: 'All Status', count: statusCounts.active + statusCounts.inactive },
+                                                { value: '1', label: 'Active', count: statusCounts.active },
+                                                { value: '0', label: 'Inactive', count: statusCounts.inactive }
                                             ].map((option) => (
                                                 <button
                                                     key={option.value}
                                                     onClick={() => {
                                                         setSelectedStatus(option.value);
                                                         setIsStatusDropdownOpen(false);
+                                                        if (currentPage !== 1) setCurrentPage(1);
                                                     }}
                                                     className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
                                                 >
-                                                    {option.label}
+                                                    <span className="flex items-center gap-2">
+                                                        {option.label}
+                                                        {statusCounts.active + statusCounts.inactive > 0 && (
+                                                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${selectedStatus === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
+                                                                {option.count}
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                     {selectedStatus === option.value && <Check size={14} />}
                                                 </button>
                                             ))}

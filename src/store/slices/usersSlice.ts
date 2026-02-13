@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../config/api';
+import { farmvestService } from '../../services/farmvest_api';
 
 // Async Thunks
 export const fetchReferralUsers = createAsyncThunk(
@@ -47,8 +48,8 @@ export const deactivateRequestOtp = createAsyncThunk(
     'users/deactivateRequestOtp',
     async (payload: { mobile: string; channel: string; }, { rejectWithValue }) => {
         try {
-            const response = await axios.post(API_ENDPOINTS.deactivateRequestOtp(), payload);
-            return response.data;
+            const response = await farmvestService.requestDeactivationOtp(payload.mobile, payload.channel);
+            return response;
         } catch (error: any) {
             const msg = error?.response?.data?.message || 'Failed to send OTP';
             return rejectWithValue(msg);
@@ -60,8 +61,8 @@ export const deactivateConfirm = createAsyncThunk(
     'users/deactivateConfirm',
     async (payload: { mobile: string; otp: string }, { rejectWithValue }) => {
         try {
-            const response = await axios.post(API_ENDPOINTS.deactivateConfirm(), payload);
-            return response.data;
+            const response = await farmvestService.confirmDeactivation(payload.mobile, payload.otp);
+            return response;
         } catch (error: any) {
             const msg = error?.response?.data?.message || 'Failed to deactivate account';
             return rejectWithValue(msg);
@@ -73,8 +74,8 @@ export const activateRequestOtp = createAsyncThunk(
     'users/activateRequestOtp',
     async (payload: { mobile: string; channel: string; }, { rejectWithValue }) => {
         try {
-            const response = await axios.post(API_ENDPOINTS.requestReactivationOtp(), payload);
-            return response.data;
+            const response = await farmvestService.requestReactivationOtp(payload.mobile, payload.channel);
+            return response;
         } catch (error: any) {
             const msg = error?.response?.data?.message || 'Failed to send OTP';
             return rejectWithValue(msg);
@@ -86,8 +87,8 @@ export const activateConfirm = createAsyncThunk(
     'users/activateConfirm',
     async (payload: { mobile: string; otp: string }, { rejectWithValue }) => {
         try {
-            const response = await axios.post(API_ENDPOINTS.confirmReactivation(), payload);
-            return response.data;
+            const response = await farmvestService.confirmReactivation(payload.mobile, payload.otp);
+            return response;
         } catch (error: any) {
             const msg = error?.response?.data?.message || 'Failed to activate account';
             return rejectWithValue(msg);
