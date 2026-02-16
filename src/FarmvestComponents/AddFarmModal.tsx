@@ -24,7 +24,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
 
     // Fetch locations logic...
-    const [locations, setLocations] = useState<string[]>([]);
+    const [locations, setLocations] = useState<any[]>([]);
 
     React.useEffect(() => {
         if (isOpen) {
@@ -138,9 +138,22 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                             >
                                 <option value="" disabled>Select Location</option>
                                 {locations.length > 0 ? (
-                                    locations.map((loc, index) => (
-                                        <option key={index} value={loc}>{loc}</option>
-                                    ))
+                                    locations.map((loc, index) => {
+                                        let label = '';
+                                        let value = '';
+
+                                        if (typeof loc === 'string') {
+                                            label = loc;
+                                            value = loc;
+                                        } else if (loc && typeof loc === 'object') {
+                                            label = loc.name || loc.location || loc.city || loc.label || JSON.stringify(loc);
+                                            value = label; // Use name as value for API
+                                        }
+
+                                        return (
+                                            <option key={index} value={value}>{label}</option>
+                                        );
+                                    })
                                 ) : (
                                     <>
                                         <option value="KURNOOL">KURNOOL</option>

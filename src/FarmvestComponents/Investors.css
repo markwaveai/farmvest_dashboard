@@ -1,0 +1,15 @@
+/* Investors.css */
+
+/* 4K Resolution Scaling */
+@media (min-width: 2000px) {
+    .investors-table th {
+        padding: 32px 32px !important;
+        font-size: 1.125rem;
+    }
+
+    .investors-table td {
+        padding: 30px 48px !important;
+        /* Adjusted padding to fill space without being excessive */
+        font-size: 1.25rem;
+    }
+}

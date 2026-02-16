@@ -165,7 +165,7 @@ const Employees: React.FC = () => {
     }, [roleCounts]);
 
     return (
-        <div className="h-full flex flex-col gap-4 max-w-full mx-auto overflow-hidden min-w-full">
+        <div className="employees-container flex flex-col gap-4 w-full animate-fadeIn h-full">
             {/* Backdrop for Dropdown */}
             {isDropdownOpen && (
                 <div
@@ -226,7 +226,7 @@ const Employees: React.FC = () => {
                             </button>
 
                             {isDropdownOpen && (
-                                <div className="absolute top-full right-0 -mt-1 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full left-0 md:left-auto md:right-0 -mt-1 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {roles.map((option) => (
                                         <button
                                             key={option.value}
@@ -267,7 +267,7 @@ const Employees: React.FC = () => {
                             </button>
 
                             {isStatusDropdownOpen && (
-                                <div className="absolute top-full right-0 -mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full left-0 md:left-auto md:right-0 -mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {[
                                         { value: '', label: 'All Status', count: statusCounts.active + statusCounts.inactive },
                                         { value: '1', label: 'Active', count: statusCounts.active },
@@ -304,10 +304,10 @@ const Employees: React.FC = () => {
                 </div >
             </div>
 
-            {/* Table Content - Flex Grow */}
-            <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-auto max-h-[calc(100vh-200px)]">
-                    <table className="min-w-full divide-y divide-gray-100 relative">
+            {/* Table Content */}
+            <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-x-auto">
+                    <table className="employees-table min-w-full divide-y divide-gray-100 relative">
                         <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th className="px-3 py-2.5 text-center bg-gray-50">S.No</th>

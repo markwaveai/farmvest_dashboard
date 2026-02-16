@@ -478,7 +478,8 @@
   .main-content {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-y: auto;
+    /* overflow-x removed to prevent double scrollbars/ghost space */
     display: flex;
     flex-direction: column;
     padding: 12px 20px;

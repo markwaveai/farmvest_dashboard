@@ -9,6 +9,7 @@ import { farmvestService } from '../services/farmvest_api';
 import { useTableSortAndSearch } from '../hooks/useTableSortAndSearch';
 import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
+import './Investors.css';
 
 const Investors = () => {
     const navigate = useNavigate();
@@ -373,13 +374,13 @@ const Investors = () => {
                 </div>
             </div>
 
-            <Snackbar
-                message={error}
-                type={error ? 'error' : null}
-                onClose={() => dispatch(clearInvestorErrors())}
-            />
-        </div>
-    );
+                    <Snackbar
+                        message={error}
+                        type={error ? 'error' : null}
+                        onClose={() => dispatch(clearInvestorErrors())}
+                    />
+                </div>
+                );
 };
 
-export default Investors;
+                export default Investors;

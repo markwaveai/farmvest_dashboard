@@ -446,20 +446,24 @@ export const farmvestService = {
         return response.data;
     },
 
-    getMilkEntries: async (params?: { page?: number; size?: number }) => {
+    getMilkEntries: async (params?: { page?: number; size?: number; farm_id?: number | string; shed_id?: number | string }) => {
         const query = new URLSearchParams();
         query.append('page', (params?.page || 1).toString());
         query.append('size', (params?.size || 15).toString());
+        if (params?.farm_id) query.append('farm_id', params.farm_id.toString());
+        if (params?.shed_id) query.append('shed_id', params.shed_id.toString());
         const response = await farmvestApi.get(`/api/milk/milk_entries?${query.toString()}`);
         return response.data;
     },
 
-    getMilkReport: async (params: { report_date: string; timing?: string; page?: number; size?: number }) => {
+    getMilkReport: async (params: { report_date: string; timing?: string; page?: number; size?: number; farm_id?: number | string; shed_id?: number | string }) => {
         const query = new URLSearchParams();
         query.append('report_date', params.report_date);
         if (params.timing) query.append('timing', params.timing);
         query.append('page', (params.page || 1).toString());
         query.append('size', (params.size || 15).toString());
+        if (params.farm_id) query.append('farm_id', params.farm_id.toString());
+        if (params.shed_id) query.append('shed_id', params.shed_id.toString());
         const response = await farmvestApi.get(`/api/milk/get_milk_report?${query.toString()}`);
         return response.data;
     },

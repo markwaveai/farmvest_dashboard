@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { farmvestService } from '../services/farmvest_api';
 import { MilkEntry, MilkTiming } from '../types/farmvest';
-import { Milk, Plus, Filter, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
-import CreateMilkEntryModal from './CreateMilkEntryModal';
+import { Milk, Filter, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import './MilkProduction.css';
 
 const MilkProduction: React.FC = () => {
@@ -15,7 +14,84 @@ const MilkProduction: React.FC = () => {
 
     const [timingFilter, setTimingFilter] = useState<string>('');
     const [reportDate, setReportDate] = useState('');
-    const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // Filter States
+    const [locations, setLocations] = useState<any[]>([]);
+    const [selectedLocation, setSelectedLocation] = useState<string>('');
+
+    const [farms, setFarms] = useState<any[]>([]);
+    const [selectedFarm, setSelectedFarm] = useState<string>('');
+
+    const [sheds, setSheds] = useState<any[]>([]);
+    const [selectedShed, setSelectedShed] = useState<string>('');
+
+    // Fetch Locations (Reused logic from Farms.tsx)
+    useEffect(() => {
+        const loadLocations = async () => {
+            try {
+                const response = await farmvestService.getLocations();
+                let locs: any[] = [];
+                if (response && response.data && Array.isArray(response.data.locations)) locs = response.data.locations;
+                else if (response && Array.isArray(response.locations)) locs = response.locations;
+                else if (Array.isArray(response)) locs = response;
+
+                if (locs.length > 0) setLocations(locs);
+            } catch (err) {
+                console.error('Failed to load locations', err);
+            }
+        };
+        loadLocations();
+    }, []);
+
+    // Fetch Farms when Location changes
+    useEffect(() => {
+        if (!selectedLocation || selectedLocation === 'ALL') {
+            setFarms([]);
+            setSelectedFarm('');
+            return;
+        }
+        const loadFarms = async () => {
+            try {
+                // API expects location NAME
+                const res = await farmvestService.getAllFarms({ location: selectedLocation, size: 100 });
+                let farmList = [];
+                if (res && Array.isArray(res.farms)) farmList = res.farms;
+                else if (res && res.data && Array.isArray(res.data)) farmList = res.data;
+                else if (Array.isArray(res)) farmList = res;
+
+                setFarms(farmList);
+                setSelectedFarm(''); // Reset farm when location changes
+            } catch (err) {
+                console.error('Failed to load farms', err);
+                setFarms([]);
+            }
+        };
+        loadFarms();
+    }, [selectedLocation]);
+
+    // Fetch Sheds when Farm changes
+    useEffect(() => {
+        if (!selectedFarm) {
+            setSheds([]);
+            setSelectedShed('');
+            return;
+        }
+        const loadSheds = async () => {
+            try {
+                const res = await farmvestService.getShedList(Number(selectedFarm));
+                let shedList = [];
+                if (res && Array.isArray(res.data)) shedList = res.data;
+                else if (Array.isArray(res)) shedList = res;
+
+                setSheds(shedList);
+                setSelectedShed(''); // Reset shed when farm changes
+            } catch (err) {
+                console.error('Failed to load sheds', err);
+                setSheds([]);
+            }
+        };
+        loadSheds();
+    }, [selectedFarm]);
 
     const fetchEntries = async () => {
         setLoading(true);
@@ -27,12 +103,19 @@ const MilkProduction: React.FC = () => {
                     timing: timingFilter || undefined,
                     page,
                     size: 15,
+                    farm_id: selectedFarm || undefined,
+                    shed_id: selectedShed || undefined
                 });
                 setEntries(res.data || []);
                 setTotalPages(res.pagination?.total_pages || 1);
                 setTotalItems(res.count || res.pagination?.total_items || 0);
             } else {
-                const res = await farmvestService.getMilkEntries({ page, size: 15 });
+                const res = await farmvestService.getMilkEntries({
+                    page,
+                    size: 15,
+                    farm_id: selectedFarm || undefined,
+                    shed_id: selectedShed || undefined
+                });
                 setEntries(res.data || []);
                 setTotalPages(res.pagination?.total_pages || 1);
                 setTotalItems(res.count || res.pagination?.total_items || 0);
@@ -47,7 +130,7 @@ const MilkProduction: React.FC = () => {
 
     useEffect(() => {
         fetchEntries();
-    }, [page, reportDate, timingFilter]);
+    }, [page, reportDate, timingFilter, selectedShed, selectedFarm]); // Trigger on filter changes
 
     const stats = useMemo(() => {
         const total = entries.reduce((sum, e) => sum + (e.quantity || 0), 0);
@@ -70,12 +153,7 @@ const MilkProduction: React.FC = () => {
                     </h1>
                     <p className="text-xs text-gray-500 mt-1">Track and manage daily milk production records</p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2.5 bg-amber-500 text-white rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-amber-600 transition-colors shadow-sm"
-                >
-                    <Plus size={16} /> Add Entry
-                </button>
+
             </div>
 
             {/* Stats */}
@@ -99,7 +177,51 @@ const MilkProduction: React.FC = () => {
             </div>
 
             {/* Filters */}
-            <div className="milk-filter-bar">
+            <div className="milk-filter-bar flex flex-wrap gap-2">
+                {/* Location Dropdown */}
+                <select
+                    className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-lg px-3 py-2 outline-none"
+                    value={selectedLocation}
+                    onChange={(e) => { setSelectedLocation(e.target.value); setPage(1); }}
+                >
+                    <option value="">All Locations</option>
+                    {locations.map((loc: any, idx) => {
+                        const label = loc.name || loc.location || loc;
+                        const value = String(label).toUpperCase(); // API expects NAME
+                        return <option key={idx} value={value}>{label}</option>
+                    })}
+                </select>
+
+                {/* Farm Dropdown */}
+                <select
+                    className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-lg px-3 py-2 outline-none disabled:opacity-50"
+                    value={selectedFarm}
+                    onChange={(e) => { setSelectedFarm(e.target.value); setPage(1); }}
+                    disabled={!selectedLocation || farms.length === 0}
+                >
+                    <option value="">All Farms</option>
+                    {farms.map((farm: any) => (
+                        <option key={farm.id || farm.farm_id} value={farm.id || farm.farm_id}>
+                            {farm.farm_name || farm.name}
+                        </option>
+                    ))}
+                </select>
+
+                {/* Shed Dropdown */}
+                <select
+                    className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-lg px-3 py-2 outline-none disabled:opacity-50"
+                    value={selectedShed}
+                    onChange={(e) => { setSelectedShed(e.target.value); setPage(1); }}
+                    disabled={!selectedFarm || sheds.length === 0}
+                >
+                    <option value="">All Sheds</option>
+                    {sheds.map((shed: any) => (
+                        <option key={shed.shed_id || shed.id} value={shed.shed_id || shed.id}>
+                            {shed.shed_id} {shed.shed_name ? `- ${shed.shed_name}` : ''}
+                        </option>
+                    ))}
+                </select>
+
                 <div className="flex items-center gap-2">
                     <Filter size={14} className="text-gray-400" />
                     <input
@@ -118,9 +240,16 @@ const MilkProduction: React.FC = () => {
                     <option value="MORNING">Morning</option>
                     <option value="EVENING">Evening</option>
                 </select>
-                {(reportDate || timingFilter) && (
+                {(reportDate || timingFilter || selectedLocation || selectedFarm || selectedShed) && (
                     <button
-                        onClick={() => { setReportDate(''); setTimingFilter(''); setPage(1); }}
+                        onClick={() => {
+                            setReportDate('');
+                            setTimingFilter('');
+                            setSelectedLocation('');
+                            setSelectedFarm('');
+                            setSelectedShed('');
+                            setPage(1);
+                        }}
                         className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase"
                     >
                         Clear Filters
@@ -166,11 +295,10 @@ const MilkProduction: React.FC = () => {
                                         {entry.end_date ? new Date(entry.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}
                                     </td>
                                     <td>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                            entry.timing === 'MORNING'
-                                                ? 'bg-amber-50 text-amber-700'
-                                                : 'bg-indigo-50 text-indigo-700'
-                                        }`}>
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${entry.timing === 'MORNING'
+                                            ? 'bg-amber-50 text-amber-700'
+                                            : 'bg-indigo-50 text-indigo-700'
+                                            }`}>
                                             {entry.timing}
                                         </span>
                                     </td>
@@ -205,11 +333,7 @@ const MilkProduction: React.FC = () => {
                 )}
             </div>
 
-            <CreateMilkEntryModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={() => { setShowCreateModal(false); fetchEntries(); }}
-            />
+
         </div>
     );
 };

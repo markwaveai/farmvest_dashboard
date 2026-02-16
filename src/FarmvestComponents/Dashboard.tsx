@@ -119,8 +119,8 @@ const Dashboard: React.FC = () => {
             );
 
             filteredAnimals.forEach((a) => {
-                const shedName = a.shed_name || (a.shed && a.shed.shed_name) || 'Unknown';
-                const farmName = a.farm_name || (a.farm && a.farm.farm_name) || 'Unknown';
+                const shedName = a.shed_name || (a.shed && (a.shed.shed_name || a.shed.name)) || 'Unknown';
+                const farmName = a.farm_name || (a.farm && (a.farm.farm_name || a.farm.name)) || 'Unknown';
                 const groupKey = selectedFarm === 'All' ? `${farmName}-${shedName}` : shedName;
 
                 if (!groups[groupKey]) {
@@ -233,6 +233,63 @@ const Dashboard: React.FC = () => {
             ? `Revenue & Expenses Trend (${selectedFarm})`
             : 'Revenue & Expenses Trend (Entire Farm)';
 
+    const [chartConfig, setChartConfig] = useState({
+        cx: '50%',
+        outerRadius: 80,
+        innerRadius: 60,
+        legendLayout: 'vertical' as 'vertical' | 'horizontal',
+        legendVerticalAlign: 'middle' as 'middle' | 'bottom',
+        legendAlign: 'right' as 'right' | 'center'
+    });
+
+    const [areaChartMargin, setAreaChartMargin] = useState({ top: 10, right: 10, left: -20, bottom: 0 });
+
+    useEffect(() => {
+        const handleResize = () => {
+            const width = window.innerWidth;
+            if (width < 480) {
+                // Mobile
+                setChartConfig({
+                    cx: '50%', // Center horizontally when legend is at bottom
+                    outerRadius: 60, // Slightly larger since we have vertical space now
+                    innerRadius: 40,
+                    legendLayout: 'horizontal',
+                    legendVerticalAlign: 'bottom',
+                    legendAlign: 'center'
+                });
+                setAreaChartMargin({ top: 10, right: 10, left: -20, bottom: 0 });
+            } else if (width < 1024) {
+                // Tablet
+                setChartConfig({
+                    cx: '45%',
+                    outerRadius: 35,
+                    innerRadius: 20,
+                    legendLayout: 'vertical',
+                    legendVerticalAlign: 'middle',
+                    legendAlign: 'right'
+                });
+                setAreaChartMargin({ top: 10, right: 10, left: -20, bottom: 0 });
+            } else {
+                // Desktop
+                setChartConfig({
+                    cx: '50%',
+                    outerRadius: 70,
+                    innerRadius: 50,
+                    legendLayout: 'vertical',
+                    legendVerticalAlign: 'middle',
+                    legendAlign: 'right'
+                });
+                setAreaChartMargin({ top: 10, right: 30, left: 10, bottom: 0 });
+            }
+        };
+
+        // Initial call
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <div className="dashboard-container relative">
             {isLoading && (
@@ -247,27 +304,29 @@ const Dashboard: React.FC = () => {
             <div className="dashboard-header">
                 <h1 className="dashboard-title">Financial & Feed Overview</h1>
 
-                <div className="flex gap-4 items-center">
+                <div className="flex flex-col md:flex-row md:flex-nowrap gap-4 items-center w-full md:w-auto">
                     {/* Filters */}
-                    <SearchableDropdown
-                        options={farmOptions}
-                        value={selectedFarm}
-                        onChange={handleFarmChange}
-                        placeholder="Select Farm"
-                        className="w-48"
-                    />
+                    <div className="flex gap-4 w-full md:w-auto">
+                        <SearchableDropdown
+                            options={farmOptions}
+                            value={selectedFarm}
+                            onChange={handleFarmChange}
+                            placeholder="Select Farm"
+                            className="w-full md:w-48"
+                        />
 
-                    <SearchableDropdown
-                        options={shedOptions}
-                        value={selectedShed}
-                        onChange={handleShedChange}
-                        placeholder="Select Shed"
-                        disabled={selectedFarm === 'All'}
-                        className="w-48"
-                    />
+                        <SearchableDropdown
+                            options={shedOptions}
+                            value={selectedShed}
+                            onChange={handleShedChange}
+                            placeholder="Select Shed"
+                            disabled={selectedFarm === 'All'}
+                            className="w-full md:w-48"
+                        />
+                    </div>
 
                     {/* Time Filter */}
-                    <div className="time-filter-container ml-4">
+                    <div className="time-filter-container w-full md:w-auto ml-0 md:ml-4 overflow-x-auto">
                         {(['daily', 'weekly', 'monthly', 'yearly'] as TimeRange[]).map((range) => (
                             <button
                                 key={range}
@@ -352,9 +411,9 @@ const Dashboard: React.FC = () => {
                     <div className="chart-header">
                         <h2 className="chart-title">{chartTitle}</h2>
                     </div>
-                    <div style={{ width: '100%', height: 350 }}>
+                    <div className="chart-container-large">
                         <ResponsiveContainer>
-                            <AreaChart data={revenueTrendData}>
+                            <AreaChart data={revenueTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor={THICK_GREEN} stopOpacity={0.8} />
@@ -366,10 +425,10 @@ const Dashboard: React.FC = () => {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" />
-                                <YAxis />
+                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                <YAxis tick={{ fontSize: 12 }} />
                                 <Tooltip />
-                                <Legend />
+                                <Legend wrapperStyle={{ fontSize: '12px' }} />
                                 <Area type="monotone" dataKey="revenue" stroke={THICK_GREEN} fillOpacity={1} fill="url(#colorRevenue)" name="Revenue" />
                                 <Area type="monotone" dataKey="expenses" stroke="#E27D60" fillOpacity={1} fill="url(#colorExpense)" name="Expenses" />
                             </AreaChart>
@@ -378,13 +437,13 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Secondary Charts - Row of 3 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {/* Feed Consumption Logic */}
                     <div className="chart-card" style={{ minHeight: 'auto', flex: 1 }}>
                         <div className="chart-header">
                             <h2 className="chart-title">Feed Consumption ({timeRange})</h2>
                         </div>
-                        <div style={{ width: '100%', height: 200 }}>
+                        <div className="chart-container-small">
                             <ResponsiveContainer>
                                 <BarChart data={revenueTrendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -402,7 +461,7 @@ const Dashboard: React.FC = () => {
                         <div className="chart-header">
                             <h2 className="chart-title">Revenue by Shed</h2>
                         </div>
-                        <div style={{ width: '100%', height: 200 }}>
+                        <div className="chart-container-small">
                             <ResponsiveContainer>
                                 <BarChart data={currentShedData} layout="vertical">
                                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -420,15 +479,15 @@ const Dashboard: React.FC = () => {
                         <div className="chart-header">
                             <h2 className="chart-title">Buffalo Distribution</h2>
                         </div>
-                        <div style={{ width: '100%', height: 200 }}>
+                        <div className="chart-container-small">
                             <ResponsiveContainer>
                                 <PieChart>
                                     <Pie
                                         data={currentShedData}
-                                        cx="50%"
+                                        cx={chartConfig.cx}
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
+                                        innerRadius={chartConfig.innerRadius}
+                                        outerRadius={chartConfig.outerRadius}
                                         fill="#E27D60"
                                         paddingAngle={5}
                                         dataKey="animals"
@@ -439,7 +498,12 @@ const Dashboard: React.FC = () => {
                                         ))}
                                     </Pie>
                                     <Tooltip />
-                                    <Legend layout="vertical" verticalAlign="middle" align="right" />
+                                    <Legend
+                                        layout={chartConfig.legendLayout}
+                                        verticalAlign={chartConfig.legendVerticalAlign}
+                                        align={chartConfig.legendAlign}
+                                        wrapperStyle={chartConfig.legendLayout === 'horizontal' ? { fontSize: '10px', paddingTop: '10px' } : undefined}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -448,7 +512,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Breakdown Table */}
-            <div className="chart-card" style={{ marginBottom: '24px' }}>
+            <div className="chart-card" style={{ marginBottom: '0', minHeight: 'auto', paddingBottom: '12px' }}>
                 <div className="chart-header">
                     <h2 className="chart-title">Detailed Financial Breakdown {selectedShed !== 'All' ? `- ${selectedShed}` : ''}</h2>
                 </div>
@@ -467,10 +531,10 @@ const Dashboard: React.FC = () => {
                             {revenueTrendData.map((data, index) => (
                                 <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
                                     <td style={{ padding: '12px', fontWeight: 500 }}>{data.name}</td>
-                                    <td style={{ padding: '12px', color: THICK_GREEN }}>₹ {data.revenue.toLocaleString()}</td>
-                                    <td style={{ padding: '12px', color: '#E27D60' }}>₹ {data.expenses.toLocaleString()}</td>
-                                    <td style={{ padding: '12px', color: '#64748b' }}>₹ {data.feedCost.toLocaleString()}</td>
-                                    <td style={{ padding: '12px', color: data.revenue - data.expenses >= 0 ? THICK_GREEN : '#E27D60', fontWeight: 600 }}>
+                                    <td style={{ padding: '12px', color: THICK_GREEN, whiteSpace: 'nowrap' }}>₹ {data.revenue.toLocaleString()}</td>
+                                    <td style={{ padding: '12px', color: '#E27D60', whiteSpace: 'nowrap' }}>₹ {data.expenses.toLocaleString()}</td>
+                                    <td style={{ padding: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>₹ {data.feedCost.toLocaleString()}</td>
+                                    <td style={{ padding: '12px', color: data.revenue - data.expenses >= 0 ? THICK_GREEN : '#E27D60', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                         ₹ {(data.revenue - data.expenses).toLocaleString()}
                                     </td>
                                 </tr>
@@ -484,6 +548,14 @@ const Dashboard: React.FC = () => {
 };
 
 const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: any; timeRange: string; shed: string }> = ({ isOpen, onClose, data, timeRange, shed }) => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 480);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 480);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     if (!isOpen) return null;
 
     // Simulate breakdown based on total consumption
@@ -498,12 +570,14 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
         { name: 'Mineral Mixture', value: totalConsumption * 0.05, fill: '#ff8042' },
     ];
 
+    const chartRadius = isMobile ? { inner: 40, outer: 70 } : { inner: 60, outer: 100 };
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-[800px] max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-800">Feed Details Analysis</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex ${isMobile ? 'items-end pb-0' : 'items-center p-4'} justify-center z-[100]`}>
+            <div className={`bg-white rounded-lg w-full max-w-3xl max-h-[85vh] overflow-y-auto ${isMobile ? 'rounded-b-none p-3' : 'p-6'}`}>
+                <div className="flex justify-between items-start mb-6">
+                    <h2 className={`font-bold text-gray-800 ${isMobile ? 'text-base' : 'text-xl'}`}>Feed Details Analysis</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1 -mt-1">
                         <ArrowUpRight className="transform rotate-45" size={24} /> {/* Using as close icon surrogate */}
                         <span className="text-2xl">&times;</span>
                     </button>
@@ -519,11 +593,11 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <p className="text-sm text-gray-500">Total Consumption</p>
-                                <p className="text-xl font-bold text-blue-600">{totalConsumption.toLocaleString()} kg</p>
+                                <p className={`font-bold text-blue-600 ${isMobile ? 'text-lg' : 'text-xl'}`}>{totalConsumption.toLocaleString()} kg</p>
                             </div>
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <p className="text-sm text-gray-500">Total Cost</p>
-                                <p className="text-xl font-bold text-orange-600">₹ {totalCost.toLocaleString()}</p>
+                                <p className={`font-bold text-orange-600 ${isMobile ? 'text-lg' : 'text-xl'}`}>₹ {totalCost.toLocaleString()}</p>
                             </div>
                         </div>
 
@@ -533,9 +607,9 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
                                 <li key={index} className="flex justify-between items-center p-2 border-b border-gray-100 last:border-0">
                                     <div className="flex items-center">
                                         <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.fill }}></div>
-                                        <span>{item.name}</span>
+                                        <span className={isMobile ? 'text-sm' : ''}>{item.name}</span>
                                     </div>
-                                    <span className="font-medium">{item.value.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</span>
+                                    <span className={`font-medium ${isMobile ? 'text-sm' : ''}`}>{item.value.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</span>
                                 </li>
                             ))}
                         </ul>
@@ -544,15 +618,15 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
                     {/* Right: Visualization */}
                     <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg p-4">
                         <h3 className="font-semibold text-gray-700 mb-2 w-full text-center">Distribution Ratio</h3>
-                        <div style={{ width: '100%', height: 300 }}>
+                        <div style={{ width: '100%', height: isMobile ? 220 : 300 }}>
                             <ResponsiveContainer>
                                 <PieChart>
                                     <Pie
                                         data={breakdown}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={100}
+                                        innerRadius={chartRadius.inner}
+                                        outerRadius={chartRadius.outer}
                                         fill="#8884d8"
                                         paddingAngle={5}
                                         dataKey="value"
@@ -562,7 +636,7 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
                                         ))}
                                     </Pie>
                                     <Tooltip formatter={(value: any) => `${value.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg`} />
-                                    <Legend />
+                                    <Legend wrapperStyle={isMobile ? { fontSize: '10px' } : undefined} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -574,6 +648,14 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
 };
 
 const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: any; timeRange: string; shed: string }> = ({ isOpen, onClose, data, timeRange, shed }) => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 480);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 480);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     if (!isOpen) return null;
 
     const totalRevenue = data.reduce((acc: number, curr: any) => acc + curr.revenue, 0);
@@ -593,12 +675,14 @@ const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data
         { name: 'Ops & Maint', value: totalExpenses * 0.10, fill: '#fcd34d' },
     ];
 
+    const chartRadius = isMobile ? { inner: 35, outer: 60 } : { inner: 50, outer: 80 };
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-800">Financial Performance Details</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex ${isMobile ? 'items-end pb-0' : 'items-center p-4'} justify-center z-[100]`}>
+            <div className={`bg-white rounded-lg w-full max-w-4xl max-h-[85vh] overflow-y-auto ${isMobile ? 'rounded-b-none p-3' : 'p-6'}`}>
+                <div className="flex justify-between items-start mb-6">
+                    <h2 className={`font-bold text-gray-800 ${isMobile ? 'text-base' : 'text-xl'} pr-2`}>Financial Performance Details</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1 -mt-1">
                         <span className="text-2xl">&times;</span>
                     </button>
                 </div>
@@ -606,33 +690,33 @@ const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className="bg-green-50 p-4 rounded-lg text-center">
                         <p className="text-sm text-gray-500">Net Profit</p>
-                        <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={`font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'} ${isMobile ? 'text-xl' : 'text-2xl'}`}>
                             ₹ {netProfit.toLocaleString()}
                         </p>
                     </div>
                     <div className="bg-teal-50 p-4 rounded-lg text-center">
                         <p className="text-sm text-gray-500">Gross Revenue</p>
-                        <p className="text-2xl font-bold text-teal-700">₹ {totalRevenue.toLocaleString()}</p>
+                        <p className={`font-bold text-teal-700 ${isMobile ? 'text-xl' : 'text-2xl'}`}>₹ {totalRevenue.toLocaleString()}</p>
                     </div>
                     <div className="bg-orange-50 p-4 rounded-lg text-center">
                         <p className="text-sm text-gray-500">Total Expenses</p>
-                        <p className="text-2xl font-bold text-orange-700">₹ {totalExpenses.toLocaleString()}</p>
+                        <p className={`font-bold text-orange-700 ${isMobile ? 'text-xl' : 'text-2xl'}`}>₹ {totalExpenses.toLocaleString()}</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                     {/* Revenue Section */}
                     <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="font-semibold text-center text-gray-700 mb-4">Revenue Sources</h3>
-                        <div style={{ width: '100%', height: 250 }}>
+                        <div style={{ width: '100%', height: isMobile ? 200 : 250 }}>
                             <ResponsiveContainer>
                                 <PieChart>
                                     <Pie
                                         data={revenueSources}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={80}
+                                        innerRadius={chartRadius.inner}
+                                        outerRadius={chartRadius.outer}
                                         dataKey="value"
                                     >
                                         {revenueSources.map((entry, index) => (
@@ -640,7 +724,7 @@ const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data
                                         ))}
                                     </Pie>
                                     <Tooltip formatter={(value: any) => `₹ ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-                                    <Legend />
+                                    <Legend wrapperStyle={isMobile ? { fontSize: '10px' } : undefined} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -649,15 +733,15 @@ const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data
                     {/* Expense Section */}
                     <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="font-semibold text-center text-gray-700 mb-4">Expense Breakdown</h3>
-                        <div style={{ width: '100%', height: 250 }}>
+                        <div style={{ width: '100%', height: isMobile ? 200 : 250 }}>
                             <ResponsiveContainer>
                                 <PieChart>
                                     <Pie
                                         data={expenseBreakdown}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={80}
+                                        innerRadius={chartRadius.inner}
+                                        outerRadius={chartRadius.outer}
                                         dataKey="value"
                                     >
                                         {expenseBreakdown.map((entry, index) => (
@@ -665,7 +749,7 @@ const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data
                                         ))}
                                     </Pie>
                                     <Tooltip formatter={(value: any) => `₹ ${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-                                    <Legend />
+                                    <Legend wrapperStyle={isMobile ? { fontSize: '10px' } : undefined} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -695,7 +779,7 @@ const BuffaloDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; shed
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-[800px] max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">Buffalo Herd Details</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -786,7 +870,7 @@ const ShedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; activeS
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-[800px] max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">Shed Utilization Details</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
