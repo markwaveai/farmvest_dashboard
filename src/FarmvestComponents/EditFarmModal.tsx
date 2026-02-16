@@ -32,7 +32,7 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
             const fetchLocations = async () => {
                 try {
                     const response = await farmvestService.getLocations();
-                    let locs: string[] = [];
+                    let locs: any[] = [];
                     if (response && response.data && Array.isArray(response.data.locations)) {
                         locs = response.data.locations;
                     } else if (response && Array.isArray(response.locations)) {
@@ -42,7 +42,14 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
                     }
 
                     if (locs.length > 0) {
-                        setLocations(locs.map(l => String(l).toUpperCase()));
+                        setLocations(locs.map(l =>
+                            (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                        ));
+                        // Set default if current location not in list
+                        const upperLocs = locs.map(l => (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase());
+                        if (location && !upperLocs.includes(location.toUpperCase())) {
+                            // keep current or default to first
+                        }
                     }
                 } catch (err) {
                     console.error("Failed to fetch locations", err);

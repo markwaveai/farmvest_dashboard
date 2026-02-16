@@ -72,7 +72,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         const fetchLocations = async () => {
             try {
                 const response = await farmvestService.getLocations();
-                let locs: string[] = [];
+                let locs: any[] = [];
                 if (response && response.data && Array.isArray(response.data.locations)) {
                     locs = response.data.locations;
                 } else if (response && Array.isArray(response.locations)) {
@@ -82,7 +82,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                 }
 
                 if (locs.length > 0) {
-                    setLocations(locs.map(String));
+                    setLocations(locs.map(l =>
+                        (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                    ));
                 }
             } catch (err) {
             }

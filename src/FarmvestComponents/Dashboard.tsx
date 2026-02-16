@@ -1,17 +1,21 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import './Dashboard.css';
 import {
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-    DollarSign, Home, Archive, Users, ArrowUpRight, ArrowDownRight, Filter
+    DollarSign, Home, Archive, Users, ArrowUpRight, ArrowDownRight, Filter, Loader2
 } from 'lucide-react';
 
 import SearchableDropdown from '../components/common/SearchableDropdown';
+import { farmvestService } from '../services/farmvest_api';
 
 type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 type FilterOption = 'All' | string;
+
+const THICK_GREEN = '#113025';
+const COLORS = [THICK_GREEN, '#E27D60', '#64748b', '#94a3b8'];
 
 const Dashboard: React.FC = () => {
     const [timeRange, setTimeRange] = useState<TimeRange>('monthly');
@@ -22,17 +26,125 @@ const Dashboard: React.FC = () => {
     const [isBuffaloModalOpen, setIsBuffaloModalOpen] = useState(false);
     const [isShedModalOpen, setIsShedModalOpen] = useState(false);
 
-    // --- Mock Data Constants ---
+    // Live Data State
+    const [farms, setFarms] = useState<any[]>([]);
+    const [sheds, setSheds] = useState<any[]>([]);
+    const [animalCount, setAnimalCount] = useState(0);
+    const [allAnimals, setAllAnimals] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // --- Mock Data Constants (Retained for Charts not yet in API) ---
     const FARMS = ['Farm A'];
     const SHEDS = ['Shed A', 'Shed B', 'Shed C', 'Shed D'];
 
+    // Initial Data Fetch
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                setIsLoading(true);
+                const farmsResponse = await farmvestService.getAllFarms();
+                const farmsList = Array.isArray(farmsResponse) ? farmsResponse : (farmsResponse.farms || farmsResponse.data || farmsResponse.data?.farms || []);
+                setFarms(farmsList);
+
+                // Fetch Initial Animals (Total)
+                const statsResponse = await farmvestService.getTotalAnimals(undefined, undefined, 1, 5000);
+                if (statsResponse) {
+                    const animalData = Array.isArray(statsResponse) ? statsResponse : (statsResponse.data || statsResponse.animals || statsResponse.data?.animals || []);
+                    setAnimalCount(statsResponse.animals_count || statsResponse.count || statsResponse.total_count || animalData.length);
+                    setAllAnimals(animalData);
+                }
+            } catch (error) {
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchInitialData();
+    }, []);
+
+    // Fetch Sheds when farm changes
+    useEffect(() => {
+        const fetchSheds = async () => {
+            if (selectedFarm === 'All') {
+                setSheds([]);
+                setSelectedShed('All');
+                return;
+            }
+            try {
+                const farmId = farms.find(f => (f.farm_name || f.name) === selectedFarm)?.id ||
+                    farms.find(f => (f.farm_name || f.name) === selectedFarm)?.farm_id;
+                if (farmId) {
+                    const shedResponse = await farmvestService.getShedsByFarm(farmId);
+                    const sl = Array.isArray(shedResponse) ? shedResponse : (shedResponse.sheds || shedResponse.data || shedResponse.data?.sheds || []);
+                    setSheds(sl);
+                }
+            } catch (error) {
+            }
+        };
+        fetchSheds();
+    }, [selectedFarm, farms]);
+
+    // Update Animal Count when filters change
+    useEffect(() => {
+        const updateCount = async () => {
+            try {
+                const farmObj = farms.find(f => (f.farm_name || f.name) === selectedFarm);
+                const shedObj = sheds.find(s => (s.shed_name || s.shed_id) === selectedShed);
+
+                const farmId = farmObj?.id || farmObj?.farm_id;
+                const shedId = shedObj?.id || shedObj?.shed_id;
+
+                const response = await farmvestService.getTotalAnimals(farmId, shedId, 1, 5000);
+                if (response) {
+                    const data = Array.isArray(response) ? response : (response.data || response.animals || response.data?.animals || []);
+                    setAnimalCount(response.animals_count || response.count || response.total_count || data.length);
+                    if (selectedFarm === 'All' && selectedShed === 'All') {
+                        setAllAnimals(data);
+                    }
+                }
+            } catch (error) {
+            }
+        };
+        updateCount();
+    }, [selectedFarm, selectedShed]);
+
     // Data strictly according to: 1 Farm = 4 Sheds, 300 Buffalos each.
-    const allShedData = [
-        { name: 'Shed A', animals: 300, revenue: 150000, color: '#113025' }, // Deep Jungle Green
-        { name: 'Shed B', animals: 300, revenue: 145000, color: '#E27D60' }, // Terracotta
-        { name: 'Shed C', animals: 300, revenue: 160000, color: '#64748b' }, // Slate Grey
-        { name: 'Shed D', animals: 300, revenue: 155000, color: '#94a3b8' }, // Light Slate
-    ];
+    // Enhanced: Use live data for distribution if all animals loaded
+    const allShedData = useMemo(() => {
+        if (allAnimals.length > 0) {
+            const groups: Record<string, { name: string, farmName?: string, animals: number, revenue: number, color: string }> = {};
+
+            // Filter by selected farm name if not "All"
+            const filteredAnimals = selectedFarm === 'All' ? allAnimals : allAnimals.filter(a =>
+                (a.farm_name || (a.farm && a.farm.farm_name)) === selectedFarm
+            );
+
+            filteredAnimals.forEach((a) => {
+                const shedName = a.shed_name || (a.shed && a.shed.shed_name) || 'Unknown';
+                const farmName = a.farm_name || (a.farm && a.farm.farm_name) || 'Unknown';
+                const groupKey = selectedFarm === 'All' ? `${farmName}-${shedName}` : shedName;
+
+                if (!groups[groupKey]) {
+                    groups[groupKey] = {
+                        name: selectedFarm === 'All' ? `${farmName} - ${shedName}` : shedName,
+                        farmName: farmName,
+                        animals: 0,
+                        revenue: 0,
+                        color: COLORS[Object.keys(groups).length % COLORS.length]
+                    };
+                }
+                groups[groupKey].animals += 1;
+                groups[groupKey].revenue += 500;
+            });
+            return Object.values(groups);
+        }
+
+        return [
+            { name: 'Shed A', animals: 300, revenue: 150000, color: '#113025' },
+            { name: 'Shed B', animals: 300, revenue: 145000, color: '#E27D60' },
+            { name: 'Shed C', animals: 300, revenue: 160000, color: '#64748b' },
+            { name: 'Shed D', animals: 300, revenue: 155000, color: '#94a3b8' },
+        ];
+    }, [allAnimals, selectedFarm]);
 
     // Filter logic for Sheds/Animals/Revenue
     const currentShedData = useMemo(() => {
@@ -40,18 +152,18 @@ const Dashboard: React.FC = () => {
             return allShedData.filter(s => s.name === selectedShed);
         }
         return allShedData;
-    }, [selectedShed]);
+    }, [selectedShed, allShedData]);
 
     // Calculate Totals based on selection
     const totalRevenue = currentShedData.reduce((acc, curr) => acc + curr.revenue, 0);
-    const totalAnimals = currentShedData.reduce((acc, curr) => acc + curr.animals, 0);
-    const activeSheds = selectedShed === 'All' ? 4 : 1;
-    const totalFarms = selectedFarm === 'All' ? 1 : 1; // Simplistic due to single farm requirement
+    const totalAnimals = selectedFarm === 'All' && selectedShed === 'All' ? animalCount : currentShedData.reduce((acc, curr) => acc + curr.animals, 0);
+    const activeSheds = selectedShed === 'All' ? (sheds.length || 4) : 1;
+    const totalFarms = farms.length || 1;
 
     // --- Mock Data Generators ---
     const getRevenueData = (range: TimeRange, shedFilter: FilterOption) => {
         // Base multiplier to simulate lower values when single shed is selected
-        const multiplier = shedFilter === 'All' ? 1 : 0.25;
+        const multiplier = shedFilter === 'All' ? 1 : (1 / (sheds.length || 4));
 
         switch (range) {
             case 'daily':
@@ -98,9 +210,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const THICK_GREEN = '#113025';
-    const COLORS = [THICK_GREEN, '#E27D60', '#64748b', '#94a3b8'];
-    const revenueTrendData = useMemo(() => getRevenueData(timeRange, selectedShed), [timeRange, selectedShed]);
+    const revenueTrendData = useMemo(() => getRevenueData(timeRange, selectedShed), [timeRange, selectedShed, sheds.length]);
     const totalFeedConsumption = revenueTrendData.reduce((acc, curr) => acc + curr.feedConsumption, 0);
 
     const handleShedChange = (val: string) => {
@@ -113,9 +223,9 @@ const Dashboard: React.FC = () => {
         setSelectedShed('All');
     };
 
-    // Prepare options for SearchableDropdown
-    const farmOptions = [{ value: 'All', label: 'All Farms' }, ...FARMS.map(f => ({ value: f, label: f }))];
-    const shedOptions = [{ value: 'All', label: 'All Sheds' }, ...SHEDS.map(s => ({ value: s, label: s }))];
+    // Prepare options for SearchableDropdown from live data
+    const farmOptions = [{ value: 'All', label: 'All Farms' }, ...farms.map(f => ({ value: f.farm_name || f.name, label: f.farm_name || f.name }))];
+    const shedOptions = [{ value: 'All', label: 'All Sheds' }, ...sheds.map(s => ({ value: s.shed_name || s.shed_id, label: s.shed_name || s.shed_id }))];
 
     const chartTitle = selectedShed !== 'All'
         ? `Revenue & Expenses Trend (${selectedShed})`
@@ -124,7 +234,15 @@ const Dashboard: React.FC = () => {
             : 'Revenue & Expenses Trend (Entire Farm)';
 
     return (
-        <div className="dashboard-container">
+        <div className="dashboard-container relative">
+            {isLoading && (
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+                    <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="animate-spin text-green-800" size={40} />
+                        <span className="font-semibold text-green-900">Synchronizing Farm Data...</span>
+                    </div>
+                </div>
+            )}
             {/* Header */}
             <div className="dashboard-header">
                 <h1 className="dashboard-title">Financial & Feed Overview</h1>

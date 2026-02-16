@@ -143,7 +143,7 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, onClose, 
         const fetchLocations = async () => {
             try {
                 const response = await farmvestService.getLocations();
-                let locs: string[] = [];
+                let locs: any[] = [];
                 if (response && response.data && Array.isArray(response.data.locations)) {
                     locs = response.data.locations;
                 } else if (response && Array.isArray(response.locations)) {
@@ -151,7 +151,9 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, onClose, 
                 } else if (Array.isArray(response)) {
                     locs = response;
                 }
-                setLocations(locs.map(String));
+                setLocations(locs.map(l =>
+                    (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                ));
             } catch (err) {
                 console.error("Failed to fetch locations", err);
             }

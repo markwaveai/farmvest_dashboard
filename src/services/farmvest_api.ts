@@ -220,12 +220,14 @@ export const farmvestService = {
             throw error;
         }
     },
-    getTotalAnimals: async (farmId?: number, shedId?: number) => {
+    getTotalAnimals: async (farmId?: number, shedId?: number, page: number = 1, size: number = 15) => {
         try {
             let url = '/api/animal/get_total_animals';
             const params = new URLSearchParams();
             if (farmId) params.append('farm_id', farmId.toString());
             if (shedId) params.append('shed_id', shedId.toString());
+            params.append('page', page.toString());
+            params.append('size', size.toString());
 
             if (params.toString()) url += `?${params.toString()}`;
 

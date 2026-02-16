@@ -94,7 +94,7 @@ const BuffaloManagement: React.FC = () => {
                     // Initial load or Filtered load: get allocated animals
                     const farmId = selectedFarm !== 'All' ? farms.find(f => f.farm_name === selectedFarm)?.id : undefined;
                     const shedId = selectedShed !== 'All' ? shedsList.find(s => (s.shed_name || s.shed_id) === selectedShed)?.id : undefined;
-                    response = await farmvestService.getTotalAnimals(farmId, shedId);
+                    response = await farmvestService.getTotalAnimals(farmId, shedId, 1, 50);
                 } else {
                     // Search mode
                     response = await farmvestService.searchAnimal(searchQuery.trim());
@@ -103,7 +103,7 @@ const BuffaloManagement: React.FC = () => {
                 if (response && (response.status === 'success' || Array.isArray(response) || response.data)) {
 
                     // Normalize dataPart
-                    const dataPart = response.data || response;
+                    const dataPart = response.data || response.animals || response.data?.animals || response;
                     const rawData = Array.isArray(dataPart) ? dataPart : [dataPart];
 
                     const seenIds = new Set();
@@ -159,7 +159,7 @@ const BuffaloManagement: React.FC = () => {
                     });
 
                     setBuffaloList(mappedData);
-                    setTotalCount(response.count || mappedData.length);
+                    setTotalCount(response.animals_count || response.count || mappedData.length);
 
                     // Auto-open if exact match
                     if (searchQuery.trim().length >= 4) {
@@ -192,8 +192,23 @@ const BuffaloManagement: React.FC = () => {
         const fetchLocations = async () => {
             try {
                 const response = await farmvestService.getLocations();
-                if (response && Array.isArray(response.data)) {
-                    setLocations(response.data);
+                if (response) {
+                    let locs: any[] = [];
+                    if (response.data?.locations && Array.isArray(response.data.locations)) {
+                        locs = response.data.locations;
+                    } else if (Array.isArray(response.data)) {
+                        locs = response.data;
+                    } else if (Array.isArray(response.locations)) {
+                        locs = response.locations;
+                    } else if (Array.isArray(response)) {
+                        locs = response;
+                    }
+
+                    if (locs.length > 0) {
+                        setLocations(locs.map(l =>
+                            (typeof l === 'object' ? (l.name || l.location || '') : String(l))
+                        ));
+                    }
                 }
             } catch (err) {
             }
@@ -359,12 +374,12 @@ const BuffaloManagement: React.FC = () => {
                         <input
                             type="text"
                             placeholder="Find by Tag ID or RFID..."
-                            className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#113025] outline-none w-64 shadow-sm"
+                            className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#113025] outline-none w-64 shadow-premium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <button className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm">
+                    <button className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-premium transition-all">
                         <Filter size={20} className="text-gray-500" />
                     </button>
                 </div>
@@ -372,7 +387,7 @@ const BuffaloManagement: React.FC = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                <div className="buffalo-stat-card border-blue-100 bg-blue-50/10">
+                <div className="buffalo-stat-card border-blue-100 bg-blue-50/10 hover:shadow-premium-hover hover:-translate-y-1 transition-all">
                     <div className="stat-icon bg-blue-100 text-blue-600 shadow-sm"><Users size={20} /></div>
                     <div className="stat-info">
                         <h3 className="text-gray-500 font-bold">Buffaloes</h3>
@@ -410,7 +425,7 @@ const BuffaloManagement: React.FC = () => {
             </div>
 
             {/* Location & Farm Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-top-4 duration-500">
+            <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-premium animate-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-[#113025] transition-all">
                     <MapPin size={14} className="text-[#113025]" />
                     <select
@@ -618,7 +633,7 @@ const BuffaloManagement: React.FC = () => {
                                         {expandedRowId === b.animalId && (
                                             <tr className="bg-gray-50/50 border-b border-gray-100">
                                                 <td colSpan={11} className="p-4 pl-12">
-                                                    <div className="rounded-lg border border-[#113025] bg-white overflow-hidden shadow-md">
+                                                    <div className="rounded-lg border border-[#113025] bg-white overflow-hidden shadow-premium">
                                                         <div className="px-4 py-2 bg-[#113025] border-b border-[#113025] flex items-center">
                                                             <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center">
                                                                 <Milk size={14} className="mr-2 text-white" /> Associated Calf ({inlineCalves[b.animalId]?.length || 0})

@@ -31,7 +31,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
             const fetchLocations = async () => {
                 try {
                     const response = await farmvestService.getLocations();
-                    let locs: string[] = [];
+                    let locs: any[] = [];
                     // Handle various response structures
                     if (response && response.data && Array.isArray(response.data.locations)) {
                         locs = response.data.locations;
@@ -42,9 +42,13 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                     }
 
                     if (locs.length > 0) {
-                        setLocations(locs.map(l => String(l).toUpperCase()));
+                        const mappedLocs = locs.map(l =>
+                            (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                        );
+                        setLocations(mappedLocs);
+
                         // Set default if current location not in list
-                        if (location && !locs.map(l => String(l).toUpperCase()).includes(location.toUpperCase())) {
+                        if (location && !mappedLocs.includes(location.toUpperCase())) {
                             // keep current or default to first
                         }
                     }

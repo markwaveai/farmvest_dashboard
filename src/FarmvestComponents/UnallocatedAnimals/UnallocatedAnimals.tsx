@@ -218,7 +218,7 @@ const UnallocatedAnimals: React.FC = () => {
 
             const [animalsResponse, gridData] = await Promise.all([
                 // Fix: Use numericId (Global ID) to fetch animals from the same shed ID we saved to
-                farmvestService.getTotalAnimals(Number(selectedFarmId), numericId).catch(e => {
+                farmvestService.getTotalAnimals(Number(selectedFarmId), numericId, 1, 300).catch(e => {
                     log(`Note: Animal fetch failed (possibly empty): ${numericId} (Raw: ${sId})`);
                     return { data: [] };
                 }),
@@ -231,7 +231,7 @@ const UnallocatedAnimals: React.FC = () => {
 
             if (!isMounted.current) return;
 
-            const allocatedAnimals = animalsResponse?.data || [];
+            const allocatedAnimals = Array.isArray(animalsResponse) ? animalsResponse : (animalsResponse?.data || animalsResponse?.animals || []);
             const allocationMap = new Map();
             const rowToLetter: { [key: string]: string } = { 'R1': 'A', 'R2': 'B', 'R3': 'C', 'R4': 'D' };
 

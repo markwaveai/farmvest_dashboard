@@ -9,7 +9,7 @@
     background: white;
     padding: 16px 24px;
     border-radius: var(--card-radius, 14px);
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
     margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
@@ -153,7 +153,7 @@
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02));
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
 }
 
 .shed-detail-card::before {
@@ -162,7 +162,7 @@
 
 .shed-detail-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03));
+    box-shadow: var(--card-shadow-hover, 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03));
     border-color: #10b981;
     z-index: 10;
 }

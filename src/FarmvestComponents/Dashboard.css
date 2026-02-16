@@ -59,7 +59,7 @@
     background-color: white;
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-premium);
     display: flex;
     flex-direction: column;
     transition: transform 0.2s, box-shadow 0.2s;
@@ -67,7 +67,7 @@
 
 .summary-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-premium-hover);
 }
 
 .card-header {
@@ -124,7 +124,7 @@
     background-color: white;
     padding: 24px;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-premium);
     min-height: 400px;
 }
 

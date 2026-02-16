@@ -73,6 +73,10 @@ module.exports = {
                     900: '#263238', // AppTheme.dark
                 },
             },
+            boxShadow: {
+                'premium': '0 12px 24px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03)',
+                'premium-hover': '0 32px 64px -12px rgba(0, 0, 0, 0.14)',
+            },
         },
     },
     plugins: [],

@@ -90,7 +90,7 @@ const Farms: React.FC = () => {
                 const response = await farmvestService.getLocations();
 
                 // Based on node script test: response.data.locations
-                let locs: string[] = [];
+                let locs: any[] = [];
 
                 if (response && response.data && Array.isArray(response.data.locations)) {
                     locs = response.data.locations;
@@ -100,9 +100,11 @@ const Farms: React.FC = () => {
                     locs = response;
                 }
 
-                // Set locations if valid strings
+                // Set locations if valid strings or objects
                 if (locs.length > 0) {
-                    setAvailableLocations(locs.map(l => String(l).toUpperCase()));
+                    setAvailableLocations(locs.map(l =>
+                        (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                    ));
                 }
             } catch (err) {
             }
@@ -175,7 +177,7 @@ const Farms: React.FC = () => {
 
     return (
         <div className="farms-container h-full flex flex-col gap-4 overflow-hidden animate-fadeIn">
-            <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-sm flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-premium flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
                     <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
                     <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
@@ -242,7 +244,7 @@ const Farms: React.FC = () => {
                     </div>
                 )}
 
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="bg-white border border-gray-100 rounded-2xl shadow-premium flex flex-col flex-1 min-h-0 overflow-hidden">
                     <div className="overflow-auto flex-1 min-h-0 hide-scrollbar">
                         <table className="farms-table w-full text-xs text-left border-collapse relative">
                             <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm">
