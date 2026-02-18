@@ -175,11 +175,11 @@ const Employees: React.FC = () => {
             )}
 
             {/* Page Header Card - Fixed Height */}
-            <div className="flex-none bg-white border-b border-gray-100 p-3 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-none bg-white border-b border-gray-100 p-3 2xl:p-6 4xl:p-12 5xl:p-20 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 4xl:gap-12 5xl:gap-20">
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">FarmVest Employees</h1>
-                        <p className="text-sm text-gray-500 mt-0.5">Manage all employees (Total: {globalTotalCount || totalCount || 0})</p>
+                        <h1 className="text-xl 2xl:text-3xl 4xl:text-6xl 5xl:text-[100px] font-bold text-gray-900 leading-tight">FarmVest Employees</h1>
+                        <p className="text-sm 2xl:text-xl 4xl:text-4xl 5xl:text-6xl text-gray-500 mt-0.5 4xl:mt-4">Manage all employees (Total: {globalTotalCount || totalCount || 0})</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -187,23 +187,23 @@ const Employees: React.FC = () => {
                              If we want search, implement separate logic. For now, keep visual.
                              (User request was specifically about pagination on existing APIs)
                          */}
-                        <div className="relative flex-1 min-w-[160px]">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search className="h-3.5 w-3.5 text-gray-400" />
+                        <div className="relative flex-1 min-w-[160px] 2xl:min-w-[300px] 4xl:min-w-[600px] 5xl:min-w-[900px]">
+                            <div className="absolute inset-y-0 left-0 pl-3 4xl:pl-8 5xl:pl-12 flex items-center pointer-events-none">
+                                <Search className="h-3.5 w-3.5 2xl:h-5 2xl:w-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400" />
                             </div>
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-9 pr-8 py-2 w-full border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                className="pl-9 2xl:pl-12 4xl:pl-24 5xl:pl-36 pr-8 py-2 2xl:py-3 4xl:py-8 5xl:py-14 w-full border border-gray-200 rounded-md 4xl:rounded-2xl text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                    className="absolute inset-y-0 right-0 pr-3 4xl:pr-8 5xl:pr-12 flex items-center text-gray-400 hover:text-gray-600"
                                 >
-                                    <X size={14} />
+                                    <X size={14} className="2xl:w-5 2xl:h-5 4xl:w-12 4xl:h-12 5xl:w-20 5xl:h-20" />
                                 </button>
                             )}
                         </div>
@@ -214,15 +214,15 @@ const Employees: React.FC = () => {
                             onMouseLeave={() => setIsDropdownOpen(false)}
                         >
                             <button
-                                className={`flex items-center justify-between min-w-[130px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                                className={`flex items-center justify-between min-w-[130px] 2xl:min-w-[180px] 4xl:min-w-[350px] 5xl:min-w-[500px] py-2 2xl:py-3 4xl:py-8 5xl:py-14 px-3 2xl:px-5 4xl:px-12 5xl:px-20 rounded-md 4xl:rounded-2xl text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
                                 <span className="flex items-center whitespace-nowrap">
                                     {formatRoleName(selectedRole)}
-                                    <span className="ml-1 text-gray-500 font-normal">
+                                    <span className="ml-1 4xl:ml-4 text-gray-500 font-normal">
                                         ({selectedRole === '' ? (globalTotalCount || totalCount) : (roleCounts[selectedRole] || 0)})
                                     </span>
                                 </span>
-                                <ChevronDown size={14} className={`ml-2 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 2xl:h-5 2xl:w-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isDropdownOpen && (
@@ -255,15 +255,15 @@ const Employees: React.FC = () => {
                             onMouseLeave={() => setIsStatusDropdownOpen(false)}
                         >
                             <button
-                                className={`flex items-center justify-between min-w-[120px] py-2 px-3 rounded-md text-xs font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                                className={`flex items-center justify-between min-w-[120px] 2xl:min-w-[160px] 4xl:min-w-[300px] 5xl:min-w-[450px] py-2 2xl:py-3 4xl:py-8 5xl:py-14 px-3 2xl:px-5 4xl:px-12 5xl:px-20 rounded-md 4xl:rounded-2xl text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
                             >
                                 <span className="flex items-center whitespace-nowrap">
                                     {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
-                                    <span className="ml-1 text-gray-500 font-normal">
+                                    <span className="ml-1 4xl:ml-4 text-gray-500 font-normal">
                                         ({selectedStatus === '' ? statusCounts.active + statusCounts.inactive : (selectedStatus === '1' ? statusCounts.active : statusCounts.inactive)})
                                     </span>
                                 </span>
-                                <ChevronDown size={14} className={`ml-2 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={14} className={`ml-2 2xl:w-5 2xl:h-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isStatusDropdownOpen && (
@@ -296,9 +296,9 @@ const Employees: React.FC = () => {
 
                         <button
                             onClick={handleAddEmployee}
-                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2.5 py-1.5 rounded-md font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all"
+                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2.5 2xl:px-6 4xl:px-14 5xl:px-24 py-1.5 2xl:py-3 4xl:py-8 5xl:py-14 rounded-md 4xl:rounded-2xl font-bold text-[11px] 2xl:text-base 4xl:text-4xl 5xl:text-6xl flex items-center gap-1 shadow-sm transition-all"
                         >
-                            <span className="text-xs">+</span> Add Employee
+                            <span className="text-xs 2xl:text-lg 4xl:text-5xl 5xl:text-7xl">+</span> Add Employee
                         </button>
                     </div >
                 </div >
@@ -308,19 +308,19 @@ const Employees: React.FC = () => {
             <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-x-auto">
                     <table className="employees-table min-w-full divide-y divide-gray-100 relative">
-                        <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-3 py-2.5 text-center bg-gray-50">S.No</th>
-                                <th className="px-3 py-2.5 text-left cursor-pointer bg-gray-50">
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">S.No</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-left cursor-pointer bg-gray-50">
                                     <span>Name</span>
                                 </th>
-                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Email</th>
-                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Phone</th>
-                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Joining Date</th>
-                                <th className="px-3 py-2.5 text-center bg-gray-50">Role</th>
-                                <th className="px-3 py-2.5 text-center bg-gray-50">Farm</th>
-                                <th className="px-3 py-2.5 text-center bg-gray-50">Shed</th>
-                                <th className="px-3 py-2.5 text-center cursor-pointer bg-gray-50">Status</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Email</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Phone</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Joining Date</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">Role</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">Farm</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">Shed</th>
+                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -329,49 +329,49 @@ const Employees: React.FC = () => {
                             ) : employees.length > 0 ? (
                                 employees.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-500 font-medium">
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-500 font-medium">
                                             {(currentPage - 1) * itemsPerPage + index + 1}
                                         </td>
 
-                                        <td className="px-3 py-2 whitespace-nowrap">
-                                            <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm" onClick={() => handleNameClick(employee)}>
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap">
+                                            <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm 2xl:text-base 4xl:text-4xl 5xl:text-6xl" onClick={() => handleNameClick(employee)}>
                                                 {`${employee.first_name || ''} ${employee.last_name || ''}`}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-600">{employee.email || '-'}</td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-600">{employee.phone_number || '-'}</td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-xs text-center text-gray-600">
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-600">{employee.email || '-'}</td>
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-600">{employee.phone_number || '-'}</td>
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-600">
                                             {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN', {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             }) : '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs">
-                                            <div className="flex gap-1 justify-center flex-wrap">
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center text-xs">
+                                            <div className="flex gap-1 justify-center flex-wrap 4xl:gap-3 5xl:gap-6">
                                                 {(selectedRole && employee.roles?.includes(selectedRole)) ? (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                    <span className="inline-flex items-center px-2 2xl:px-4 4xl:px-10 4xl:py-3 5xl:px-16 5xl:py-6 py-1 2xl:py-2 rounded-full text-[11px] 2xl:text-sm 4xl:text-3xl 5xl:text-5xl font-bold bg-orange-50 text-orange-700 border border-orange-100">
                                                         {formatRoleName(selectedRole)}
                                                     </span>
                                                 ) : (
                                                     employee.roles && employee.roles.length > 0 ? (
                                                         employee.roles.map((role: string, roleIdx: number) => (
-                                                            <span key={roleIdx} className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                            <span key={roleIdx} className="inline-flex items-center px-2 2xl:px-4 4xl:px-10 4xl:py-3 5xl:px-16 5xl:py-6 py-1 2xl:py-2 rounded-full text-[11px] 2xl:text-sm 4xl:text-3xl 5xl:text-5xl font-bold bg-orange-50 text-orange-700 border border-orange-100">
                                                                 {role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                                             </span>
                                                         ))
                                                     ) : (
-                                                        <span className="text-gray-400 mx-auto">-</span>
+                                                        <span className="text-gray-400 mx-auto 4xl:text-4xl 5xl:text-6xl">-</span>
                                                     )
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-gray-500">
                                             {employee.farm_name || employee.farm?.farm_name || '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center text-xs text-gray-500">
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-gray-500">
                                             {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center">
+                                            <span className={`inline-flex items-center px-1.5 2xl:px-3 4xl:px-8 4xl:py-4 5xl:px-12 5xl:py-8 py-0.5 2xl:py-1.5 rounded-full text-[11px] 2xl:text-sm 4xl:text-3xl 5xl:text-5xl font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>

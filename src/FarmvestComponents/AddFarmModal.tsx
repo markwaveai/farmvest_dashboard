@@ -12,6 +12,7 @@ interface AddFarmModalProps {
 const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess, initialLocation }) => {
     const [location, setLocation] = useState('');
     const [shedCount, setShedCount] = useState<number>(1);
+    const [isTest, setIsTest] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -43,14 +44,9 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
                     if (locs.length > 0) {
                         const mappedLocs = locs.map(l =>
-                            (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                            (typeof l === 'object' ? (l.name || l.location || '') : String(l))
                         );
                         setLocations(mappedLocs);
-
-                        // Set default if current location not in list
-                        if (location && !mappedLocs.includes(location.toUpperCase())) {
-                            // keep current or default to first
-                        }
                     }
                 } catch (err) {
                 }
@@ -74,12 +70,13 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
         try {
             await farmvestService.createFarm({
-                location: location.toUpperCase(),
+                location_name: location,
                 shed_count: Number(shedCount),
-                is_test: false
+                is_test: isTest
             });
 
             setShedCount(1);
+            setIsTest(false);
             onSuccess(location);
             onClose();
         } catch (err: any) {
@@ -134,7 +131,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                 id="location"
                                 className="form-select"
                                 value={location}
-                                onChange={(e) => setLocation(e.target.value.toUpperCase())}
+                                onChange={(e) => setLocation(e.target.value)}
                             >
                                 <option value="" disabled>Select Location</option>
                                 {locations.length > 0 ? (
@@ -147,7 +144,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                             value = loc;
                                         } else if (loc && typeof loc === 'object') {
                                             label = loc.name || loc.location || loc.city || loc.label || JSON.stringify(loc);
-                                            value = label; // Use name as value for API
+                                            value = label;
                                         }
 
                                         return (
@@ -156,8 +153,10 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                     })
                                 ) : (
                                     <>
+                                        <option value="ADONI">ADONI</option>
                                         <option value="KURNOOL">KURNOOL</option>
                                         <option value="HYDERABAD">HYDERABAD</option>
+                                        <option value="VIJAYAWADA">VIJAYAWADA</option>
                                     </>
                                 )}
                             </select>
@@ -175,7 +174,19 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                                 onChange={(e) => setShedCount(parseInt(e.target.value) || 0)}
                             />
                         </div>
+
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                            <input
+                                id="isTest"
+                                type="checkbox"
+                                checked={isTest}
+                                onChange={(e) => setIsTest(e.target.checked)}
+                                style={{ width: 'auto', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="isTest" style={{ marginBottom: 0, cursor: 'pointer' }}>Is Test Farm</label>
+                        </div>
                     </div>
+
 
                     <div className="modal-footer">
                         <button type="button" className="cancel-button" onClick={onClose} disabled={loading}>

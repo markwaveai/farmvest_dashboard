@@ -107,6 +107,7 @@ export const API_ENDPOINTS = {
   getFarmStaff: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/farm/staff`,
   getInvestorFarms: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/farm/investor/farms`,
   getFarmLocations: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/farm/locations`,
+  createLocation: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/locations/`,
   updateFarm: (farmId: number | string) => `${API_CONFIG.getFarmVestBaseUrl()}/api/farm/update/${farmId}`,
   deleteFarm: (farmId: number | string) => `${API_CONFIG.getFarmVestBaseUrl()}/api/farm/delete/${farmId}`,
 

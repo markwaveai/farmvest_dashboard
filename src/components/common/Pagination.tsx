@@ -25,19 +25,19 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
     return (
         <div className="pagination-container">
             <button
-                className="pagination-btn"
+                className="pagination-btn 2xl:py-4 2xl:px-8 4xl:py-10 4xl:px-20 5xl:py-16 5xl:px-32 2xl:text-2xl 4xl:text-[40px] 5xl:text-[60px]"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
             >
-                <ChevronLeft size={16} />
-                <span className="pagination-btn-text">Previous</span>
+                <ChevronLeft className="w-4 h-4 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24" />
+                <span className="pagination-btn-text ml-1 2xl:ml-4 4xl:ml-8 5xl:ml-12">Previous</span>
             </button>
 
             <div className="pagination-numbers">
                 {pages.map((page, index) => (
                     <button
                         key={index}
-                        className={`pagination-number ${page === currentPage ? 'active' : ''}`}
+                        className={`pagination-number ${page === currentPage ? 'active' : ''} 2xl:w-12 2xl:h-12 4xl:w-24 4xl:h-24 5xl:w-36 5xl:h-36 2xl:text-2xl 4xl:text-[40px] 5xl:text-[60px]`}
                         onClick={() => onPageChange(page)}
                     >
                         {page}
@@ -46,12 +46,12 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
             </div>
 
             <button
-                className="pagination-btn"
+                className="pagination-btn 2xl:py-4 2xl:px-8 4xl:py-10 4xl:px-20 5xl:py-16 5xl:px-32 2xl:text-2xl 4xl:text-[40px] 5xl:text-[60px]"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
             >
-                <span className="pagination-btn-text">Next</span>
-                <ChevronRight size={16} />
+                <span className="pagination-btn-text mr-1 2xl:mr-4 4xl:mr-8 5xl:mr-12">Next</span>
+                <ChevronRight className="w-4 h-4 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24" />
             </button>
         </div>
     );

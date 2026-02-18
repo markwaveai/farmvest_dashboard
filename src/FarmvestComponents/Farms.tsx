@@ -7,6 +7,7 @@ import Pagination from '../components/common/Pagination';
 import TableSkeleton from '../components/common/TableSkeleton';
 import { farmvestService } from '../services/farmvest_api';
 import AddFarmModal from './AddFarmModal';
+import AddLocationDialog from './AddLocationDialog';
 import './Farms.css';
 import CustomDropdown from '../components/common/CustomDropdown';
 
@@ -67,7 +68,7 @@ const Farms: React.FC = () => {
 
     // Derived location from URL or default to ALL
     const location = useMemo(() => {
-        return searchParams.get('location') ? searchParams.get('location')!.toUpperCase() : 'ALL';
+        return searchParams.get('location') || 'ALL';
     }, [searchParams]);
 
     // Defensive parsing of currentPage
@@ -82,35 +83,37 @@ const Farms: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [isAddFarmModalOpen, setIsAddFarmModalOpen] = useState(false);
+    const [isAddLocationModalOpen, setIsAddLocationModalOpen] = useState(false);
     const [availableLocations, setAvailableLocations] = useState<string[]>([]);
 
-    useEffect(() => {
-        const loadLocations = async () => {
-            try {
-                const response = await farmvestService.getLocations();
+    const loadLocations = useCallback(async () => {
+        try {
+            const response = await farmvestService.getLocations();
 
-                // Based on node script test: response.data.locations
-                let locs: any[] = [];
+            // Based on node script test: response.data.locations
+            let locs: any[] = [];
 
-                if (response && response.data && Array.isArray(response.data.locations)) {
-                    locs = response.data.locations;
-                } else if (response && Array.isArray(response.locations)) {
-                    locs = response.locations;
-                } else if (Array.isArray(response)) {
-                    locs = response;
-                }
-
-                // Set locations if valid strings or objects
-                if (locs.length > 0) {
-                    setAvailableLocations(locs.map(l =>
-                        (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
-                    ));
-                }
-            } catch (err) {
+            if (response && response.data && Array.isArray(response.data.locations)) {
+                locs = response.data.locations;
+            } else if (response && Array.isArray(response.locations)) {
+                locs = response.locations;
+            } else if (Array.isArray(response)) {
+                locs = response;
             }
-        };
-        loadLocations();
+
+            // Set locations if valid strings or objects
+            if (locs.length > 0) {
+                setAvailableLocations(locs.map(l =>
+                    (typeof l === 'object' ? (l.name || l.location || '') : String(l))
+                ));
+            }
+        } catch (err) {
+        }
     }, []);
+
+    useEffect(() => {
+        loadLocations();
+    }, [loadLocations]);
 
     const handleFarmNameClick = useCallback((farm: any) => {
         if (!farm || !farm.id) return;
@@ -141,12 +144,14 @@ const Farms: React.FC = () => {
     const locationOptions = useMemo(() => {
         const allOption = { value: 'ALL', label: 'ALL LOCATIONS' };
         if (availableLocations.length > 0) {
-            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc }))];
+            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc.toUpperCase() }))];
         }
         return [
             allOption,
-            { value: 'KURNOOL', label: 'KURNOOL' },
-            { value: 'HYDERABAD', label: 'HYDERABAD' }
+            { value: 'Adoni', label: 'ADONI' },
+            { value: 'Kurnool', label: 'KURNOOL' },
+            { value: 'Hyderabad', label: 'HYDERABAD' },
+            { value: 'Vijayawada', label: 'VIJAYAWADA' }
         ];
     }, [availableLocations]);
 
@@ -176,22 +181,22 @@ const Farms: React.FC = () => {
     }, [totalCount, itemsPerPage]);
 
     return (
-        <div className="farms-container h-full flex flex-col gap-4 overflow-hidden animate-fadeIn">
-            <div className="farms-header p-3 border-b border-gray-100 bg-white shadow-premium flex flex-col lg:flex-row justify-between items-center gap-6">
-                <div>
-                    <h2 className="text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
-                    <div className="text-sm text-gray-500 font-medium flex items-center gap-2 mt-1">
+        <div className="farms-container h-full flex flex-col gap-1 sm:gap-4 overflow-hidden animate-fadeIn">
+            <div className="farms-header p-2 sm:p-3 border-b border-gray-100 bg-white shadow-premium flex flex-col md:flex-row justify-between items-center gap-1.5 sm:gap-4 md:gap-6">
+                <div className="text-center md:text-left w-full md:w-auto">
+                    <h2 className="text-sm sm:text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
+                    <div className="text-[10px] sm:text-sm text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2 mt-0 sm:mt-1">
                         <span>{location} Operations • {totalCount} Farms Found</span>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                    {/* Search Input */}
-                    <div className="w-full sm:w-56 relative group">
+                <div className="flex flex-col md:flex-row items-center gap-1.5 sm:gap-3 w-full md:w-auto">
+                    {/* Search Input - Full width on mobile, fixed on medium+ */}
+                    <div className="w-full md:w-56 relative group">
                         <input
                             type="text"
                             placeholder="Find farm name..."
-                            className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm"
+                            className="w-full pl-11 pr-10 py-1 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm text-xs"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -207,21 +212,35 @@ const Farms: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="relative w-full sm:w-48 z-20">
-                        <CustomDropdown
-                            options={locationOptions}
-                            value={location}
-                            onChange={handleLocationSelect}
-                            placeholder="Select Location"
-                        />
-                    </div>
+                    {/* Filter and Buttons in one line on mobile */}
+                    <div className="flex flex-row items-center gap-1 sm:gap-2 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-48 z-20 min-w-0">
+                            <CustomDropdown
+                                options={locationOptions}
+                                value={location}
+                                onChange={handleLocationSelect}
+                                placeholder="Select Location"
+                            />
+                        </div>
 
-                    <button
-                        onClick={() => setIsAddFarmModalOpen(true)}
-                        className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition-all shadow-orange-100"
-                    >
-                        <span className="text-base">+</span> Add Farm
-                    </button>
+                        <div className="flex flex-row gap-1 sm:gap-2 shrink-0">
+                            {adminRole?.toUpperCase() === 'SUPER ADMIN' && (
+                                <button
+                                    onClick={() => setIsAddLocationModalOpen(true)}
+                                    className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
+                                >
+                                    <span className="text-sm">+</span> Loc
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => setIsAddFarmModalOpen(true)}
+                                className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
+                            >
+                                <span className="text-sm">+</span> Farm
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -299,7 +318,7 @@ const Farms: React.FC = () => {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="mt-4 px-4 pb-4 flex justify-end">
+                    <div className="mt-2 sm:mt-4 px-2 sm:px-4 pb-2 sm:pb-4 flex justify-center sm:justify-end">
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
@@ -326,6 +345,12 @@ const Farms: React.FC = () => {
                         dispatch(fetchFarms({ location, page: currentPage, size: itemsPerPage }));
                     }
                 }}
+            />
+
+            <AddLocationDialog
+                isOpen={isAddLocationModalOpen}
+                onClose={() => setIsAddLocationModalOpen(false)}
+                onSuccess={loadLocations}
             />
         </div>
     );

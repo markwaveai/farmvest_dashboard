@@ -16,21 +16,24 @@ export const fetchFarms = createAsyncThunk(
             const normalizedLocation = location ? location.toUpperCase() : 'ALL';
 
             // Build params object
+            // Build params object
             const apiParams: any = {
                 size: size,
                 page: page
             };
 
-            // Only add location if it's not 'ALL'
+            // If location is selected, fetch ALL farms and filter client-side to ensure correctness
+            // The API seems to ignore the location parameter or returns mixed results
             if (normalizedLocation !== 'ALL') {
-                apiParams.location = normalizedLocation;
+                apiParams.size = 10000;
+                apiParams.page = 1;
+                apiParams.location = location; // Use original casing if provided
+                apiParams.location_name = location; // Use original casing if provided
             }
 
-            // Client-side search handling for Farms
-            // API might ignore 'search', so if search is present, we fetch MORE items and filter locally
+            // Pass search param to API
             if (search) {
-                apiParams.size = 10000; // Fetch all for filtering
-                apiParams.page = 1;
+                apiParams.search = search;
             }
 
             const response = await farmvestService.getAllFarms(apiParams);
@@ -40,85 +43,103 @@ export const fetchFarms = createAsyncThunk(
 
             // Normalize response data with robust checks
             if (response) {
-                // Check for pagination object at root or inside data
-                const pagination = response.pagination || (response.data && response.data.pagination);
-                if (pagination && pagination.total_items) {
-                    totalCount = pagination.total_items;
-                }
+                // Helper to find the first array in an object recursively
+                const findArray = (obj: any): any[] => {
+                    if (Array.isArray(obj)) return obj;
+                    if (!obj || typeof obj !== 'object') return [];
 
-                if (Array.isArray(response)) {
-                    allFarms = response;
-                    if (!totalCount) totalCount = response.length;
-                } else if (response && Array.isArray(response.data)) {
-                    allFarms = response.data;
-                    if (!totalCount) totalCount = response.total || response.total_count || response.count || response.data.length;
-                } else if (response && Array.isArray(response.farms)) {
-                    allFarms = response.farms;
-                    if (!totalCount) totalCount = response.total || response.count || response.farms.length;
-                } else if (response && response.data && Array.isArray(response.data.farms)) {
-                    allFarms = response.data.farms;
-                    if (!totalCount) totalCount = response.data.total || response.data.count || response.data.farms.length;
-                } else if (response && (response.items || response.results)) {
-                    allFarms = response.items || response.results;
-                    if (!totalCount) totalCount = response.total || response.count || allFarms.length;
-                } else if (response && Array.isArray(response.payload)) {
-                    allFarms = response.payload;
-                    if (!totalCount) totalCount = response.total || response.payload.length;
-                } else if (response && (response.status === 200 || response.status === "200") && Array.isArray(response.data)) {
-                    allFarms = response.data;
-                    if (!totalCount) totalCount = response.total || response.data.length;
-                }
+                    // Priority keys
+                    const priorityKeys = ['farms', 'data', 'items', 'results', 'payload', 'records'];
+                    for (const key of priorityKeys) {
+                        if (Array.isArray(obj[key])) return obj[key];
+                    }
+
+                    // Search all keys
+                    for (const key in obj) {
+                        if (Array.isArray(obj[key])) return obj[key];
+                        if (obj[key] && typeof obj[key] === 'object') {
+                            const nested = findArray(obj[key]);
+                            if (nested.length > 0) return nested;
+                        }
+                    }
+                    return [];
+                };
+
+                allFarms = findArray(response);
+
+                // Try to find total count
+                const findTotal = (obj: any): number => {
+                    if (!obj || typeof obj !== 'object') return 0;
+                    const countKeys = ['total_items', 'totalCount', 'total_count', 'total', 'count', 'length'];
+                    for (const key of countKeys) {
+                        if (typeof obj[key] === 'number') return obj[key];
+                    }
+                    // Check pagination object
+                    if (obj.pagination && typeof obj.pagination.total_items === 'number') return obj.pagination.total_items;
+                    if (obj.data && typeof obj.data.total_items === 'number') return obj.data.total_items;
+                    return 0;
+                };
+
+                totalCount = findTotal(response) || allFarms.length;
             }
+
+            // Helper to infer location from farm name prefix if missing
+            const inferLocation = (name: string): string | null => {
+                if (!name) return null;
+                const upperName = name.toUpperCase();
+                if (upperName.startsWith('VJY')) return 'VIJAYAWADA';
+                if (upperName.startsWith('HYD')) return 'HYDERABAD';
+                if (upperName.startsWith('KNL') || upperName.startsWith('KUR')) return 'KURNOOL';
+                if (upperName.startsWith('ADO')) return 'ADONI';
+                if (upperName.startsWith('NAN')) return 'NANDYAL';
+                return null;
+            };
 
             // Map and normalize data to ensure UI compatibility
-            allFarms = allFarms.map((item: any, index: number) => ({
-                id: item.id || item._id || item.farm_id || index,
-                farm_name: item.farm_name || item.name || `Farm ${index + 1}`,
-                location: item.location || normalizedLocation,
-                total_buffaloes_count: item.total_buffaloes_count || item.total_animals || item.buffalo_count || 0,
-                farm_manager_name: item.farm_manager_name || item.manager_name || (item.farm_manager?.name) || '-',
-                mobile_number: item.mobile_number || item.manager_mobile || item.manager_phone || (item.farm_manager?.mobile) || '-',
-                sheds_count: item.sheds_count || item.shed_count || item.total_sheds || 0
-            }));
+            allFarms = allFarms.map((item: any, index: number) => {
+                const farmName = item.farm_name || item.name || item.farmName || `Farm ${index + 1}`;
+                
+                // Location can be a string or object
+                const locRaw = item.location_name || item.location || item.locationName || item.city || item.address || null;
+                let locationStr = typeof locRaw === 'string' ? locRaw : (locRaw?.name || locRaw?.label || locRaw?.location_name || null);
+                
+                // If location is missing, try to infer it from the name
+                if (!locationStr || locationStr === '-') {
+                    const inferred = inferLocation(farmName);
+                    if (inferred) locationStr = inferred;
+                }
 
-            // Filter by search term if present
-            if (search) {
-                const lowerSearch = search.toLowerCase();
-                allFarms = allFarms.filter((farm: any) =>
-                    (farm.farm_name && farm.farm_name.toLowerCase().includes(lowerSearch)) ||
-                    (farm.location && farm.location.toLowerCase().includes(lowerSearch)) ||
-                    (farm.farm_manager_name && farm.farm_manager_name.toLowerCase().includes(lowerSearch))
-                );
-                // Update total count after filtering
+                if (!locationStr) locationStr = '-';
+
+                return {
+                    id: item.id || item._id || item.farm_id || index,
+                    farm_name: farmName,
+                    location: locationStr,
+                    total_buffaloes_count: item.total_buffaloes_count || item.total_animals || item.buffalo_count || item.animal_count || 0,
+                    farm_manager_name: item.farm_manager_name || item.manager_name || (item.farm_manager?.name) || '-',
+                    mobile_number: item.mobile_number || item.manager_mobile || item.manager_phone || (item.farm_manager?.mobile) || '-',
+                    sheds_count: item.sheds_count || item.shed_count || (item.sheds?.length) || item.total_sheds || 0
+                };
+            });
+
+            // Client-side filtering for Location
+            if (normalizedLocation !== 'ALL') {
+                allFarms = allFarms.filter(farm => {
+                    if (!farm.location) return false;
+                    const farmLoc = String(farm.location).trim().toUpperCase();
+                    const searchLoc = normalizedLocation.trim().toUpperCase();
+                    // Check for exact match or if one is a prefix of other (e.g. VIJAYAWADA vs VIJAYAWADA Operations)
+                    return farmLoc === searchLoc || farmLoc.includes(searchLoc) || searchLoc.includes(farmLoc);
+                });
                 totalCount = allFarms.length;
+                
+                // Since we fetched ALL, we need to handle pagination manually here
+                const startIndex = (page - 1) * size;
+                const endIndex = startIndex + size;
+                allFarms = allFarms.slice(startIndex, endIndex);
             }
 
-            // Fetch shed counts for each farm (still needed? if API provides it, we skip. Code showed we fetch it)
-            // To optimize, maybe we shouldn't fetch sheds for ALL farms if paginated? 
-            // We'll keep it for now but it might be slow for page size 20.
-            const farmsWithShedCounts = await Promise.all(
-                allFarms.map(async (farm) => {
-                    try {
-                        const shedData = await farmvestService.getShedList(farm.id);
-                        let count = 0;
-                        if (Array.isArray(shedData)) {
-                            count = shedData.length;
-                        } else if (shedData && Array.isArray(shedData.data)) {
-                            count = shedData.data.length;
-                        } else if (shedData && typeof shedData === 'object') {
-                            if (Object.keys(shedData).length > 0) {
-                                count = Object.keys(shedData).length; // Fallback if object
-                            }
-                        }
-                        return { ...farm, sheds_count: count };
-                    } catch (error) {
-                        console.error(`Failed to fetch sheds for farm ${farm.id}`, error);
-                        return farm; // Return farm with default 0 if fetch fails
-                    }
-                })
-            );
-
-            return { farms: farmsWithShedCounts, totalCount, location: normalizedLocation };
+            return { farms: allFarms, totalCount, location: normalizedLocation };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch farms');
         }

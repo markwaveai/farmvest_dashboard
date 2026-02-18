@@ -88,33 +88,32 @@ const FarmDetails: React.FC = () => {
 
     return (
         <div className="farm-details-container animate-fadeIn">
-            <div className="farm-details-header">
-                <div className="flex items-center gap-4">
-                    <button className="back-button" onClick={() => navigate(-1)}>
-                        <ArrowLeft size={14} /> Back to Farms
+            <div className="farm-details-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6 bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 sm:mb-6">
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                    <button className="back-button shrink-0" onClick={() => navigate(-1)}>
+                        <ArrowLeft size={14} /> <span className="hidden xs:inline">Back to Farms</span><span className="xs:hidden">Back</span>
                     </button>
-                    <div className="farm-title-section">
-                        <h1>{farmName}</h1>
+                    <div className="farm-title-section min-w-0">
+                        <h1 className="truncate text-lg sm:text-xl font-bold">{farmName}</h1>
                         {farmLocation && (
-                            <div className="farm-location">
-                                <MapPin size={14} className="text-gray-400" />
-                                {farmLocation}
+                            <div className="farm-location flex items-center gap-1 text-gray-500 text-xs sm:text-sm">
+                                <MapPin size={12} />
+                                <span className="truncate">{farmLocation}</span>
                             </div>
                         )}
                     </div>
                 </div>
-                <div className="farm-header-right-actions">
-
-                    <div className="manager-details-section">
-                        <div className="manager-entry">
-                            <span className="info-label">Manager Name:</span>
-                            <span className="info-value">
+                <div className="farm-header-right-actions w-full sm:w-auto">
+                    <div className="manager-details-section sm:border-l sm:border-gray-200 sm:pl-6 flex flex-col gap-y-1 text-[10px] sm:text-xs">
+                        <div className="manager-entry flex flex-row items-baseline gap-1.5 min-w-0">
+                            <span className="info-label text-gray-400 font-medium whitespace-nowrap">Manager Name:</span>
+                            <span className="info-value font-bold truncate text-gray-800">
                                 {initialFarm?.farm_manager_name || initialFarm?.manager_name || (initialFarm?.farm_manager?.name) || '-'}
                             </span>
                         </div>
-                        <div className="manager-entry">
-                            <span className="info-label">Phone No:</span>
-                            <span className="info-value">
+                        <div className="manager-entry flex flex-row items-baseline gap-1.5 min-w-0">
+                            <span className="info-label text-gray-400 font-medium whitespace-nowrap">Phone No:</span>
+                            <span className="info-value font-bold truncate text-gray-800">
                                 {initialFarm?.mobile_number || initialFarm?.manager_mobile || initialFarm?.manager_phone || (initialFarm?.farm_manager?.mobile) || '-'}
                             </span>
                         </div>
@@ -225,6 +224,7 @@ const FarmDetails: React.FC = () => {
             {/* Staff Section */}
             {staff && (
                 <div className="mt-8">
+                    {/* ... staff UI ... */}
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <Users size={20} className="text-gray-400" /> Farm Staff
                     </h2>
@@ -293,7 +293,6 @@ const FarmDetails: React.FC = () => {
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

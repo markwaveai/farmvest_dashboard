@@ -1050,7 +1050,11 @@
   }
 
   /* Mobile S (320px) specific adjustments */
-  @media (max-width: 320px) {
+  @media (max-width: 480px) {
+    .hide-mobile {
+      display: none;
+    }
+
     .header-brand-text {
       font-size: 0.85rem;
     }
@@ -1161,4 +1165,89 @@
 
   .app-header {
     background-color: #113025 !important;
+  }
+
+  @media (min-width: 2000px) {
+    .sidebar {
+      width: 480px;
+    }
+
+    .sidebar.closed {
+      width: 120px;
+    }
+
+    .nav-item {
+      padding: 24px 32px;
+      font-size: 24px;
+      border-radius: 20px;
+      margin: 8px 0;
+    }
+
+    .nav-item svg {
+      min-width: 32px;
+      height: 32px;
+    }
+
+    .nav-text {
+      margin-left: 20px;
+    }
+
+    .nav-section-label {
+      padding: 32px 32px 12px;
+      font-size: 16px;
+    }
+
+    .sidebar-menu {
+      padding: 0 24px;
+      gap: 12px;
+    }
+
+    .sidebar-header {
+      height: 120px;
+    }
+
+    .header-logo-sidebar {
+      height: 70px !important;
+    }
+
+    .app-header {
+      height: 120px;
+      padding: 0 48px;
+    }
+
+    .header-logo {
+      height: 100px;
+    }
+
+    .header-brand-text {
+      font-size: 2.5rem;
+    }
+
+    .status-pill {
+      padding: 16px 32px;
+      gap: 16px;
+    }
+
+    .status-text {
+      font-size: 1.5rem;
+    }
+
+    .admin-name-text {
+      font-size: 1.5rem;
+    }
+
+    .admin-avatar-small {
+      width: 80px;
+      height: 80px;
+      font-size: 2rem;
+    }
+
+    .main-content {
+      padding: 40px 60px;
+    }
+
+    .sidebar.closed .nav-item {
+      width: 80px;
+      height: 80px;
+    }
   }

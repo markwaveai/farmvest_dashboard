@@ -10,9 +10,8 @@ interface EditFarmModalProps {
 }
 
 const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSuccess, farm }) => {
-    const [farmName, setFarmName] = useState('');
     const [location, setLocation] = useState('');
-    const [shedCount, setShedCount] = useState<number>(0);
+    const [shedCount, setShedCount] = useState<string>('0');
     const [isTest, setIsTest] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,9 +19,8 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
 
     useEffect(() => {
         if (farm) {
-            setFarmName(farm.farm_name || '');
             setLocation(farm.location || '');
-            setShedCount(farm.sheds_count || 0);
+            setShedCount(farm.sheds_count?.toString() || '0');
             setIsTest(farm.is_test || false);
         }
     }, [farm]);
@@ -43,13 +41,8 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
 
                     if (locs.length > 0) {
                         setLocations(locs.map(l =>
-                            (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase()
+                            (typeof l === 'object' ? (l.name || l.location || '') : String(l))
                         ));
-                        // Set default if current location not in list
-                        const upperLocs = locs.map(l => (typeof l === 'object' ? (l.name || l.location || '') : String(l)).toUpperCase());
-                        if (location && !upperLocs.includes(location.toUpperCase())) {
-                            // keep current or default to first
-                        }
                     }
                 } catch (err) {
                     console.error("Failed to fetch locations", err);
@@ -61,21 +54,15 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
 
     const isFormValid = useMemo(() => {
         return (
-            farmName.trim().length > 0 &&
             location.trim().length > 0 &&
-            shedCount >= 0
+            parseInt(shedCount) >= 0
         );
-    }, [farmName, location, shedCount]);
+    }, [location, shedCount]);
 
     if (!isOpen || !farm) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!farmName.trim()) {
-            setError('Please enter a farm name');
-            return;
-        }
 
         if (!location) {
             setError('Please select a location');
@@ -86,12 +73,12 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
         setError(null);
 
         try {
-            await farmvestService.updateFarm(farm.id, {
-                farm_name: farmName,
-                location: location.toUpperCase(),
-                shed_count: Number(shedCount),
-                is_test: isTest
-            });
+            const payload = {
+                location_name: location,
+                shed_count: parseInt(shedCount),
+                is_test: false
+            };
+            await farmvestService.updateFarm(farm.id, payload);
 
             onSuccess(location);
             onClose();
@@ -109,7 +96,7 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
         <div className="add-farm-modal-overlay">
             <div className="add-farm-modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header" style={{ position: 'relative' }}>
-                    <h2>Edit Farm: {farmName}</h2>
+                    <h2>Edit Farm: {farm.farm_name}</h2>
                     <button
                         type="button"
                         onClick={onClose}
@@ -140,24 +127,12 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
                         {error && <div className="error-message" style={{ marginBottom: '15px' }}>{error}</div>}
 
                         <div className="form-group">
-                            <label htmlFor="farmName">Farm Name</label>
-                            <input
-                                id="farmName"
-                                type="text"
-                                className="form-input"
-                                placeholder="e.g. KUR_F19"
-                                value={farmName}
-                                onChange={(e) => setFarmName(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="form-group">
                             <label htmlFor="location">Location</label>
                             <select
                                 id="location"
                                 className="form-select"
                                 value={location}
-                                onChange={(e) => setLocation(e.target.value.toUpperCase())}
+                                onChange={(e) => setLocation(e.target.value)}
                             >
                                 <option value="" disabled>Select Location</option>
                                 {locations.length > 0 ? (
@@ -166,8 +141,10 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
                                     ))
                                 ) : (
                                     <>
+                                        <option value="ADONI">ADONI</option>
                                         <option value="KURNOOL">KURNOOL</option>
                                         <option value="HYDERABAD">HYDERABAD</option>
+                                        <option value="VIJAYAWADA">VIJAYAWADA</option>
                                     </>
                                 )}
                             </select>
@@ -182,7 +159,7 @@ const EditFarmModal: React.FC<EditFarmModalProps> = ({ isOpen, onClose, onSucces
                                 className="form-input"
                                 placeholder="e.g. 1"
                                 value={shedCount}
-                                onChange={(e) => setShedCount(parseInt(e.target.value) || 0)}
+                                onChange={(e) => setShedCount(e.target.value)}
                             />
                         </div>
 

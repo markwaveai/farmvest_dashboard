@@ -113,12 +113,21 @@ export const farmvestService = {
             throw error;
         }
     },
-    getAllFarms: async (params?: { location?: string, sort_by?: number, page?: number, size?: number, search?: string }) => {
+    createLocation: async (locationData: { name: string; prefix: string }) => {
+        try {
+            const response = await farmvestApi.post(API_ENDPOINTS.createLocation(), locationData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    getAllFarms: async (params?: { location?: string, location_name?: string, sort_by?: number, page?: number, size?: number, search?: string }) => {
         try {
             let url = API_ENDPOINTS.getAllFarms();
             if (params) {
                 const query = new URLSearchParams();
                 if (params.location) query.append('location', params.location);
+                if (params.location_name) query.append('location_name', params.location_name);
                 if (params.sort_by) query.append('sort_by', params.sort_by.toString());
                 if (params.page) query.append('page', params.page.toString());
                 if (params.size) query.append('size', params.size.toString());
@@ -254,10 +263,10 @@ export const farmvestService = {
         }
     },
     // Create Farm
-    createFarm: (farmData: { location: string; shed_count: number; is_test: boolean }) => {
+    createFarm: (farmData: { farm_name?: string; location_name: string; shed_count: number; is_test: boolean }) => {
         return farmvestApi.post(API_ENDPOINTS.createFarm(), farmData);
     },
-    updateFarm: async (farmId: number, farmData: { farm_name?: string; location?: string; shed_count?: number; is_test?: boolean }) => {
+    updateFarm: async (farmId: number, farmData: { farm_name?: string; location_name?: string; shed_count?: number; is_test?: boolean }) => {
         try {
             const response = await farmvestApi.put(API_ENDPOINTS.updateFarm(farmId), farmData);
             return response.data;

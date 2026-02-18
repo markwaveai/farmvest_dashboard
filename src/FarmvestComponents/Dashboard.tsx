@@ -242,7 +242,7 @@ const Dashboard: React.FC = () => {
         legendAlign: 'right' as 'right' | 'center'
     });
 
-    const [areaChartMargin, setAreaChartMargin] = useState({ top: 10, right: 10, left: -20, bottom: 0 });
+    const [areaChartMargin, setAreaChartMargin] = useState({ top: 10, right: 10, left: 0, bottom: 0 });
 
     useEffect(() => {
         const handleResize = () => {
@@ -257,27 +257,27 @@ const Dashboard: React.FC = () => {
                     legendVerticalAlign: 'bottom',
                     legendAlign: 'center'
                 });
-                setAreaChartMargin({ top: 10, right: 10, left: -20, bottom: 0 });
+                setAreaChartMargin({ top: 10, right: 10, left: 0, bottom: 0 });
             } else if (width < 1024) {
                 // Tablet
                 setChartConfig({
-                    cx: '45%',
-                    outerRadius: 35,
-                    innerRadius: 20,
-                    legendLayout: 'vertical',
-                    legendVerticalAlign: 'middle',
-                    legendAlign: 'right'
+                    cx: '50%',
+                    outerRadius: 60,
+                    innerRadius: 40, // Increased to match mobile or slightly larger
+                    legendLayout: 'horizontal',
+                    legendVerticalAlign: 'bottom',
+                    legendAlign: 'center'
                 });
-                setAreaChartMargin({ top: 10, right: 10, left: -20, bottom: 0 });
+                setAreaChartMargin({ top: 10, right: 10, left: 0, bottom: 0 });
             } else {
                 // Desktop
                 setChartConfig({
                     cx: '50%',
-                    outerRadius: 70,
-                    innerRadius: 50,
-                    legendLayout: 'vertical',
-                    legendVerticalAlign: 'middle',
-                    legendAlign: 'right'
+                    outerRadius: 80, // Slightly increased as we have width, but careful with height
+                    innerRadius: 60,
+                    legendLayout: 'horizontal',
+                    legendVerticalAlign: 'bottom',
+                    legendAlign: 'center'
                 });
                 setAreaChartMargin({ top: 10, right: 30, left: 10, bottom: 0 });
             }
@@ -301,18 +301,18 @@ const Dashboard: React.FC = () => {
                 </div>
             )}
             {/* Header */}
-            <div className="dashboard-header">
-                <h1 className="dashboard-title">Financial & Feed Overview</h1>
+            <div className="dashboard-header flex flex-col lg:flex-row items-start lg:items-center gap-4">
+                <h1 className="dashboard-title w-full lg:w-auto">Financial & Feed Overview</h1>
 
-                <div className="flex flex-col md:flex-row md:flex-nowrap gap-4 items-center w-full md:w-auto">
+                <div className="flex flex-row flex-wrap lg:flex-nowrap gap-2 items-center w-full lg:w-auto justify-between lg:justify-end">
                     {/* Filters */}
-                    <div className="flex gap-4 w-full md:w-auto">
+                    <div className="flex gap-2 w-auto">
                         <SearchableDropdown
                             options={farmOptions}
                             value={selectedFarm}
                             onChange={handleFarmChange}
                             placeholder="Select Farm"
-                            className="w-full md:w-48"
+                            className="w-32 md:w-40"
                         />
 
                         <SearchableDropdown
@@ -321,16 +321,16 @@ const Dashboard: React.FC = () => {
                             onChange={handleShedChange}
                             placeholder="Select Shed"
                             disabled={selectedFarm === 'All'}
-                            className="w-full md:w-48"
+                            className="w-32 md:w-40"
                         />
                     </div>
 
                     {/* Time Filter */}
-                    <div className="time-filter-container w-full md:w-auto ml-0 md:ml-4 overflow-x-auto">
+                    <div className="time-filter-container w-auto ml-0 lg:ml-1 overflow-x-auto flex-shrink-0">
                         {(['daily', 'weekly', 'monthly', 'yearly'] as TimeRange[]).map((range) => (
                             <button
                                 key={range}
-                                className={`time-filter-btn ${timeRange === range ? 'active' : ''}`}
+                                className={`time-filter-btn ${timeRange === range ? 'active' : ''} text-xs px-2 py-1 md:px-3 md:py-1`}
                                 onClick={() => setTimeRange(range)}
                             >
                                 {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -413,7 +413,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="chart-container-large">
                         <ResponsiveContainer>
-                            <AreaChart data={revenueTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <AreaChart data={revenueTrendData} margin={areaChartMargin}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor={THICK_GREEN} stopOpacity={0.8} />
@@ -437,7 +437,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Secondary Charts - Row of 3 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Feed Consumption Logic */}
                     <div className="chart-card" style={{ minHeight: 'auto', flex: 1 }}>
                         <div className="chart-header">
@@ -463,12 +463,12 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="chart-container-small">
                             <ResponsiveContainer>
-                                <BarChart data={currentShedData} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="name" type="category" width={80} />
+                                <BarChart data={currentShedData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
+                                    <YAxis />
                                     <Tooltip cursor={{ fill: 'transparent' }} />
-                                    <Bar dataKey="revenue" fill={THICK_GREEN} radius={[0, 4, 4, 0]} barSize={20} name="Revenue" />
+                                    <Bar dataKey="revenue" fill={THICK_GREEN} radius={[4, 4, 0, 0]} barSize={20} name="Revenue" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -570,15 +570,14 @@ const FeedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data: a
         { name: 'Mineral Mixture', value: totalConsumption * 0.05, fill: '#ff8042' },
     ];
 
-    const chartRadius = isMobile ? { inner: 40, outer: 70 } : { inner: 60, outer: 100 };
+    const chartRadius = isMobile ? { inner: 35, outer: 60 } : { inner: 50, outer: 80 };
 
     return (
-        <div className={`fixed inset-0 bg-black bg-opacity-50 flex ${isMobile ? 'items-end pb-0' : 'items-center p-4'} justify-center z-[100]`}>
-            <div className={`bg-white rounded-lg w-full max-w-3xl max-h-[85vh] overflow-y-auto ${isMobile ? 'rounded-b-none p-3' : 'p-6'}`}>
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex ${isMobile ? 'items-end p-4' : 'items-center p-8 md:p-12'} justify-center z-[100] md:pl-64`}>
+            <div className={`bg-white rounded-lg w-full max-w-3xl ${isMobile ? 'max-h-[85vh] p-3' : 'max-h-[75vh] p-6'} overflow-y-auto`}>
                 <div className="flex justify-between items-start mb-6">
                     <h2 className={`font-bold text-gray-800 ${isMobile ? 'text-base' : 'text-xl'}`}>Feed Details Analysis</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1 -mt-1">
-                        <ArrowUpRight className="transform rotate-45" size={24} /> {/* Using as close icon surrogate */}
                         <span className="text-2xl">&times;</span>
                     </button>
                 </div>
@@ -678,8 +677,8 @@ const RevenueDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; data
     const chartRadius = isMobile ? { inner: 35, outer: 60 } : { inner: 50, outer: 80 };
 
     return (
-        <div className={`fixed inset-0 bg-black bg-opacity-50 flex ${isMobile ? 'items-end pb-0' : 'items-center p-4'} justify-center z-[100]`}>
-            <div className={`bg-white rounded-lg w-full max-w-4xl max-h-[85vh] overflow-y-auto ${isMobile ? 'rounded-b-none p-3' : 'p-6'}`}>
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex ${isMobile ? 'items-end p-4' : 'items-center p-8 md:p-12'} justify-center z-[100] md:pl-64`}>
+            <div className={`bg-white rounded-lg w-full max-w-4xl ${isMobile ? 'max-h-[85vh] p-3' : 'max-h-[75vh] p-6'} overflow-y-auto`}>
                 <div className="flex justify-between items-start mb-6">
                     <h2 className={`font-bold text-gray-800 ${isMobile ? 'text-base' : 'text-xl'} pr-2`}>Financial Performance Details</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1 -mt-1">
@@ -778,7 +777,7 @@ const BuffaloDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; shed
     ];
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 md:pl-64">
             <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">Buffalo Herd Details</h2>
@@ -869,7 +868,7 @@ const ShedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; activeS
     ];
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 md:pl-64">
             <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">Shed Utilization Details</h2>

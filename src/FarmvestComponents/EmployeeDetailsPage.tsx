@@ -107,8 +107,11 @@ const EmployeeDetailsPage: React.FC = () => {
     if (loading) {
         return (
             <div className="p-6">
-                <button onClick={handleBack} className="flex items-center text-gray-600 mb-6 hover:text-gray-900 transition-colors">
-                    <ArrowLeft size={20} className="mr-2" />
+                <button
+                    onClick={handleBack}
+                    className="flex items-center text-gray-600 mb-6 2xl:mb-10 4xl:mb-20 5xl:mb-32 hover:text-gray-900 transition-colors text-base 2xl:text-2xl 4xl:text-[40px] 5xl:text-[60px] font-medium"
+                >
+                    <ArrowLeft className="mr-2 2xl:mr-4 4xl:mr-8 5xl:mr-12 w-5 h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24" />
                     Back to Employees
                 </button>
                 <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
@@ -126,8 +129,11 @@ const EmployeeDetailsPage: React.FC = () => {
     if (error || !employee) {
         return (
             <div className="p-6 text-center">
-                <button onClick={handleBack} className="flex items-center text-gray-600 mb-6 hover:text-gray-900 transition-colors">
-                    <ArrowLeft size={20} className="mr-2" />
+                <button
+                    onClick={handleBack}
+                    className="flex items-center text-gray-600 mb-6 2xl:mb-10 4xl:mb-20 5xl:mb-32 hover:text-gray-900 transition-colors text-base 2xl:text-2xl 4xl:text-[40px] 5xl:text-[60px] font-medium"
+                >
+                    <ArrowLeft className="mr-2 2xl:mr-4 4xl:mr-8 5xl:mr-12 w-5 h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24" />
                     Back to Employees
                 </button>
                 <div className="py-12 bg-white rounded-xl border border-red-100 p-8 shadow-sm">
@@ -154,146 +160,139 @@ const EmployeeDetailsPage: React.FC = () => {
         <div className="p-4 w-full min-w-full max-w-full mx-auto">
             <button
                 onClick={handleBack}
-                className="flex items-center text-gray-600 mb-6 hover:text-blue-600 transition-colors font-medium"
+                className="flex items-center text-gray-600 mb-6 2xl:mb-10 4xl:mb-20 5xl:mb-32 hover:text-blue-600 transition-colors text-base 2xl:text-2xl 4xl:text-[40px] 5xl:text-[60px] font-medium"
             >
-                <ArrowLeft size={20} className="mr-2" />
+                <ArrowLeft className="mr-2 2xl:mr-4 4xl:mr-8 5xl:mr-12 w-5 h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24" />
                 Back to Employees
             </button>
 
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-white px-8 py-8 border-b border-blue-100 animate-slide-up-fade-1">
-                    <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-blue-600 p-3 rounded-xl shadow-lg shadow-blue-200">
-                                <User className="w-8 h-8 text-white" />
+                <div className="bg-gradient-to-r from-blue-50 to-white px-8 py-4 2xl:px-12 2xl:py-8 4xl:px-20 4xl:py-16 5xl:px-32 5xl:py-24 border-b border-blue-100 animate-slide-up-fade-1">
+                    <div className="flex flex-col gap-1.5 2xl:gap-3 4xl:gap-6 5xl:gap-10">
+                        {/* Line 1: Icon and Name */}
+                        <div className="flex items-center gap-4 2xl:gap-6 4xl:gap-10 5xl:gap-16">
+                            <div className="bg-blue-600 p-2.5 2xl:p-4 4xl:p-8 5xl:p-12 rounded-xl 4xl:rounded-3xl shadow-md shadow-blue-200">
+                                <User className="w-7 h-7 2xl:w-10 2xl:h-10 4xl:w-20 4xl:h-20 5xl:w-32 5xl:h-32 text-white" />
                             </div>
-                            <div>
-                                <h1 className="text-3xl font-bold text-gray-900">
-                                    {employee.first_name || employee.name} {employee.last_name || ''}
-                                </h1>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold capitalize">
-                                        {String(displayRole).replace(/_/g, ' ').toLowerCase()}
-                                    </span>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                        {isActive ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
-                            </div>
+                            <h1 className="text-2xl md:text-3xl 2xl:text-5xl 4xl:text-[80px] 5xl:text-[120px] font-bold text-gray-900 leading-tight">
+                                {employee.first_name || employee.name} {employee.last_name || ''}
+                            </h1>
                         </div>
-                        <div className="flex items-center gap-3">
 
-                            <div className="text-right">
-                                <p className="text-sm text-gray-500 mb-1">Employee ID</p>
-                                <p className="text-xl font-mono font-bold text-gray-800">#{employee.id}</p>
+                        {/* Line 2: Role, Status and Employee ID */}
+                        <div className="flex flex-wrap items-center gap-3 md:gap-6 2xl:gap-10 4xl:gap-16 5xl:gap-24 ml-0 md:ml-[68px] 2xl:ml-[92px] 4xl:ml-[160px] 5xl:ml-[256px]">
+                            <div className="flex flex-row items-center gap-2 2xl:gap-4 4xl:gap-8 5xl:gap-12 flex-shrink-0">
+                                <span className="px-3 py-1 2xl:px-5 2xl:py-2 4xl:px-10 4xl:py-4 5xl:px-16 5xl:py-8 bg-blue-100 text-blue-800 rounded-full text-sm 2xl:text-lg 4xl:text-4xl 5xl:text-6xl font-semibold capitalize whitespace-nowrap inline-flex items-center justify-center min-w-fit">
+                                    {String(displayRole).replace(/_/g, ' ').toLowerCase()}
+                                </span>
+                                <span className={`px-3 py-1 2xl:px-5 2xl:py-2 4xl:px-10 4xl:py-4 5xl:px-16 5xl:py-8 rounded-full text-sm 2xl:text-lg 4xl:text-4xl 5xl:text-6xl font-semibold whitespace-nowrap inline-flex items-center justify-center min-w-fit ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    {isActive ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 2xl:gap-4 4xl:gap-8 5xl:gap-12">
+                                <span className="text-sm 2xl:text-xl 4xl:text-4xl 5xl:text-6xl text-gray-500 font-medium whitespace-nowrap">Employee ID:</span>
+                                <span className="text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl font-mono font-bold text-gray-800">#{employee.id}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="p-4 lg:p-6 2xl:p-10 4xl:p-20 5xl:p-32">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8 2xl:gap-12 4xl:gap-24 5xl:gap-40">
                         {/* Contact Information */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow animate-slide-up-fade-2">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                <Mail className="w-5 h-5 text-gray-400" />
-                                Contact Details
+                        <div className="bg-white border border-gray-200 rounded-xl 4xl:rounded-[40px] p-3 sm:p-4 lg:p-6 2xl:p-10 4xl:p-20 5xl:p-32 hover:shadow-md transition-shadow animate-slide-up-fade-2 h-full min-h-[220px] 2xl:min-h-[320px] 4xl:min-h-[600px] 5xl:min-h-[900px]">
+                            <h3 className="text-base sm:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-8xl font-bold text-gray-800 mb-4 2xl:mb-6 4xl:mb-12 5xl:mb-20 flex items-center gap-2 4xl:gap-6 5xl:gap-10 border-b 4xl:border-b-4 pb-2 2xl:pb-4 4xl:pb-10 5xl:pb-16">
+                                <Mail className="w-5 h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24 text-gray-400" />
+                                <span className="truncate">Contact Details</span>
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-4 2xl:space-y-8 4xl:space-y-16 5xl:space-y-24">
                                 <div className="group">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Email Address</label>
-                                    <div className="text-gray-900 font-medium flex items-center gap-2 break-all">
+                                    <label className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl font-semibold text-gray-500 uppercase tracking-wider mb-1 4xl:mb-4 block group-hover:text-blue-600 transition-colors">Email Address</label>
+                                    <div className="text-gray-900 font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl flex items-center gap-2 break-all">
                                         {employee.email || 'N/A'}
                                     </div>
                                 </div>
                                 <div className="group">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Mobile Number</label>
-                                    <div className="text-gray-900 font-medium flex items-center gap-2">
-                                        <Phone className="w-4 h-4 text-gray-300" />
+                                    <label className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl font-semibold text-gray-500 uppercase tracking-wider mb-1 4xl:mb-4 block group-hover:text-blue-600 transition-colors">Mobile Number</label>
+                                    <div className="text-gray-900 font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl flex items-center gap-2">
+                                        <Phone className="w-4 h-4 2xl:w-6 2xl:h-6 4xl:w-14 4xl:h-14 5xl:w-20 5xl:h-20 text-gray-300" />
                                         {employee.mobile || employee.phone_number || 'N/A'}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Assignment Details */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow lg:col-span-2 animate-slide-up-fade-3">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between border-b pb-2">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-gray-400" />
-                                    Assignment Information
-                                </div>
-                                {displayRole === 'ADMIN' && (
-                                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full uppercase tracking-tighter">Not Applicable for Admin</span>
-                                )}
+                        {/* System Metadata */}
+                        <div className="bg-white border border-gray-200 rounded-xl 4xl:rounded-[40px] p-3 sm:p-4 lg:p-6 2xl:p-10 4xl:p-20 5xl:p-32 hover:shadow-md transition-shadow animate-slide-up-fade-4 h-full min-h-[220px] 2xl:min-h-[320px] 4xl:min-h-[600px] 5xl:min-h-[900px]">
+                            <h3 className="text-base sm:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-8xl font-bold text-gray-800 mb-4 2xl:mb-6 4xl:mb-12 5xl:mb-20 flex items-center gap-1.5 sm:gap-2 4xl:gap-6 5xl:gap-10 border-b 4xl:border-b-4 pb-2 2xl:pb-4 4xl:pb-10 5xl:pb-16">
+                                <Hash className="w-4 h-4 sm:w-5 sm:h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24 text-gray-400" />
+                                <span className="truncate">System Metadata</span>
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-green-50/50 rounded-lg p-4 border border-green-100">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="bg-green-100 p-1.5 rounded-md">
-                                            <MapPin className="w-4 h-4 text-green-700" />
-                                        </div>
-                                        <h4 className="font-semibold text-gray-800">Farm Location</h4>
-                                    </div>
-                                    <div className="space-y-3 pl-2">
-                                        <div>
-                                            <span className="text-xs text-gray-500 block">Farm Name</span>
-                                            <span className="font-medium text-gray-900">{employee.farm_name || 'Not Assigned'}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-xs text-gray-500 block">Location</span>
-                                            <span className="font-medium text-gray-900">{employee.location || employee.farm_location || 'N/A'}</span>
-                                        </div>
+                            <div className="space-y-4 2xl:space-y-8 4xl:space-y-16 5xl:space-y-24">
+                                <div className="group">
+                                    <label className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl font-semibold text-gray-500 uppercase tracking-wider mb-1 4xl:mb-4 block group-hover:text-blue-600 transition-colors">Employee ID</label>
+                                    <div className="text-gray-900 font-medium font-mono text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl">
+                                        #{employee.id}
                                     </div>
                                 </div>
-
-                                <div className="bg-purple-50/50 rounded-lg p-4 border border-purple-100">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="bg-purple-100 p-1.5 rounded-md">
-                                            <Warehouse className="w-4 h-4 text-purple-700" />
-                                        </div>
-                                        <h4 className="font-semibold text-gray-800">Shed Assignment</h4>
+                                <div className="group">
+                                    <label className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl font-semibold text-gray-500 uppercase tracking-wider mb-1 4xl:mb-4 block group-hover:text-blue-600 transition-colors">Joined Date</label>
+                                    <div className="text-gray-900 font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 2xl:w-6 2xl:h-6 4xl:w-14 4xl:h-14 5xl:w-20 5xl:h-20 text-gray-300" />
+                                        <span className="truncate">
+                                            {employee.created_at || employee.joining_date ? new Date(employee.created_at || employee.joining_date).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            }) : 'N/A'}
+                                        </span>
                                     </div>
-                                    <div className="space-y-3 pl-2">
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Farm Location Box */}
+                        <div className="bg-white border border-gray-200 rounded-xl 4xl:rounded-[40px] p-3 sm:p-4 lg:p-6 2xl:p-10 4xl:p-20 5xl:p-32 hover:shadow-md transition-shadow animate-slide-up-fade-3 h-full min-h-[220px] 2xl:min-h-[320px] 4xl:min-h-[600px] 5xl:min-h-[900px]">
+                            <h3 className="text-base sm:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-8xl font-bold text-gray-800 mb-4 2xl:mb-6 4xl:mb-12 5xl:mb-20 flex items-center gap-2 4xl:gap-6 5xl:gap-10 border-b 4xl:border-b-4 pb-2 2xl:pb-4 4xl:pb-10 5xl:pb-16">
+                                <MapPin className="w-5 h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24 text-gray-400" />
+                                <span className="truncate">Farm Location</span>
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="bg-green-50/50 rounded-lg p-3 sm:p-4 2xl:p-6 4xl:p-16 5xl:p-24 border border-green-100 h-full">
+                                    <div className="space-y-3 lg:space-y-4 2xl:space-y-8 4xl:space-y-16 5xl:space-y-24">
                                         <div>
-                                            <span className="text-xs text-gray-500 block">Shed Name</span>
-                                            <span className="font-medium text-gray-900">{employee.shed_name || 'Not Assigned'}</span>
+                                            <span className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl text-gray-500 block uppercase font-semibold mb-0.5 4xl:mb-4">Farm Name</span>
+                                            <span className="font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl text-gray-900 truncate block">{employee.farm_name || 'Not Assigned'}</span>
                                         </div>
                                         <div>
-                                            <span className="text-xs text-gray-500 block">Section Details</span>
-                                            <span className="font-medium text-gray-900">
-                                                {/* API check: might return section or shed_section */}
-                                                {employee.section || employee.shed_section ? `Section ${employee.section || employee.shed_section}` : 'N/A'}
-                                            </span>
+                                            <span className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl text-gray-500 block uppercase font-semibold mb-0.5 4xl:mb-4">Location</span>
+                                            <span className="font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl text-gray-900 truncate block">{employee.location || employee.farm_location || 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* System Details */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow animate-slide-up-fade-4">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                <Hash className="w-5 h-5 text-gray-400" />
-                                System Metadata
+                        {/* Shed Assignment Box */}
+                        <div className="bg-white border border-gray-200 rounded-xl 4xl:rounded-[40px] p-3 sm:p-4 lg:p-6 2xl:p-10 4xl:p-20 5xl:p-32 hover:shadow-md transition-shadow animate-slide-up-fade-5 h-full min-h-[220px] 2xl:min-h-[320px] 4xl:min-h-[600px] 5xl:min-h-[900px]">
+                            <h3 className="text-base sm:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-8xl font-bold text-gray-800 mb-4 2xl:mb-6 4xl:mb-12 5xl:mb-20 flex items-center gap-2 4xl:gap-6 5xl:gap-10 border-b 4xl:border-b-4 pb-2 2xl:pb-4 4xl:pb-10 5xl:pb-16">
+                                <Warehouse className="w-5 h-5 2xl:w-8 2xl:h-8 4xl:w-16 4xl:h-16 5xl:w-24 5xl:h-24 text-gray-400" />
+                                <span className="truncate">Shed Assignment</span>
                             </h3>
                             <div className="space-y-4">
-                                <div className="group">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Employee ID</label>
-                                    <div className="text-gray-900 font-medium font-mono">
-                                        #{employee.id}
-                                    </div>
-                                </div>
-                                <div className="group">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block group-hover:text-blue-600 transition-colors">Joined Date</label>
-                                    <div className="text-gray-900 font-medium flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-gray-300" />
-                                        {employee.created_at || employee.joining_date ? new Date(employee.created_at || employee.joining_date).toLocaleDateString(undefined, {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        }) : 'N/A'}
+                                <div className="bg-purple-50/50 rounded-lg p-3 sm:p-4 2xl:p-6 4xl:p-16 5xl:p-24 border border-purple-100 h-full">
+                                    <div className="space-y-3 lg:space-y-4 2xl:space-y-8 4xl:space-y-16 5xl:space-y-24">
+                                        <div>
+                                            <span className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl text-gray-500 block uppercase font-semibold mb-0.5 4xl:mb-4">Shed Name</span>
+                                            <span className="font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl text-gray-900 truncate block">{employee.shed_name || 'Not Assigned'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs 2xl:text-lg 4xl:text-4xl 5xl:text-6xl text-gray-500 block uppercase font-semibold mb-0.5 4xl:mb-4">Section Details</span>
+                                            <span className="font-medium text-base lg:text-lg 2xl:text-2xl 4xl:text-5xl 5xl:text-7xl text-gray-900 truncate block">
+                                                {employee.section || employee.shed_section ? `Section ${employee.section || employee.shed_section}` : 'N/A'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

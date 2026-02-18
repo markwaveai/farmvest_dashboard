@@ -102,8 +102,6 @@
     flex-direction: column;
     gap: 4px;
     text-align: left;
-    border-left: 1px solid var(--card-border, #e2e8f0);
-    padding-left: 24px;
 }
 
 .manager-entry {
@@ -297,14 +295,141 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 639px) {
+
+    /* xs to sm */
+    .farm-details-header {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .farm-title-section h1 {
+        font-size: 1.1rem;
+    }
+
+    .back-button {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .manager-details-section {
+        padding-top: 8px;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 4px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 400px) {
+    .manager-details-section {
+        align-items: center;
+        gap: 2px;
+    }
+}
+
+@media (max-width: 639px) {
     .sheds-grid-container {
         grid-template-columns: 1fr;
     }
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
+@media (min-width: 640px) and (max-width: 1024px) {
     .sheds-grid-container {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .shed-detail-card {
+        padding: 16px;
+    }
+
+    .shed-name-title {
+        font-size: 0.85rem;
+    }
+
+    .stat-value {
+        font-size: 0.85rem;
+    }
+}
+
+@media (min-width: 2000px) {
+    .farm-details-container {
+        padding: 60px;
+    }
+
+    .farm-details-header {
+        padding: 48px 64px;
+        border-radius: 48px;
+        margin-bottom: 48px;
+    }
+
+    .farm-title-section h1 {
+        font-size: 4.5rem;
+    }
+
+    .farm-location {
+        font-size: 2rem;
+        gap: 12px;
+    }
+
+    .back-button {
+        padding: 24px 48px;
+        font-size: 2rem;
+        border-radius: 20px;
+        gap: 16px;
+    }
+
+    .manager-entry {
+        font-size: 2rem;
+        gap: 16px;
+    }
+
+    .info-label,
+    .info-value {
+        font-size: 2rem;
+    }
+
+    .sheds-grid-container {
+        gap: 48px;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .shed-detail-card {
+        padding: 60px;
+        border-radius: 48px;
+    }
+
+    .shed-name-title {
+        font-size: 3rem;
+    }
+
+    .stat-row {
+        gap: 24px;
+    }
+
+    .stat-label {
+        font-size: 2rem;
+    }
+
+    .stat-value {
+        font-size: 3rem;
+    }
+
+    .shed-icon-large {
+        font-size: 5rem;
+    }
+
+    .shed-id-badge-inline {
+        font-size: 1.5rem;
+        padding: 8px 24px;
+    }
+
+    .card-info-label-sm,
+    .card-info-value-sm {
+        font-size: 1.5rem;
     }
 }

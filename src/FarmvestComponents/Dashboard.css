@@ -21,6 +21,18 @@
     color: #1a1a1a;
 }
 
+@media (max-width: 768px) {
+    .dashboard-header {
+        gap: 8px;
+        /* Reduce gap to fit in one line */
+    }
+
+    .dashboard-title {
+        font-size: 18px;
+        /* Reduce size further */
+    }
+}
+
 .time-filter-container {
     display: flex;
     background-color: white;
@@ -54,14 +66,15 @@
 /* Summary Cards */
 .summary-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    /* Increased minmax to encourage wrapping if space is tight, preventing squish */
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
     margin-bottom: 24px;
 }
 
 .summary-card {
     background-color: white;
-    padding: 20px;
+    padding: 16px;
     border-radius: 12px;
     box-shadow: var(--shadow-premium);
     display: flex;
@@ -77,23 +90,28 @@
 .card-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 12px;
 }
 
 .card-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .card-title {
-    font-size: 14px;
+    font-size: 13px;
+    /* Slightly reduced */
     color: #666;
     font-weight: 500;
+    line-height: 1.2;
+    /* Allow wrapping if needed */
+    white-space: normal;
 }
 
 .card-value {

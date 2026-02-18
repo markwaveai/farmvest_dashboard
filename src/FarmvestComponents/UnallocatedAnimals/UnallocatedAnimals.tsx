@@ -680,39 +680,45 @@ const UnallocatedAnimals: React.FC = () => {
 
     return (
         <div className="unallocated-animals-container">
-            <div className="ua-header p-6 pb-0">
-                <div className="flex items-center gap-4 mb-2">
-                    {navState?.fromShedView && (
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="bg-white border border-gray-200 text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors"
-                        >
-                            <ChevronDown size={14} className="rotate-90" /> Back to Farms
-                        </button>
-                    )}
-                    <h1><span>Shed Allocation</span></h1>
+            <div className="ua-header p-2 sm:p-6 pb-0">
+                <div className="flex flex-row items-center justify-between w-full gap-1 sm:gap-2">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                        {navState?.fromShedView && (
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="ua-back-btn bg-white border border-gray-200 text-gray-600 hover:text-gray-900 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors shrink-0"
+                            >
+                                <ChevronDown size={14} className="rotate-90" /> <span className="sm:hidden">Back</span><span className="hidden sm:inline">Back to Farms</span>
+                            </button>
+                        )}
+                        <h1 className="text-[11px] mm:text-sm sm:text-2xl font-bold text-gray-800 m-0 leading-tight mm:whitespace-nowrap">
+                            Shed <br className="mm:hidden" /> Allocation
+                        </h1>
+                    </div>
+
+                    <button
+                        className="save-allocation-btn shrink-0 whitespace-nowrap"
+                        onClick={handleSaveAllocation}
+                        disabled={isSaving || pendingAllocations.size === 0}
+                        style={{
+                            backgroundColor: pendingAllocations.size > 0 ? '#f59e0b' : '#9CA3AF',
+                            color: 'white',
+                            padding: '6px 8px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            fontWeight: 700,
+                            cursor: pendingAllocations.size > 0 ? 'pointer' : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '2px',
+                            fontSize: '9px'
+                        }}
+                    >
+                        {isSaving ? <Loader2 className="animate-spin" size={12} /> : null}
+                        <span>{isSaving ? 'Saving...' : `Save (${pendingAllocations.size})`}</span>
+                    </button>
                 </div>
-                <button
-                    className="save-allocation-btn"
-                    onClick={handleSaveAllocation}
-                    disabled={isSaving || pendingAllocations.size === 0}
-                    style={{
-                        marginLeft: 'auto',
-                        backgroundColor: pendingAllocations.size > 0 ? '#f59e0b' : '#9CA3AF',
-                        color: 'white',
-                        padding: '8px 24px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontWeight: 600,
-                        cursor: pendingAllocations.size > 0 ? 'pointer' : 'not-allowed',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}
-                >
-                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : null}
-                    {isSaving ? 'Saving...' : `Save Changes (${pendingAllocations.size})`}
-                </button>
             </div>
 
             <div className="flex-1 overflow-auto p-6 scrollbar-hide">
@@ -796,7 +802,7 @@ const UnallocatedAnimals: React.FC = () => {
                                     </span>
                                 )}
                             </div>
-                        )) : <div style={{ padding: '10px' }}>{selectedFarmId ? "No unallocated animals." : "Select farm first."}</div>
+                        )) : <div className="ua-empty-msg" style={{ padding: '10px' }}>{selectedFarmId ? "No unallocated animals." : "Select farm first."}</div>
                     )}
                 </div>
 
@@ -806,8 +812,8 @@ const UnallocatedAnimals: React.FC = () => {
                     <div className="space-y-2 p-4">
                         {(() => {
                             const Separator = ({ label }: { label: string }) => (
-                                <div className="w-full bg-[#f0fdf4]/80 border border-green-100/50 rounded-lg py-1.5 mb-3 shadow-sm flex items-center justify-center">
-                                    <span className="text-[10px] font-bold text-green-700/60 tracking-widest uppercase">{label}</span>
+                                <div className="ua-grid-separator-container w-full bg-[#f0fdf4]/80 border border-green-100/50 rounded-lg py-1.5 mb-3 shadow-sm flex items-center justify-center">
+                                    <span className="ua-grid-separator-text text-[10px] font-bold text-green-700/60 tracking-widest uppercase">{label}</span>
                                 </div>
                             );
 
@@ -838,16 +844,16 @@ const UnallocatedAnimals: React.FC = () => {
 
                                 return (
                                     <div className="mb-4">
-                                        <h4 className="text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
+                                        <h4 className="ua-grid-row-title text-[12px] font-bold text-gray-700 mb-1 ml-1">{rowLabel}</h4>
                                         <div className="ua-grid-row-scroll scrollbar-hide px-1">
                                             {chunks.map((chunk, groupIndex) => (
                                                 <div key={groupIndex} className="flex flex-col items-center">
                                                     <div className="mb-0.5 flex flex-col items-center animate-pulse">
-                                                        <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
-                                                            <Camera size={11} className="text-blue-600" />
+                                                        <div className="ua-grid-cctv-icon w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100 shadow-sm z-10 transition-transform hover:scale-110 cursor-pointer" title="CCTV Coverage">
+                                                            <Camera className="ua-camera-icon text-blue-600" size={11} />
                                                         </div>
-                                                        <div className="h-1.5 w-0.5 bg-blue-200 -mt-0.5"></div>
-                                                        <div className="w-full h-0.5 bg-blue-200"></div>
+                                                        <div className="ua-grid-cctv-pole-v h-1.5 w-0.5 bg-blue-200 -mt-0.5"></div>
+                                                        <div className="ua-grid-cctv-pole-h w-full h-0.5 bg-blue-200"></div>
                                                     </div>
 
                                                     <div className="flex gap-1 bg-gray-50/50 p-1 rounded-lg border border-dashed border-gray-200 relative pt-1.5 min-w-[200px]">
@@ -867,7 +873,7 @@ const UnallocatedAnimals: React.FC = () => {
                                                                     }}
                                                                 >
                                                                     <div className={`
-                                                                        w-11 h-11 border rounded-md flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
+                                                                        ua-grid-slot-box w-11 h-11 border rounded-md flex flex-col items-center justify-center bg-white shadow-sm transition-all relative overflow-hidden
                                                                         ${isOccupied && !isPending ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'}
                                                                         ${isPending ? 'ring-1 ring-emerald-500 border-emerald-500' : ''}
                                                                     `}>
@@ -876,17 +882,18 @@ const UnallocatedAnimals: React.FC = () => {
                                                                                 <img
                                                                                     src={displayImg}
                                                                                     alt="Buffalo"
-                                                                                    className={`w-8 h-8 object-contain mb-0.5 rounded-full shadow-sm`}
+                                                                                    className={`ua-grid-slot-img w-8 h-8 object-contain mb-0.5 rounded-full shadow-sm`}
                                                                                     onError={(e) => {
                                                                                         e.currentTarget.src = "/buffalo_green_icon.png";
                                                                                     }}
                                                                                 />
-                                                                                <span className="text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
+                                                                                <span className="ua-grid-slot-id text-[7px] font-bold text-emerald-600 mt-0">{pos.label}</span>
                                                                             </div>
                                                                         )}
                                                                         {isPending && (
                                                                             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90">
                                                                                 <PawPrint
+                                                                                    className="ua-paw-icon"
                                                                                     size={18}
                                                                                     color={isOccupied ? '#EF4444' : '#22C55E'}
                                                                                     fill={isOccupied ? '#EF4444' : '#22C55E'}
@@ -899,9 +906,9 @@ const UnallocatedAnimals: React.FC = () => {
                                                                                 <img
                                                                                     src={displayImg}
                                                                                     alt="Buffalo"
-                                                                                    className={`w-4 h-4 object-contain mb-0.5`}
+                                                                                    className={`ua-grid-slot-img w-4 h-4 object-contain mb-0.5`}
                                                                                 />
-                                                                                <span className="text-[8px] font-bold text-gray-400">{pos.label}</span>
+                                                                                <span className="ua-grid-slot-id text-[8px] font-bold text-gray-400">{pos.label}</span>
                                                                             </>
                                                                         )}
                                                                     </div>
