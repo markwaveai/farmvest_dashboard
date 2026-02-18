@@ -823,6 +823,36 @@
     box-shadow: none;
 }
 
+.cpf-details-btn {
+    width: 100%;
+    background-color: white;
+    color: #4B5563;
+    border: 1px solid #E5E7EB;
+    padding: 1rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.cpf-details-btn:hover {
+    background-color: #F9FAFB;
+    border-color: #D1D5DB;
+    color: #111827;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.cpf-details-btn:active {
+    transform: translateY(0);
+}
+
 /* Main Onboarding Card (Initial View) */
 .onboarding-main-card {
     background: white;

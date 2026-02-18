@@ -3,7 +3,7 @@ import './AnimalOnboarding.css';
 import { useNavigate } from 'react-router-dom';
 import { farmvestService } from '../../services/farmvest_api';
 import SuccessToast from '../../components/common/SuccessToast/ToastNotification';
-import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X, CheckCircle } from 'lucide-react';
+import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X, CheckCircle, FileText, Check } from 'lucide-react';
 import CustomDropdown from '../../components/common/CustomDropdown';
 
 const CalfIcon = ({ size = 24 }: { size?: number }) => (
@@ -102,6 +102,25 @@ const AnimalOnboarding: React.FC = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    // CPF Modal State
+    const [showCPFModal, setShowCPFModal] = useState(false);
+    const [cpfData, setCpfData] = useState({
+        name: '',
+        mobile: '',
+        method: 'online' as 'online' | 'offline',
+        utrNumber: '',
+        onlineImage: '',
+        offlineImage: ''
+    });
+    const [hasSubmittedCPF, setHasSubmittedCPF] = useState(false);
+    const [agreementChecked, setAgreementChecked] = useState(false);
+
+    const [cpfEmployees, setCpfEmployees] = useState<any[]>([]);
+    const [cpfSearchQuery, setCpfSearchQuery] = useState('');
+    const [showCPFEmployeeDropdown, setShowCPFEmployeeDropdown] = useState(false);
+    const [searchingEmployees, setSearchingEmployees] = useState(false);
+    const [allEmployees, setAllEmployees] = useState<any[]>([]);
+
     // Close dropdown on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -112,6 +131,68 @@ const AnimalOnboarding: React.FC = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            const lowerQuery = cpfSearchQuery.toLowerCase().trim();
+
+            // 1. Local Search from allEmployees (Pre-fetched)
+            const employeeMatches = allEmployees.filter(emp => {
+                const fullName = (emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`).toLowerCase();
+                const mobile = (emp.mobile_number || emp.phone_number || emp.mobile || '').toLowerCase();
+                return fullName.includes(lowerQuery) || mobile.includes(lowerQuery);
+            });
+
+            // 2. Local Search from allMembers (Investors)
+            const investorMatches = allMembers
+                .filter(m => (m.displayName?.toLowerCase().includes(lowerQuery)) || (m.mobile?.includes(cpfSearchQuery)))
+                .map(m => ({
+                    full_name: m.displayName,
+                    mobile_number: m.mobile,
+                    roles: [m.type || 'investor'],
+                    is_active: 1
+                }));
+
+            if (lowerQuery.length > 0) {
+                setSearchingEmployees(true);
+                try {
+                    // 3. Remote Search from API for latest/missing results
+                    const response = await farmvestService.searchEmployee(cpfSearchQuery);
+                    let remoteEmployees = [];
+                    if (Array.isArray(response)) remoteEmployees = response;
+                    else if (response && Array.isArray(response.data)) remoteEmployees = response.data;
+                    else if (response && (response.users || response.employees)) remoteEmployees = response.users || response.employees;
+
+                    // Combined and unique results
+                    const combined = [...remoteEmployees];
+                    [...employeeMatches, ...investorMatches].forEach(lm => {
+                        const lmMobile = lm.mobile_number || lm.phone_number || lm.mobile;
+                        if (!combined.some(re => (re.mobile_number || re.phone_number || re.mobile) === lmMobile)) {
+                            combined.push(lm);
+                        }
+                    });
+
+                    setCpfEmployees(combined.slice(0, 15));
+                    setShowCPFEmployeeDropdown(true);
+                } catch (e) {
+                    const combinedLocal = [...employeeMatches];
+                    investorMatches.forEach(im => {
+                        if (!combinedLocal.some(em => em.mobile_number === im.mobile_number)) combinedLocal.push(im);
+                    });
+                    setCpfEmployees(combinedLocal.slice(0, 15));
+                    setShowCPFEmployeeDropdown(combinedLocal.length > 0);
+                } finally {
+                    setSearchingEmployees(false);
+                }
+            } else {
+                // If empty query, show all pre-fetched employees
+                setCpfEmployees(allEmployees.slice(0, 15));
+                setSearchingEmployees(false);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [cpfSearchQuery, allMembers, allEmployees]);
+
 
     const handleMobileChange = (val: string) => {
         setMobile(val);
@@ -242,23 +323,9 @@ const AnimalOnboarding: React.FC = () => {
                     allFetchedMembers.push(...normalizedInvestors);
 
                     // 2. Fetch In-Transit Orders (Pending Users)
-                    // Passing empty string to hopefully get all pending orders?
-                    // Verify if API supports this, otherwise we might need a different endpoint.
-                    const transitData = await farmvestService.getPaidOrders('');
-
-                    if (transitData && Array.isArray(transitData.orders)) {
-                        // The API structure for getPaidOrders might return { user, orders } OR distinct structure for bulk?
-                        // Actually getPaidOrders is usually for a *single* user.
-                        // If we pass empty string, does it return ALL orders?
-                        // If not, we can't easily autocomplete *everyone*.
-                        // But if it works, great.
-
-                        // Assuming it might fail or return just one wrapper.
-                        // If the API returns a list of orders with user details embedded, we extract them.
-                        // Based on getPaidOrders return type: { user: ..., orders: ... }
-                        // This suggests it's per-user.
-                        // But let's check the logs.
-                        if (transitData.user) {
+                    try {
+                        const transitData = await farmvestService.getPaidOrders('');
+                        if (transitData && transitData.user) {
                             const u = transitData.user;
                             const normalizedTransitUser = {
                                 displayName: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown Investor',
@@ -267,22 +334,34 @@ const AnimalOnboarding: React.FC = () => {
                                 type: 'investor',
                                 ...u
                             };
-                            // Add only if not already present (e.g., by mobile number)
                             if (!allFetchedMembers.some(member => member.mobile === normalizedTransitUser.mobile)) {
                                 allFetchedMembers.push(normalizedTransitUser);
                             }
                         }
+                    } catch (transitError) {
+                        console.error('Error fetching transit users:', transitError);
                     }
-
-                    // If getPaidOrders returns null user when empty, we might need 'getInTransitOrders' from API_ENDPOINTS directly if it supports GET list.
-                    // API_ENDPOINTS.getInTransitOrders is used by getPaidOrders as POST.
-
                 } catch (investorError) {
                     console.error('Error fetching investors:', investorError);
                 }
 
-                setAllMembers(allFetchedMembers);
+                // 3. Fetch All Employees specifically for CPF
+                try {
+                    const empData = await farmvestService.getEmployees({ size: 1000, page: 1 });
+                    let empList: any[] = [];
+                    if (Array.isArray(empData)) {
+                        empList = empData;
+                    } else if (empData && Array.isArray(empData.data)) {
+                        empList = empData.data;
+                    } else if (empData && (empData.users || empData.employees)) {
+                        empList = empData.users || empData.employees;
+                    }
+                    setAllEmployees(empList);
+                } catch (e) {
+                    console.error("Error fetching all employees:", e);
+                }
 
+                setAllMembers(allFetchedMembers);
             } catch (error) {
                 console.error('Error in fetchInitialData:', error);
             }
@@ -570,7 +649,7 @@ const AnimalOnboarding: React.FC = () => {
         if (!selectedFarmId || selectedFarmId === 'Show all farms') return false;
 
         const incompleteAnimals = animals.filter(a => {
-            if (!a.rfidTag || !a.earTag || !a.age || !a.neckbandId) return true;
+            if (!a.rfidTag || !a.earTag || !a.age) return true;
             if (a.type === 'Calf' && !a.parentBuffaloId) return true;
             if (a.type === 'Buffalo' && a.photos.length === 0) return true;
             return false;
@@ -586,7 +665,7 @@ const AnimalOnboarding: React.FC = () => {
         }
 
         const incompleteAnimals = animals.filter(a => {
-            if (!a.rfidTag || !a.earTag || !a.age || !a.neckbandId) return true;
+            if (!a.rfidTag || !a.earTag || !a.age) return true;
             if (a.type === 'Calf' && !a.parentBuffaloId) return true;
             if (a.type === 'Buffalo' && a.photos.length === 0) return true;
             return false;
@@ -597,7 +676,7 @@ const AnimalOnboarding: React.FC = () => {
             if (missingImages) {
                 alert('Please upload at least one image for every Buffalo.');
             } else {
-                alert(`Please complete RFID, Ear Tag, Age, and Neckband ID for all animals.`);
+                alert(`Please complete RFID, Ear Tag, and Age for all animals.`);
             }
             return;
         }
@@ -655,8 +734,13 @@ const AnimalOnboarding: React.FC = () => {
                     number_of_units: selectedOrder.numUnits,
                     payment_method: selectedOrder.paymentType || "BANK_TRANSFER",
                     bank_name: "HDFC Bank - PARK STREET",
-                    utr_number: "",
-                    payment_verification_screenshot: "https://firebasestorage.googleapis.com/v0/b/markwave-481315.firebasestorage.app/o/placeholders%2Fpy.jpg?alt=media"
+                    utr_number: cpfData.utrNumber || "",
+                    payment_verification_screenshot: (cpfData.method === 'online' ? cpfData.onlineImage : cpfData.offlineImage) || "https://firebasestorage.googleapis.com/v0/b/markwave-481315.firebasestorage.app/o/placeholders%2Fpy.jpg?alt=media",
+                    cpf_employee_name: cpfData.name,
+                    cpf_employee_mobile: cpfData.mobile,
+                    cpf_payment_type: cpfData.method,
+                    cpf_name: cpfData.name,
+                    cpf_image: (cpfData.method === 'online' ? cpfData.onlineImage : cpfData.offlineImage) || ""
                 },
                 animals: animals.map(a => {
                     const isBuffalo = a.type === 'Buffalo';
@@ -694,7 +778,9 @@ const AnimalOnboarding: React.FC = () => {
                         };
                     }
                 }),
-                farm_id: Number(selectedFarmId)
+                farm_id: Number(selectedFarmId),
+                agreement_accepted: true,
+                agreement_type: hasSubmittedCPF ? "CPF_AGREEMENT" : "STANDARD_AGREEMENT"
             };
 
             await farmvestService.onboardAnimal(payload);
@@ -1142,15 +1228,79 @@ const AnimalOnboarding: React.FC = () => {
                         </div>
 
                         <div className="onboarding-actions">
+                            <button
+                                className="cpf-details-btn"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    marginBottom: '12px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #E5E7EB',
+                                    backgroundColor: hasSubmittedCPF ? '#E8F5E9' : '#F9FAFB',
+                                    color: hasSubmittedCPF ? '#2E7D32' : '#374151',
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '10px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                    transition: 'all 0.2s'
+                                }}
+                                onClick={() => {
+                                    if (!hasSubmittedCPF) {
+                                        // Removed initial name/mobile pre-filling as per user request
+                                        // Employee will now enter their own details or select from list
+                                        setShowCPFModal(true);
+                                    } else {
+                                        setShowCPFModal(true); // Open modal even if submitted, to allow editing
+                                    }
+                                }}
+                            >
+                                <FileText size={20} />
+                                {hasSubmittedCPF ? 'Edit CPF Details' : 'Add CPF Details'}
+                                {hasSubmittedCPF && <CheckCircle size={18} />}
+                            </button>
+
                             <button className="autofill-btn" onClick={handleAutofill}>
                                 <Wand2 size={16} color="#F97316" />
                                 Autofill Test Data
                             </button>
 
+                            <div style={{
+                                backgroundColor: '#F9FAFB',
+                                padding: '12px',
+                                borderRadius: '12px',
+                                border: '1px solid #E5E7EB',
+                                marginBottom: '16px',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '10px'
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    id="agreement"
+                                    checked={agreementChecked}
+                                    onChange={(e) => setAgreementChecked(e.target.checked)}
+                                    style={{ marginTop: '3px', cursor: 'pointer', transform: 'scale(1.2)' }}
+                                />
+                                <label htmlFor="agreement" style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.5', cursor: 'pointer', fontWeight: '500' }}>
+                                    {hasSubmittedCPF
+                                        ? "I hereby confirm that I have collected and verified the CPF details and payment proof for this onboarding."
+                                        : "I hereby confirm that all animal details entered are correct and move the animal to the unallocated list."
+                                    }
+                                </label>
+                            </div>
+
                             <button
                                 className="confirm-onboarding-btn"
                                 onClick={handleConfirmOnboarding}
-                                disabled={!isFormComplete}
+                                disabled={!isFormComplete || !agreementChecked}
+                                style={{
+                                    opacity: (!isFormComplete || !agreementChecked) ? 0.6 : 1,
+                                    cursor: (!isFormComplete || !agreementChecked) ? 'not-allowed' : 'pointer'
+                                }}
                             >
                                 Confirm Onboarding
                             </button>
@@ -1397,6 +1547,327 @@ const AnimalOnboarding: React.FC = () => {
                             >
                                 Save Calf Details
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* CPF Details Modal */}
+                {showCPFModal && (
+                    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                        <div style={{
+                            background: 'white',
+                            width: '100%',
+                            maxWidth: '440px',
+                            maxHeight: 'calc(100vh - 40px)',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            position: 'relative',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                            overflow: 'hidden'
+                        }}>
+                            {/* Header */}
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '20px 20px 10px 20px',
+                                borderBottom: '1px solid #F3F4F6'
+                            }}>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1F2937', margin: 0 }}>CPF Details</h3>
+                                <button onClick={() => setShowCPFModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: '4px' }}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            {/* Scrollable Body */}
+                            <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <div className="form-group" style={{ position: 'relative' }}>
+                                        <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9CA3AF', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>EMPLOYEE NAME</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Search Employee..."
+                                            value={cpfSearchQuery || cpfData.name}
+                                            onFocus={() => {
+                                                if (cpfEmployees.length === 0 && allEmployees.length > 0) {
+                                                    setCpfEmployees(allEmployees.slice(0, 15));
+                                                }
+                                                setShowCPFEmployeeDropdown(true);
+                                            }}
+                                            onChange={(e) => {
+                                                setCpfSearchQuery(e.target.value);
+                                                setCpfData(prev => ({ ...prev, name: e.target.value }));
+                                            }}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', outline: 'none', fontSize: '1rem' }}
+                                        />
+                                        {searchingEmployees && (
+                                            <div style={{ position: 'absolute', right: '12px', top: '42px' }}>
+                                                <Loader2 size={16} className="animate-spin" color="#2E7D32" />
+                                            </div>
+                                        )}
+                                        {showCPFEmployeeDropdown && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                left: 0,
+                                                right: 0,
+                                                background: 'white',
+                                                border: '1px solid #E5E7EB',
+                                                borderRadius: '8px',
+                                                marginTop: '4px',
+                                                maxHeight: '200px',
+                                                overflowY: 'auto',
+                                                zIndex: 100,
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                            }}>
+                                                {cpfEmployees.length > 0 ? (
+                                                    cpfEmployees.map((emp, idx) => {
+                                                        const fullName = emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim();
+                                                        const mobile = emp.mobile_number || emp.phone_number || emp.mobile || '';
+                                                        const role = Array.isArray(emp.roles) ? emp.roles[0] : (emp.role || emp.role_name || 'Employee');
+                                                        const isActive = emp.is_active !== undefined ? Number(emp.is_active) === 1 : Number(emp.active_status) === 1;
+
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => {
+                                                                    setCpfData(prev => ({
+                                                                        ...prev,
+                                                                        name: fullName,
+                                                                        mobile: mobile
+                                                                    }));
+                                                                    setCpfSearchQuery('');
+                                                                    setShowCPFEmployeeDropdown(false);
+                                                                }}
+                                                                style={{
+                                                                    padding: '12px',
+                                                                    cursor: 'pointer',
+                                                                    borderBottom: idx === cpfEmployees.length - 1 ? 'none' : '1px solid #F3F4F6',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center'
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                                            >
+                                                                <div>
+                                                                    <p style={{ margin: 0, fontWeight: '600', color: '#374151' }}>{fullName}</p>
+                                                                    <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>
+                                                                        {mobile} {role ? `• ${role.replace(/_/g, ' ')}` : ''}
+                                                                    </p>
+                                                                </div>
+                                                                <span style={{
+                                                                    fontSize: '10px',
+                                                                    padding: '2px 8px',
+                                                                    borderRadius: '12px',
+                                                                    fontWeight: 'bold',
+                                                                    backgroundColor: isActive ? '#DCFCE7' : '#FEE2E2',
+                                                                    color: isActive ? '#166534' : '#991B1B'
+                                                                }}>
+                                                                    {isActive ? 'Active' : 'Inactive'}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <div style={{ padding: '12px', textAlign: 'center', color: '#6B7280', fontSize: '14px' }}>
+                                                        No results found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9CA3AF', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>MOBILE NUMBER</label>
+                                        <input
+                                            type="text"
+                                            value={cpfData.mobile}
+                                            onChange={(e) => setCpfData(prev => ({ ...prev, mobile: e.target.value }))}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', outline: 'none', fontSize: '1rem' }}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'flex', backgroundColor: '#F3F4F6', borderRadius: '14px', padding: '6px' }}>
+                                        <button
+                                            onClick={() => setCpfData(prev => ({ ...prev, method: 'online' }))}
+                                            style={{
+                                                flex: 1,
+                                                padding: '12px',
+                                                borderRadius: '10px',
+                                                border: 'none',
+                                                background: cpfData.method === 'online' ? 'white' : 'transparent',
+                                                color: cpfData.method === 'online' ? '#2E7D32' : '#6B7280',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                boxShadow: cpfData.method === 'online' ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Online
+                                        </button>
+                                        <button
+                                            onClick={() => setCpfData(prev => ({ ...prev, method: 'offline' }))}
+                                            style={{
+                                                flex: 1,
+                                                padding: '12px',
+                                                borderRadius: '10px',
+                                                border: 'none',
+                                                background: cpfData.method === 'offline' ? 'white' : 'transparent',
+                                                color: cpfData.method === 'offline' ? '#2E7D32' : '#6B7280',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                boxShadow: cpfData.method === 'offline' ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Offline
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        {cpfData.method === 'online' ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9CA3AF', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>UTR NUMBER</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Enter UTR Number"
+                                                        value={cpfData.utrNumber}
+                                                        onChange={(e) => setCpfData(prev => ({ ...prev, utrNumber: e.target.value }))}
+                                                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', outline: 'none', fontSize: '1rem' }}
+                                                    />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9CA3AF', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>PAYMENT SCREENSHOT</label>
+                                                    <div
+                                                        onClick={() => document.getElementById('online-payment-img')?.click()}
+                                                        style={{
+                                                            border: '2px dashed #E5E7EB',
+                                                            borderRadius: '16px',
+                                                            height: '140px',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            cursor: 'pointer',
+                                                            overflow: 'hidden',
+                                                            position: 'relative',
+                                                            backgroundColor: '#F9FAFB'
+                                                        }}
+                                                    >
+                                                        {cpfData.onlineImage ? (
+                                                            <img src={cpfData.onlineImage} alt="Payment" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <>
+                                                                <div style={{ padding: '12px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '8px' }}>
+                                                                    <Camera size={24} color="#9CA3AF" />
+                                                                </div>
+                                                                <span style={{ fontSize: '0.875rem', color: '#9CA3AF', fontWeight: '500' }}>Click to upload screenshot</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        id="online-payment-img"
+                                                        type="file"
+                                                        accept="image/*"
+                                                        style={{ display: 'none' }}
+                                                        onChange={async (e) => {
+                                                            if (e.target.files?.[0]) {
+                                                                const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+                                                                const url = await uploadToFirebase(e.target.files[0]);
+                                                                setCpfData(prev => ({ ...prev, onlineImage: url }));
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="form-group">
+                                                <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9CA3AF', letterSpacing: '0.05em', marginBottom: '12px', display: 'block' }}>PAYMENT RECEIPT</label>
+                                                <div
+                                                    onClick={() => document.getElementById('offline-payment-img')?.click()}
+                                                    style={{
+                                                        border: '2px dashed #E5E7EB',
+                                                        borderRadius: '16px',
+                                                        height: '140px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        overflow: 'hidden',
+                                                        position: 'relative',
+                                                        backgroundColor: '#F9FAFB'
+                                                    }}
+                                                >
+                                                    {cpfData.offlineImage ? (
+                                                        <img src={cpfData.offlineImage} alt="Receipt" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <>
+                                                            <div style={{ padding: '12px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '8px' }}>
+                                                                <Camera size={24} color="#9CA3AF" />
+                                                            </div>
+                                                            <span style={{ fontSize: '0.875rem', color: '#9CA3AF', fontWeight: '500' }}>Click to upload receipt</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <input
+                                                    id="offline-payment-img"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    style={{ display: 'none' }}
+                                                    onChange={async (e) => {
+                                                        if (e.target.files?.[0]) {
+                                                            const { uploadToFirebase } = await import('../../config/firebaseAppConfig');
+                                                            const url = await uploadToFirebase(e.target.files[0]);
+                                                            setCpfData(prev => ({ ...prev, offlineImage: url }));
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div style={{ padding: '20px', borderTop: '1px solid #F3F4F6' }}>
+                                <button
+                                    onClick={() => {
+                                        const finalJson = {
+                                            cpf_name: cpfData.name,
+                                            cpf_image: cpfData.method === 'online' ? cpfData.onlineImage : cpfData.offlineImage,
+                                            cpf_payment_type: cpfData.method
+                                        };
+                                        console.log('CPF Details JSON:', finalJson);
+                                        setHasSubmittedCPF(true);
+                                        setShowCPFModal(false);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px',
+                                        backgroundColor: '#FFA000',
+                                        color: 'white',
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        fontWeight: '800',
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 6px -1px rgba(255, 160, 0, 0.3)',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        letterSpacing: '0.025em'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FF8F00'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFA000'}
+                                >
+                                    Save CPF Details
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
