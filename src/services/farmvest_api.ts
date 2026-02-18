@@ -358,14 +358,22 @@ export const farmvestService = {
     },
     allocateAnimal: async (shedId: string, allocations: { animal_id: any; row_number: string; parking_id: string }[]) => {
         try {
-            // Reverting to path parameter as per Swagger docs (404 was likely due to 'Animal Not Found' not 'Endpoint Not Found')
             const url = API_ENDPOINTS.allocateAnimal(shedId);
-            const payload = { allocations };
-            const response = await farmvestApi.post(url, payload);
-            return response.data;
+
+            // The API expects a single allocation object at the root of the body:
+            // { animal_id, row_number, parking_id }
+            // If the UI sends multiple, we loop through them to ensure all are processed.
+            const responses = [];
+            for (const allocation of allocations) {
+                const response = await farmvestApi.post(url, allocation);
+                responses.push(response.data);
+            }
+
+            // Return the last response or a summary if needed
+            return responses.length > 0 ? responses[responses.length - 1] : { status: "success", count: 0 };
         } catch (error: any) {
             if (error.response) {
-                // alert replaced with console error
+                console.error("Allocation Error:", error.response.data);
             }
             throw error;
         }
