@@ -247,22 +247,46 @@
 }
 
 /* Detail View Styling */
+.order-details-wrapper {
+    width: 100%;
+    padding: 0 2rem;
+}
+
 .order-details-container {
-    max-width: 1200px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 0;
+}
+
+.cards-grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+@media (max-width: 968px) {
+    .cards-grid-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Ensure cards take full width of their grid cell */
 .detail-card {
     width: 100%;
     background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #F3F4F6;
+    transition: all 0.3s ease;
+}
+
+.detail-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
 }
 
 /* Dropdown should span full width or be centered in a row */
@@ -289,12 +313,7 @@
 }
 
 .detail-card-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #F3F4F6;
+    display: none;
 }
 
 .detail-card-header h3 {
@@ -323,18 +342,32 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #F9FAFB;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.detail-row:first-child {
+    padding-top: 0;
 }
 
 .detail-label {
     color: #6B7280;
-    font-size: 0.95rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 
 .detail-value {
     color: #111827;
-    font-weight: 500;
-    font-size: 0.95rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+    text-align: right;
 }
 
 .text-dark-bold {
@@ -361,6 +394,12 @@
 
 .farm-onboarding-dropdown {
     max-width: 300px;
+}
+
+.farm-field {
+    max-width: 500px;
+    margin: 32px auto 32px auto;
+    padding: 0 2rem;
 }
 
 /* Animal Details Section - REFINED */

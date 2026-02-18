@@ -54,7 +54,7 @@ export const EquipmentInventory: React.FC<EquipmentInventoryProps> = ({ onBack }
     const statuses = ['Good', 'Repair', 'Replace'];
 
     return (
-        <div className="h-full flex flex-col gap-4 max-w-full mx-auto overflow-hidden min-w-full font-sans text-gray-900 bg-white p-6">
+        <div className="min-h-screen w-full flex flex-col gap-4 overflow-y-auto overflow-x-hidden font-sans text-gray-900 p-6">
 
             {/* Header Card */}
             <div className="flex-none bg-white border-b border-gray-100 p-4 shadow-sm rounded-xl">
@@ -133,46 +133,46 @@ export const EquipmentInventory: React.FC<EquipmentInventoryProps> = ({ onBack }
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex items-center justify-between">
+                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-200 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Assets</p>
                         <h3 className="text-lg font-bold text-gray-900 mt-1">24 Active</h3>
                     </div>
-                    <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                    <div className="p-2 bg-blue-50 rounded-lg ">
                         <Box size={20} />
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex items-center justify-between">
+                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-200 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Maint. Due</p>
-                        <h3 className="text-lg font-bold text-orange-600 mt-1">03 Items</h3>
+                        <h3 className="text-lg font-bold  mt-1">03 Items</h3>
                     </div>
-                    <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
+                    <div className="p-2 bg-orange-50 rounded-lg ">
                         <Wrench size={20} />
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex items-center justify-between">
+                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-200 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Uptime</p>
-                        <h3 className="text-lg font-bold text-green-600 mt-1">98.2%</h3>
+                        <h3 className="text-lg font-bold  mt-1">98.2%</h3>
                     </div>
-                    <div className="p-2 bg-green-50 rounded-lg text-green-600">
+                    <div className="p-2 bg-green-50 rounded-lg ">
                         <BarChart3 size={20} />
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex items-center justify-between">
+                <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-200 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Est. Value</p>
                         <h3 className="text-lg font-bold text-gray-900 mt-1">$12.4k</h3>
                     </div>
-                    <div className="p-2 bg-gray-50 rounded-lg text-gray-600">
+                    <div className="p-2 bg-gray-50 rounded-lg ">
                         <LayoutGrid size={20} />
                     </div>
                 </div>
             </div>
 
             {/* Table */}
-            <div className="flex-1 min-h-[600px] bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden min-h-[400px] max-h-[600px]">
                 <div className="flex-1 overflow-auto">
                     <table className="min-w-full divide-y divide-gray-100 relative">
                         <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
@@ -243,7 +243,7 @@ export const EquipmentInventory: React.FC<EquipmentInventoryProps> = ({ onBack }
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex-none flex justify-end">
+                <div className="flex-none flex justify-end pb-4">
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}

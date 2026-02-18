@@ -65,11 +65,14 @@ const Inventory: React.FC = () => {
     }
 
     return (
-        <div className="h-full flex flex-col gap-6 pt-4 pb-8 px-8 font-sans bg-white min-h-screen text-gray-900">
+        <div className="h-full flex flex-col gap-6 pt-1 pb-8 px-8 font-sans min-h-screen text-gray-900">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="farms-header bg-white p-3 border-b border-gray-100 shadow-premium flex flex-col lg:flex-row justify-between items-center gap-6">
                 <div>
-                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Inventory Management</h1>
+                    <h1 className="text-xl font-bold  text-slate-900 tracking-tight">Inventory Management</h1>
+                    <p className="text-slate-500 pt-1font-medium text-sm">
+                        ALL Operations • <span className="text-slate-600">{totalAnimalCount} Animals Found</span>
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -92,7 +95,7 @@ const Inventory: React.FC = () => {
                         <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                     </button>
 
-                    <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 shadow-sm transition-colors">
+                    <button className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 shadow-sm transition-colors">
                         <Plus size={18} />
                         New Entry
                     </button>
@@ -102,7 +105,7 @@ const Inventory: React.FC = () => {
             {/* Quick Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {/* Card 1 */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-2xl border border-gray-300 shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow">
                     <div className="flex justify-between items-start mb-4">
                         <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total Inventory Value</span>
                         <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[11px] font-medium">
@@ -111,13 +114,13 @@ const Inventory: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">$124,000</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-1 tracking-tight">$124,000</h2>
                         <p className="text-xs font-medium text-slate-500">Valuation across all categories</p>
                     </div>
                 </div>
 
                 {/* Card 2 */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-2xl border border-gray-300 shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex flex-col">
                             <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Low Stock</span>
@@ -128,13 +131,13 @@ const Inventory: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">8 Items</h2>
-                        <p className="text-xs font-medium">Critical levels in fodder & meds</p>
+                        <h2 className="text-xl font-semibold  mb-1 tracking-tight">8 Items</h2>
+                        <p className="text-xs font-medium text-slate-500">Critical levels in fodder & meds</p>
                     </div>
                 </div>
 
                 {/* Card 3 */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-2xl border border-gray-300 shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex flex-col">
                             <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Expiring</span>
@@ -145,13 +148,13 @@ const Inventory: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">3 Units</h2>
-                        <p className="text-xs font-medium">Expires within next 7 days</p>
+                        <h2 className="text-xl font-semibold mb-1 tracking-tight">3 Units</h2>
+                        <p className="text-xs font-medium text-slate-500">Expires within next 7 days</p>
                     </div>
                 </div>
 
                 {/* Card 4 */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-2xl border border-gray-300 shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex flex-col">
                             <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Feed</span>
@@ -162,8 +165,8 @@ const Inventory: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">2,850 kg</h2>
-                        <p className="text-xs font-medium">Last 24 hours total usage</p>
+                        <h2 className="text-xl font-semibold  mb-1 tracking-tight">2,850 kg</h2>
+                        <p className="text-xs font-medium text-slate-500">Last 24 hours total usage</p>
                     </div>
                 </div>
             </div>
@@ -175,7 +178,7 @@ const Inventory: React.FC = () => {
                     <button className="text-blue-900 hover:text-blue-800 text-sm font-semibold hover:underline">View Map View</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group hover:shadow-md transition-all">
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-300 group hover:shadow-md transition-all">
                         <div className="h-32 bg-gradient-to-br from-blue-900 to-slate-900 relative p-6 flex flex-col justify-end">
                             <div>
                                 <h4 className="text-white font-bold text-lg leading-tight">Shed 1: Main Barn</h4>
@@ -202,7 +205,7 @@ const Inventory: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group hover:shadow-md transition-all">
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-300 group hover:shadow-md transition-all">
                         <div className="h-32 bg-gradient-to-br from-emerald-600 to-emerald-800 relative p-6 flex flex-col justify-end">
                             <div>
                                 <h4 className="text-white font-bold text-lg leading-tight">Shed 2: Milking Parlor</h4>
@@ -229,7 +232,7 @@ const Inventory: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group hover:shadow-md transition-all">
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-300 group hover:shadow-md transition-all">
                         <div className="h-32 bg-gradient-to-br from-teal-600 to-teal-800 relative p-6 flex flex-col justify-end">
                             <div>
                                 <h4 className="text-white font-bold text-lg leading-tight">Shed 3: Calving Unit</h4>
@@ -262,49 +265,49 @@ const Inventory: React.FC = () => {
             <section className="mt-4 pb-8">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Inventory Categories</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-                    <div onClick={() => setView('feed-fodder')} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
+                    <div onClick={() => setView('feed-fodder')} className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                             <Tractor size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-emerald-700">Feed & Fodder</span>
                     </div>
-                    <div onClick={() => setView('medicines')} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
+                    <div onClick={() => setView('medicines')} className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center group-hover:bg-blue-900 group-hover:text-white transition-colors">
                             <Stethoscope size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-blue-900 transition-colors">Medicines</span>
                     </div>
-                    <div onClick={() => setView('equipment')} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
+                    <div onClick={() => setView('equipment')} className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                             <Wrench size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-emerald-700">Equipment</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center group-hover:bg-blue-900 group-hover:text-white transition-colors">
                             <Droplet size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-blue-900">Dairy Production</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                             <Box size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-emerald-700">Consumables</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center group-hover:bg-blue-900 group-hover:text-white transition-colors">
                             <PawPrint size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-blue-900">Breeding</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                             <ArrowLeftRight size={20} />
                         </div>
                         <span className="text-[11px] font-medium text-slate-700 group-hover:text-emerald-700">Transfers</span>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-900 transition-all group h-28 text-center">
                         <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center group-hover:bg-blue-900 group-hover:text-white transition-colors">
                             <AlertTriangle size={20} />
                         </div>

@@ -157,75 +157,73 @@ const InvestorDetailsPage: React.FC = () => {
     }
 
     return (
-        <div className="p-4 max-w-full mx-auto min-h-screen">
+        <div className="min-h-screen bg-gray-50 p-8">
             {/* Header */}
-            <div className="mb-6">
+            <div className="mb-8">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center text-gray-500 hover:text-gray-900 transition-colors mb-4"
+                    className="flex items-center text-gray-400 hover:text-gray-600 transition-colors mb-6 text-sm font-medium"
                 >
-                    <ArrowLeft size={20} className="mr-2" /> Back to Investors
+                    <ArrowLeft size={16} className="mr-2" /> Back to Investors
                 </button>
-                <div className="flex items-start justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">{investor.first_name} {investor.last_name}</h1>
-                        <p className="text-gray-500 flex items-center mt-1">
-                            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${investor.active_status || investor.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            {investor.active_status || investor.is_active ? 'Active Investor' : 'Inactive Investor'}
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{investor.first_name} {investor.last_name}</h1>
+                    <p className="text-gray-500 flex items-center text-sm font-medium">
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${investor.active_status || investor.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        {investor.active_status || investor.is_active ? 'Active Investor' : 'Inactive Investor'}
+                    </p>
                 </div>
             </div>
 
             {/* Profile Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-                <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center">
-                    <User size={18} className="mr-2 text-blue-500" /> Personal Information
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-6 flex items-center">
+                    <User size={16} className="mr-2 text-blue-600" /> Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-start">
                         <Mail className="text-gray-400 mt-1 mr-3" size={18} />
                         <div>
-                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Email Address</p>
-                            <p className="text-gray-900 font-medium">{investor.email || '-'}</p>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Email Address</p>
+                            <p className="text-sm text-gray-900 font-semibold">{investor.email || '-'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-start">
                         <Phone className="text-gray-400 mt-1 mr-3" size={18} />
                         <div>
-                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Phone Number</p>
-                            <p className="text-gray-900 font-medium">{investor.mobile || investor.phone_number || '-'}</p>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Phone Number</p>
+                            <p className="text-sm text-gray-900 font-semibold">{investor.mobile || investor.phone_number || '-'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-start">
                         <Calendar className="text-gray-400 mt-1 mr-3" size={18} />
                         <div>
-                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Joined Date</p>
-                            <p className="text-gray-900 font-medium">{investor.created_at ? new Date(investor.created_at).toLocaleDateString() : '-'}</p>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Joined Date</p>
+                            <p className="text-sm text-gray-900 font-semibold">{investor.created_at ? new Date(investor.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '-'}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Investments / Animals Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                    <h3 className="text-base font-bold text-gray-800 flex items-center">
-                        <Milk size={18} className="mr-2 text-orange-500" /> Livestock Portfolio
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center">
+                        <Milk size={16} className="mr-2 text-orange-600" /> Livestock Portfolio
                     </h3>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-blue-100">
-                            <span className="text-base mr-1.5">🐃</span> {animals ? animals.filter((a: any) => String(a.animal_type || a.type || '').toUpperCase() === 'BUFFALO').length : 0} Buffaloes
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold flex items-center">
+                            <span className="mr-1.5">🐃</span> <span className="text-blue-900 font-bold">{animals ? animals.filter((a: any) => String(a.animal_type || a.type || '').toUpperCase() === 'BUFFALO').length : 0}</span> <span className="ml-1">Buffaloes</span>
                         </div>
-                        <div className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-orange-100">
-                            <span className="text-base mr-1.5">🐄</span> {animals ? animals.reduce((acc, curr) => acc + (curr.associated_calves?.length || 0), 0) : 0} Calf
+                        <div className="px-3 py-2 bg-orange-50 text-orange-700 rounded-lg text-xs font-semibold flex items-center">
+                            <span className="mr-1.5">🐄</span> <span className="text-orange-900 font-bold">{animals ? animals.reduce((acc, curr) => acc + (curr.associated_calves?.length || 0), 0) : 0}</span> <span className="ml-1">Calf</span>
                         </div>
-                        <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-green-100">
-                            <span className="text-base mr-1.5">🏡</span> {animals ? new Set(animals.map((a: any) => a.farm_name || a.farm_id).filter(Boolean)).size : 0} Farms
+                        <div className="px-3 py-2 bg-green-50 text-green-700 rounded-lg text-xs font-semibold flex items-center">
+                            <span className="mr-1.5">🏡</span> <span className="text-green-900 font-bold">{animals ? new Set(animals.map((a: any) => a.farm_name || a.farm_id).filter(Boolean)).size : 0}</span> <span className="ml-1">Farms</span>
                         </div>
-                        <div className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold flex items-center shadow-sm border border-purple-100">
-                            <span className="text-base mr-1.5">🛖</span> {animals ? new Set(animals.map(a => a.shed_name || a.shed_id).filter(Boolean)).size : 0} Sheds
+                        <div className="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold flex items-center">
+                            <span className="mr-1.5">🛖</span> <span className="text-purple-900 font-bold">{animals ? new Set(animals.map(a => a.shed_name || a.shed_id).filter(Boolean)).size : 0}</span> <span className="ml-1">Sheds</span>
                         </div>
                     </div>
                 </div>

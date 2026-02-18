@@ -35,6 +35,8 @@ interface Animal {
     investor_name?: string;
     display_text?: string;
     onboarding_time?: string;
+    _id?: string | number;
+    rfid_tag_number?: string | number;
 }
 
 // Custom Dropdown Component for Scrollable Selection
@@ -554,8 +556,24 @@ const UnallocatedAnimals: React.FC = () => {
                         if (match) rowNum = `R${match[1]}`;
                     }
 
+                    // Get animal_id - try multiple fields with comprehensive fallbacks
+                    let animalId: any = animal.animal_id;
+
+                    if (!animalId) {
+                        const possibleIds = [animal.uuid, animal.rfid, animal.id];
+                        for (const posId of possibleIds) {
+                            if (posId) {
+                                const numericPart = String(posId).replace(/\D/g, '');
+                                if (numericPart) {
+                                    animalId = parseInt(numericPart);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     validAllocations.push({
-                        rfid_tag_number: animal.uuid || animal.rfid || animal.id, // User Request: Convert RFID to UUID
+                        animal_id: animalId || animal.id,
                         row_number: rowNum,    // "R1"
                         parking_id: slotLabel  // "A1"
                     });

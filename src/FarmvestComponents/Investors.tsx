@@ -160,16 +160,16 @@ const Investors = () => {
     };
 
     return (
-        <div className="flex flex-col h-full overflow-hidden ">
-            <div className="flex-1 flex flex-col overflow-auto p-10">
-                <div className="max-w-7xl mx-auto w-full flex flex-col gap-10">
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-auto">
+                <div className="w-full flex flex-col gap-6">
 
                     {/* Header with Title and Primary Actions */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white px-8 pt-6 pb-4 border-b border-gray-100 shadow-premium">
                         <div className="flex flex-col gap-1">
-                            <h1 className="text-xl font text-[#1e293b] tracking-tight">Investor Management</h1>
+                            <h1 className="text-xl font-bold  tracking-tight">Investor Management</h1>
                             <p className="text-slate-500 font-medium text-sm">
-                                ALL Operations • <span className="text-slate-600 ">{investors.length} Investors Found</span>
+                                ALL Operations • <span className="text-slate-600">{investors.length} Investors Found</span>
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -191,7 +191,7 @@ const Investors = () => {
                     </div>
 
                     {/* Stats Cards Grid - 4 Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Total Investors */}
                         <div className="bg-white rounded-[1.25rem] p-4 shadow-premium border border-slate-100 flex items-center gap-4 transition-all hover:shadow-premium-hover hover:-translate-y-1">
                             <div className="p-3 bg-blue-50/50 rounded-xl">
@@ -240,147 +240,122 @@ const Investors = () => {
 
 
                     {/* Table Container */}
-                    <div className="bg-white rounded-[2.5rem] shadow-premium border border-slate-100 overflow-hidden flex flex-col">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-slate-100 bg-slate-50/20">
-                                        <th className="px-8 py-8 text-left text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] w-24">
-                                            S.NO
-                                        </th>
-                                        <th onClick={() => requestSort('first_name')} className="px-6 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-600 transition-colors">
-                                            Investor Name {getSortIcon('first_name')}
-                                        </th>
-                                        <th className="px-6 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                            Contact Details
-                                        </th>
-                                        <th className="px-6 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                            Phone
-                                        </th>
-                                        <th className="px-6 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                            Portfolio Mix
-                                        </th>
-                                        <th onClick={() => requestSort('created_at')} className="px-6 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-600 transition-colors">
-                                            Joined Date {getSortIcon('created_at')}
-                                        </th>
-                                        <th onClick={() => requestSort('active_status')} className="px-6 py-8 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-600 transition-colors">
-                                            Status {getSortIcon('active_status')}
-                                        </th>
-                                        <th className="px-8 py-8 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {investorsLoading ? (
-                                        <TableSkeleton cols={8} rows={8} />
-                                    ) : currentItems.length > 0 ? (
-                                        currentItems.map((investor: any, index: number) => {
-                                            const idStr = String(investor.id || investor.investor_id);
-                                            const stats = animalStats[idStr] || { buffaloes: 0, calves: 0, loading: true };
-                                            const fullName = `${investor.first_name || ''} ${investor.last_name || ''}`;
-                                            const displayIndex = String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0');
+                    <div className="px-8 pb-8 border borderRadius-[1.25rem]">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden ">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-gray-200">
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                S.NO
+                                            </th>
+                                            <th onClick={() => requestSort('first_name')} className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                                                NAME {getSortIcon('first_name')}
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                EMAIL
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                PHONE
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                JOINING DATE
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                PORTFOLIO
+                                            </th>
+                                            <th onClick={() => requestSort('active_status')} className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:text-gray-900">
+                                                STATUS {getSortIcon('active_status')}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-100">
+                                        {investorsLoading ? (
+                                            <TableSkeleton cols={7} rows={8} />
+                                        ) : currentItems.length > 0 ? (
+                                            currentItems.map((investor: any, index: number) => {
+                                                const idStr = String(investor.id || investor.investor_id);
+                                                const stats = animalStats[idStr] || { buffaloes: 0, calves: 0, loading: true };
+                                                const fullName = `${investor.first_name || ''} ${investor.last_name || ''}`;
+                                                const displayIndex = (currentPage - 1) * itemsPerPage + index + 1;
 
-                                            return (
-                                                <tr
-                                                    key={investor.id || index}
-                                                    className="group hover:bg-slate-50/50 transition-all cursor-pointer border-b border-transparent hover:border-slate-100"
-                                                    onClick={() => handleNameClick(investor)}
-                                                >
-                                                    <td className="px-8 py-9">
-                                                        <span className="text-slate-400 font-bold text-sm tracking-tighter">{displayIndex}</span>
-                                                    </td>
-                                                    <td className="px-6 py-6">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs shadow-sm border border-blue-100/50">
-                                                                {getInitials(investor.first_name, investor.last_name)}
-                                                            </div>
-                                                            <span className="font-bold text-slate-800 group-hover:text-blue-600 transition-all">{fullName}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-6">
-                                                        <span className="text-[#2563eb] font-bold text-sm hover:underline cursor-pointer">{investor.email || '-'}</span>
-                                                    </td>
-                                                    <td className="px-6 py-6">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-slate-600 font-bold text-sm whitespace-nowrap">
-                                                                {investor.phone_number?.startsWith('+') ? '' : '+91 '}
+                                                return (
+                                                    <tr
+                                                        key={investor.id || index}
+                                                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                                        onClick={() => handleNameClick(investor)}
+                                                    >
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {displayIndex}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className="text-sm font-medium text-gray-900">{fullName}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className="text-sm text-blue-600">{investor.email || '-'}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className="text-sm text-gray-900">
                                                                 {investor.phone_number || investor.mobile || '-'}
                                                             </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-6">
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="flex items-baseline gap-1.5">
-                                                                <span className="text-lg font-black text-[#1e293b]">{stats.buffaloes}</span>
-                                                                <span className="text-sm font-bold text-[#1e293b]">Buffaloes</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className="text-sm text-gray-700">{formatDate(investor.created_at)}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm">
+                                                                <span className="font-semibold text-gray-900">{stats.buffaloes}</span>
+                                                                <span className="text-gray-600"> Buffaloes, </span>
+                                                                <span className="font-semibold text-gray-900">{stats.calves}</span>
+                                                                <span className="text-gray-600"> Calves</span>
                                                             </div>
-                                                            <span className="text-[11px] text-slate-400 font-bold">{stats.calves} Calves</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-6">
-                                                        <span className="text-slate-500 text-sm font-bold">{formatDate(investor.created_at)}</span>
-                                                    </td>
-                                                    <td className="px-6 py-6 transition-all">
-                                                        <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${investor.active_status === 1
-                                                            ? 'bg-[#e7f8ef] text-[#059669]' // ACTIVE - Green
-                                                            : investor.active_status === 2
-                                                                ? 'bg-[#fff7ed] text-[#d97706]' // PENDING - Orange
-                                                                : 'bg-[#f1f5f9] text-[#64748b]' // INACTIVE - Grey
-                                                            }`}>
-                                                            {investor.active_status === 1 ? 'ACTIVE' : investor.active_status === 2 ? 'PENDING' : 'INACTIVE'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-8 py-6 text-right">
-                                                        <button
-                                                            className="p-2.5 opacity-0 group-hover:opacity-100 transition-all text-slate-300 hover:text-slate-600"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                            }}
-                                                        >
-                                                            <MoreHorizontal className="h-5 w-5" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={8} className="py-32 text-center text-slate-400 font-bold">
-                                                No records found matching your criteria
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded ${investor.active_status === 1
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : investor.active_status === 2
+                                                                    ? 'bg-orange-100 text-orange-800'
+                                                                    : 'bg-red-100 text-red-800'
+                                                                }`}>
+                                                                {investor.active_status === 1 ? 'Active' : investor.active_status === 2 ? 'Pending' : 'Inactive'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={7} className="py-12 text-center text-gray-500">
+                                                    No records found matching your criteria
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        {/* Custom Footer Pagination */}
-                        <div className="px-10 py-12 border-t border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/30">
-                            <p className="text-sm text-slate-400 font-black uppercase tracking-widest">
-                                Result Page <span className="text-slate-900">{currentPage}</span> / <span className="text-slate-900">{totalPages}</span>
-                            </p>
-
+                            {/* Footer Pagination */}
                             {totalPages > 1 && (
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    onPageChange={setCurrentPage}
-                                />
+                                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                </div>
                             )}
                         </div>
-                        <div className="h-4" /> {/* Bottom Spacer */}
                     </div>
                 </div>
             </div>
 
-                    <Snackbar
-                        message={error}
-                        type={error ? 'error' : null}
-                        onClose={() => dispatch(clearInvestorErrors())}
-                    />
-                </div>
-                );
+            <Snackbar
+                message={error}
+                type={error ? 'error' : null}
+                onClose={() => dispatch(clearInvestorErrors())}
+            />
+        </div>
+    );
 };
 
-                export default Investors;
+export default Investors;

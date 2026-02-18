@@ -77,8 +77,6 @@ const AnimalOnboarding: React.FC = () => {
 
     // API Data States
     const [farms, setFarms] = useState<Farm[]>([]);
-    const [locations, setLocations] = useState<string[]>([]);
-    const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [selectedFarmName, setSelectedFarmName] = useState<string>('');
     const [selectedFarmId, setSelectedFarmId] = useState<number | string>('');
 
@@ -188,9 +186,14 @@ const AnimalOnboarding: React.FC = () => {
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                // Fetch Farms
+                // Fetch Farms with the specified API parameters
                 try {
-                    const farmData = await farmvestService.getAllFarms({ size: 1000 });
+                    const farmData = await farmvestService.getAllFarms({
+                        sort_by: 2,
+                        page: 1,
+                        size: 15
+                    });
+
                     let farmList: Farm[] = [];
                     if (Array.isArray(farmData)) {
                         farmList = farmData;
@@ -199,13 +202,16 @@ const AnimalOnboarding: React.FC = () => {
                     } else if (farmData && Array.isArray(farmData.data)) {
                         farmList = farmData.data;
                     }
+
                     const normalizedFarms = farmList.map((f: any) => ({
                         farm_id: f.farm_id || f.id || 0,
                         farm_name: f.farm_name || f.name || 'Unknown Farm',
                         location: f.location || ''
                     }));
+
                     setFarms(normalizedFarms);
                 } catch (farmError) {
+                    console.error('Error fetching farms:', farmError);
                 }
 
                 // Fetch Investors
@@ -272,11 +278,13 @@ const AnimalOnboarding: React.FC = () => {
                     // API_ENDPOINTS.getInTransitOrders is used by getPaidOrders as POST.
 
                 } catch (investorError) {
+                    console.error('Error fetching investors:', investorError);
                 }
 
                 setAllMembers(allFetchedMembers);
 
             } catch (error) {
+                console.error('Error in fetchInitialData:', error);
             }
         };
 
@@ -851,109 +859,79 @@ const AnimalOnboarding: React.FC = () => {
                 {selectedOrder && (
                     <div className="order-details-wrapper">
                         <div className="order-details-container">
-                            <div className="detail-card investor-profile-card">
-                                <div className="detail-card-header">
-                                    <User size={20} className="detail-icon" />
-                                    <h3>Investor Profile</h3>
+                            <div className="cards-grid-container">
+                                <div className="detail-card investor-profile-card">
+                                    <div className="detail-card-header">
+                                        <User size={20} className="detail-icon" />
+                                        <h3>Investor Profile</h3>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Name</span>
+                                        <span className="detail-value">{user?.name || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Mobile</span>
+                                        <span className="detail-value">{user?.mobile || searchedMobile}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Email</span>
+                                        <span className="detail-value">{user?.email || 'N/A'}</span>
+                                    </div>
                                 </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Name</span>
-                                    <span className="detail-value">{user?.name || 'N/A'}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Mobile</span>
-                                    <span className="detail-value">{user?.mobile || searchedMobile}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Email</span>
-                                    <span className="detail-value">{user?.email || 'N/A'}</span>
-                                </div>
-                            </div>
 
-                            <div className="detail-card investment-details-card">
-                                <div className="detail-card-header">
-                                    <Receipt size={20} className="detail-icon" />
-                                    <h3>Investment Details</h3>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Order ID</span>
-                                    <span className="detail-value text-dark-bold">{selectedOrder.id}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Total Cost</span>
-                                    <span className="detail-value text-dark-bold">{formatCurrency(selectedOrder.totalCost)}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">UTR Number</span>
-                                    <span className="detail-value">{'N/A'}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Date</span>
-                                    <span className="detail-value">{formatDate(selectedOrder.placedAt)}</span>
+                                <div className="detail-card investment-details-card">
+                                    <div className="detail-card-header">
+                                        <Receipt size={20} className="detail-icon" />
+                                        <h3>Investment Details</h3>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Order ID</span>
+                                        <span className="detail-value text-dark-bold">{selectedOrder.id}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Total Cost</span>
+                                        <span className="detail-value text-dark-bold">{formatCurrency(selectedOrder.totalCost)}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">UTR Number</span>
+                                        <span className="detail-value">{'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Date</span>
+                                        <span className="detail-value">{formatDate(selectedOrder.placedAt)}</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="farm-selection-group" style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gridTemplateColumns: '1fr',
                                 gap: '15px',
                                 width: '100%',
                                 marginBottom: '20px'
                             }}>
-                                <div className="farm-field">
-                                    <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Location</label>
-                                    <CustomDropdown
-                                        options={locations.map(loc => ({ value: loc, label: loc }))}
-                                        value={selectedLocation}
-                                        onChange={(val) => {
-                                            setSelectedLocation(String(val));
-                                            setSelectedFarmName('');
-                                            setSelectedFarmId('');
-                                        }}
-                                        placeholder="Select Location"
-                                    />
-                                </div>
 
-                                <div className="farm-field">
-                                    <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Farm Name</label>
-                                    <CustomDropdown
-                                        options={farms
-                                            .filter(f => f.location === selectedLocation)
-                                            .map(f => ({ value: f.farm_name, label: f.farm_name }))}
-                                        value={selectedFarmName}
-                                        onChange={(val) => {
-                                            setSelectedFarmName(String(val));
-                                            const farm = farms.find(f => f.location === selectedLocation && f.farm_name === val);
-                                            if (farm) {
-                                                setSelectedFarmId(farm.farm_id);
-                                                localStorage.setItem('fv_selected_farm_id', String(farm.farm_id));
-                                            } else {
-                                                setSelectedFarmId('');
-                                            }
-                                        }}
-                                        placeholder="Select Farm"
-                                        disabled={!selectedLocation}
-                                    />
-                                </div>
-
-                                <div className="farm-field">
-                                    <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Farm ID</label>
-                                    <div style={{
-                                        padding: '12px',
-                                        background: '#F3F4F6',
-                                        borderRadius: '8px',
-                                        fontSize: '14px',
-                                        color: '#374151',
-                                        border: '1px solid #E5E7EB',
-                                        height: '45px',
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                    }}>
-                                        {selectedFarmId || 'Select a farm'}
-                                    </div>
-                                </div>
                             </div>
                         </div>
+                        <div className="farm-field">
+                            <label style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', display: 'block' }}>Farm</label>
+                            <CustomDropdown
+                                options={farms.map(farm => ({
+                                    value: farm.farm_id,
+                                    label: farm.farm_name
+                                }))}
+                                value={selectedFarmId}
+                                onChange={(val) => {
+                                    setSelectedFarmId(val);
+                                    const farm = farms.find(f => f.farm_id === Number(val));
+                                    if (farm) {
+                                        setSelectedFarmName(farm.farm_name);
+                                    }
+                                }}
+                                placeholder="Select Farm"
+                            />
+                        </div>
+
 
                         <div className="animals-list-container">
                             {animals.filter(a => a.type === 'Buffalo').map((animal, filteredIdx) => (
@@ -1423,7 +1401,7 @@ const AnimalOnboarding: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 };
 

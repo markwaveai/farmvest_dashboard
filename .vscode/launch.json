@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Launch Chrome against localhost",
-            "type": "pwa-chrome",
+            "type": "chrome",
             "request": "launch",
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}/src",
@@ -13,12 +13,12 @@
         },
         {
             "name": "Attach to Chrome",
-            "type": "pwa-chrome",
+            "type": "chrome",
             "request": "attach",
             "port": 9222,
             "webRoot": "${workspaceFolder}/src",
             "sourceMapPathOverrides": {
-                "webpack:///src /*": "${webRoot}/*"
+                "webpack:///src/*": "${webRoot}/*"
             }
         }
     ]
