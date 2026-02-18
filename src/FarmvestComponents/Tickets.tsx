@@ -286,11 +286,11 @@ const Tickets: React.FC = () => {
             <div className="tickets-filter-bar">
                 <div className="flex-1 min-w-[200px]">
                     <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search case ID, animal tag..."
-                            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium outline-none focus:border-amber-300"
+                            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:border-amber-300"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -377,16 +377,16 @@ const Tickets: React.FC = () => {
                     <table className="tickets-table">
                         <thead className="sticky top-0 z-10 bg-[#f8fafc]">
                             <tr>
-                                <th className="w-16">S.No</th>
-                                <th>Case ID</th>
-                                <th>Animal</th>
-                                <th>Farm ID</th>
-                                <th>Shed ID</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Priority</th>
-                                <th>Created</th>
-                                <th>Assigned To</th>
+                                <th className="w-16 px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">S.No</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Case ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Animal</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Farm ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Shed ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Priority</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned To</th>
                             </tr>
                         </thead>
                         <tbody>

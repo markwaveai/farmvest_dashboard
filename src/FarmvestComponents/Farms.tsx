@@ -184,7 +184,7 @@ const Farms: React.FC = () => {
         <div className="farms-container h-full flex flex-col gap-1 sm:gap-4 overflow-hidden animate-fadeIn">
             <div className="farms-header p-2 sm:p-3 border-b border-gray-100 bg-white shadow-premium flex flex-col md:flex-row justify-between items-center gap-1.5 sm:gap-4 md:gap-6">
                 <div className="text-center md:text-left w-full md:w-auto">
-                    <h2 className="text-sm sm:text-md font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
+                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
                     <div className="text-[10px] sm:text-sm text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2 mt-0 sm:mt-1">
                         <span>{location} Operations • {totalCount} Farms Found</span>
                     </div>
@@ -196,7 +196,7 @@ const Farms: React.FC = () => {
                         <input
                             type="text"
                             placeholder="Find farm name..."
-                            className="w-full pl-11 pr-10 py-1 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm text-xs"
+                            className="w-full pl-11 pr-10 py-1 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -265,8 +265,8 @@ const Farms: React.FC = () => {
 
                 <div className="bg-white border border-gray-100 rounded-2xl shadow-premium flex flex-col flex-1 min-h-0 overflow-hidden">
                     <div className="overflow-auto flex-1 min-h-0 hide-scrollbar">
-                        <table className="farms-table w-full text-xs text-left border-collapse relative">
-                            <thead className="bg-gray-50 border-b border-gray-100 text-sm font-extrabold tracking-wider text-black sticky top-0 z-10 shadow-sm">
+                        <table className="farms-table w-full text-sm text-left border-collapse relative">
+                            <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold uppercase tracking-wider text-gray-500 sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th className="px-4 py-2 text-center">S.no</th>
                                     <th className="px-4 py-2 text-center">

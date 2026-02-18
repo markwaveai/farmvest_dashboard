@@ -35,6 +35,7 @@ const FarmVestLeaveRequests = React.lazy(() => import('./FarmvestComponents/Leav
 const FarmVestMilkProduction = React.lazy(() => import('./FarmvestComponents/MilkProduction'));
 const FarmVestAccountDeletion = React.lazy(() => import('./FarmvestComponents/AccountDeletion'));
 const FarmVestDashboard = React.lazy(() => import('./FarmvestComponents/Dashboard'));
+const FarmVestAlertManagement = React.lazy(() => import('./FarmvestComponents/AlertManagement'));
 
 interface Session {
   mobile: string;
@@ -308,6 +309,14 @@ function App() {
           <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
             <React.Suspense fallback={<UsersPageSkeleton />}>
               <FarmVestMilkProduction />
+            </React.Suspense>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/farmvest/alert-management" element={
+          <ProtectedRoute session={session} isAdmin={isAdmin} handleLogout={handleLogout}>
+            <React.Suspense fallback={<UsersPageSkeleton />}>
+              <FarmVestAlertManagement />
             </React.Suspense>
           </ProtectedRoute>
         } />

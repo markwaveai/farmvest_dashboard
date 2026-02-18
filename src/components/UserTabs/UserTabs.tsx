@@ -73,6 +73,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   else if (currentPath.includes('/farmvest/buffalo')) activeTab = 'farmvest-buffalo';
   else if (currentPath.includes('/farmvest/tickets')) activeTab = 'farmvest-tickets';
   else if (currentPath.includes('/farmvest/leave-requests')) activeTab = 'farmvest-leave';
+  else if (currentPath.includes('/farmvest/alert-management')) activeTab = 'farmvest-alerts';
   else if (currentPath.includes('/farmvest/milk-production')) activeTab = 'farmvest-milk';
   else if (currentPath.includes('/support-tickets')) activeTab = 'support-tickets';
   else if (currentPath.includes('/privacy-policy')) activeTab = 'privacy';
@@ -146,6 +147,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-buffalo' && 'Buffalo Management'}
                   {activeTab === 'farmvest-tickets' && 'Ticket Management'}
                   {activeTab === 'farmvest-leave' && 'Leave Requests'}
+                  {activeTab === 'farmvest-alerts' && 'Alert Management'}
                   {activeTab === 'farmvest-milk' && 'Milk Production'}
                   {activeTab === 'farmvest-activation' && 'User Activation'}
                   {activeTab === 'support' && 'Support Tickets'}
@@ -163,6 +165,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-buffalo' && 'Individual asset tracking and logs'}
                   {activeTab === 'farmvest-tickets' && 'Manage health, transfer, and vaccination tickets'}
                   {activeTab === 'farmvest-leave' && 'Review and manage employee leave requests'}
+                  {activeTab === 'farmvest-alerts' && 'Configure and monitor system alerts'}
                   {activeTab === 'farmvest-milk' && 'Track daily milk production records'}
                   {activeTab === 'farmvest-activation' && 'Activate or deactivate users'}
                   {activeTab === 'support' && 'View and manage tickets'}
@@ -296,6 +299,14 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <Calendar size={18} />
                   <span className="nav-text">Leave Requests</span>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button className={`nav-item ${activeTab === 'farmvest-alerts' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/alert-management'); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <AlertCircle size={18} />
+                  <span className="nav-text">Alert Management</span>
                 </div>
               </button>
             </li>

@@ -357,6 +357,7 @@ const Dashboard: React.FC = () => {
                     icon={<Archive color="white" size={24} />}
                     color="#E27D60"
                     onClick={() => setIsFeedModalOpen(true)}
+                    noShadow={true}
                 />
                 <SummaryCard
                     title="Active Sheds"
@@ -439,7 +440,7 @@ const Dashboard: React.FC = () => {
                 {/* Secondary Charts - Row of 3 */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Feed Consumption Logic */}
-                    <div className="chart-card" style={{ minHeight: 'auto', flex: 1 }}>
+                    <div className="chart-card" style={{ minHeight: 'auto', flex: 1, boxShadow: 'none' }}>
                         <div className="chart-header">
                             <h2 className="chart-title">Feed Consumption ({timeRange})</h2>
                         </div>
@@ -449,7 +450,7 @@ const Dashboard: React.FC = () => {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" hide />
                                     <YAxis />
-                                    <Tooltip />
+                                    <Tooltip cursor={{ fill: 'transparent' }} />
                                     <Bar dataKey="feedConsumption" fill="#E27D60" name="Feed (kg)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -943,13 +944,14 @@ const ShedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; activeS
 };
 
 
-const SummaryCard: React.FC<{ title: string, value: string, subtitle: string, icon: React.ReactNode, color: string, onClick?: () => void }> = ({ title, value, subtitle, icon, color, onClick }) => {
+const SummaryCard: React.FC<{ title: string, value: string, subtitle: string, icon: React.ReactNode, color: string, onClick?: () => void, style?: React.CSSProperties, noShadow?: boolean }> = ({ title, value, subtitle, icon, color, onClick, style, noShadow }) => {
     const isPositive = subtitle.includes('+') || subtitle.includes('Occupancy') || subtitle.includes('New') || subtitle.includes('Live') || subtitle.includes('Monthly');
 
     return (
         <div
-            className={`summary-card ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            className={`summary-card ${onClick && !noShadow ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${onClick ? 'cursor-pointer' : ''}`}
             onClick={onClick}
+            style={{ ...style, ...(noShadow ? { boxShadow: 'none' } : {}) }}
         >
             <div className="card-header">
                 <div className="card-icon" style={{ backgroundColor: color }}>

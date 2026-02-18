@@ -29,6 +29,15 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
     React.useEffect(() => {
         if (isOpen) {
+            setLocation('');
+            setShedCount(1);
+            setIsTest(false);
+            setError(null);
+        }
+    }, [isOpen]);
+
+    React.useEffect(() => {
+        if (isOpen) {
             const fetchLocations = async () => {
                 try {
                     const response = await farmvestService.getLocations();
@@ -70,7 +79,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
         try {
             await farmvestService.createFarm({
-                location_name: location,
+                location: location,
                 shed_count: Number(shedCount),
                 is_test: isTest
             });

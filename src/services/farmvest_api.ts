@@ -263,7 +263,7 @@ export const farmvestService = {
         }
     },
     // Create Farm
-    createFarm: (farmData: { farm_name?: string; location_name: string; shed_count: number; is_test: boolean }) => {
+    createFarm: (farmData: { farm_name?: string; location: string; shed_count: number; is_test: boolean }) => {
         return farmvestApi.post(API_ENDPOINTS.createFarm(), farmData);
     },
     updateFarm: async (farmId: number, farmData: { farm_name?: string; location_name?: string; shed_count?: number; is_test?: boolean }) => {
@@ -450,9 +450,8 @@ export const farmvestService = {
         return response.data;
     },
 
-    assignTicket: async (ticketId: number, assistantId?: number) => {
-        const payload: any = { ticket_id: ticketId };
-        if (assistantId) payload.assistant_id = assistantId;
+    assignTicket: async (ticketId: number, assignments: { assistant_id?: number; doctor_id?: number }) => {
+        const payload: any = { ticket_id: ticketId, ...assignments };
         const response = await farmvestApi.post(API_ENDPOINTS.assignTickets(), payload);
         return response.data;
     },

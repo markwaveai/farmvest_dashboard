@@ -35,19 +35,31 @@ const TicketDetailDrawer: React.FC<Props> = ({ ticket, onClose }) => {
     const [treatmentDescription, setTreatmentDescription] = useState('');
     const [selectedDiseases, setSelectedDiseases] = useState<string[]>([]);
 
+    const [selectedDoctorId, setSelectedDoctorId] = useState<number | undefined>(undefined);
+    const [selectedAssistantId, setSelectedAssistantId] = useState<number | undefined>(undefined);
+
     useEffect(() => {
         if (ticket) {
             setTreatmentDescription(ticket.description || '');
             setSelectedDiseases(ticket.disease || []);
-            fetchAssistants();
+            setSelectedDoctorId(ticket.doctor_id || undefined);
+            setSelectedAssistantId(ticket.assistant_doctor_id || undefined);
+            fetchStaff();
         }
     }, [ticket]);
 
-    const fetchAssistants = async () => {
+    const fetchStaff = async () => {
         setLoadingAssistants(true);
         try {
-            const res = await farmvestService.getDoctorAssistants();
-            setAssistants(Array.isArray(res) ? res : (res?.data || []));
+            // Fetch all employees and filter for doctors/assistants
+            // Ideally we'd have a specific API for this, but reusing getEmployees is fine
+            const res = await farmvestService.getEmployees({ size: 1000 }); // Fetch all
+            const allStaff = Array.isArray(res) ? res : (res?.data?.employees || res?.employees || []);
+
+            const medicalStaff = allStaff.filter((emp: any) =>
+                ['DOCTOR', 'ASSISTANT_DOCTOR'].includes(emp.role)
+            );
+            setAssistants(medicalStaff);
         } catch {
             setAssistants([]);
         } finally {
@@ -55,11 +67,15 @@ const TicketDetailDrawer: React.FC<Props> = ({ ticket, onClose }) => {
         }
     };
 
-    const handleAssign = async (assistantId: number) => {
+    const handleAssign = async () => {
         if (!ticket) return;
         setIsAssigning(true);
         try {
-            await dispatch(assignTicket({ ticketId: ticket.id, assistantId })).unwrap();
+            await dispatch(assignTicket({
+                ticketId: ticket.id,
+                assistantId: selectedAssistantId,
+                doctorId: selectedDoctorId
+            })).unwrap();
         } catch {
             // Error managed by Redux state
         } finally {
@@ -234,32 +250,86 @@ const TicketDetailDrawer: React.FC<Props> = ({ ticket, onClose }) => {
                             <User size={12} /> Assignment
                         </h3>
                         <div className="bg-gray-50 rounded-lg p-4">
-                            <div className="flex justify-between items-center text-sm mb-3">
-                                <span className="text-gray-500 font-medium">Assigned Staff</span>
-                                <span className="font-bold text-gray-900">{ticket.assigned_staff_name || 'Unassigned'}</span>
+                            {/* Display Assigned Staff */}
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Doctor</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                                            {ticket.doctor_id ? 'Dr' : '?'}
+                                        </div>
+                                        <span className={`text-sm font-bold ${ticket.doctor_id ? 'text-gray-900' : 'text-gray-400'}`}>
+                                            {ticket.doctor_id && assistants.find(a => a.id === ticket.doctor_id)
+                                                ? `${assistants.find(a => a.id === ticket.doctor_id)?.first_name} ${assistants.find(a => a.id === ticket.doctor_id)?.last_name}`
+                                                : ticket.assigned_staff_name && !ticket.assistant_doctor_id ? ticket.assigned_staff_name : 'Unassigned'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Assistant</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">
+                                            {ticket.assistant_doctor_id ? 'As' : '?'}
+                                        </div>
+                                        <span className={`text-sm font-bold ${ticket.assistant_doctor_id ? 'text-gray-900' : 'text-gray-400'}`}>
+                                            {ticket.assistant_doctor_id && assistants.find(a => a.id === ticket.assistant_doctor_id)
+                                                ? `${assistants.find(a => a.id === ticket.assistant_doctor_id)?.first_name} ${assistants.find(a => a.id === ticket.assistant_doctor_id)?.last_name}`
+                                                : 'Unassigned'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase block">Assign to Assistant</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium outline-none appearance-none cursor-pointer focus:border-amber-400 disabled:opacity-50"
-                                        disabled={loadingAssistants || isAssigning}
-                                        onChange={(e) => handleAssign(Number(e.target.value))}
-                                        value={ticket.assistant_doctor_id || ''}
-                                    >
-                                        <option value="">Select Assistant Doctor</option>
-                                        {assistants.map(a => (
-                                            <option key={a.id} value={a.id}>{a.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                </div>
-                                {isAssigning && (
-                                    <div className="flex items-center gap-2 text-[10px] text-amber-600 font-bold animate-pulse">
-                                        <Loader2 size={10} className="animate-spin" /> Assigning task...
+                            <div className="space-y-3 pt-3 border-t border-gray-200">
+                                {/* Doctor Dropdown */}
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Assign Doctor</label>
+                                    <div className="relative">
+                                        <select
+                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium outline-none appearance-none cursor-pointer focus:border-amber-400 disabled:opacity-50"
+                                            disabled={loadingAssistants || isAssigning}
+                                            onChange={(e) => setSelectedDoctorId(e.target.value ? Number(e.target.value) : undefined)}
+                                            value={selectedDoctorId || ''}
+                                        >
+                                            <option value="">Select Doctor</option>
+                                            {assistants.filter(a => a.role === 'DOCTOR').map(a => (
+                                                <option key={a.id} value={a.id}>
+                                                    {a.first_name} {a.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                     </div>
-                                )}
+                                </div>
+
+                                {/* Assistant Dropdown */}
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Assign Assistant</label>
+                                    <div className="relative">
+                                        <select
+                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium outline-none appearance-none cursor-pointer focus:border-amber-400 disabled:opacity-50"
+                                            disabled={loadingAssistants || isAssigning}
+                                            onChange={(e) => setSelectedAssistantId(e.target.value ? Number(e.target.value) : undefined)}
+                                            value={selectedAssistantId || ''}
+                                        >
+                                            <option value="">Select Assistant</option>
+                                            {assistants.filter(a => a.role === 'ASSISTANT_DOCTOR').map(a => (
+                                                <option key={a.id} value={a.id}>
+                                                    {a.first_name} {a.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleAssign}
+                                    disabled={(!selectedDoctorId && !selectedAssistantId) || isAssigning || loadingAssistants}
+                                    className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:hover:bg-amber-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 mt-2"
+                                >
+                                    {isAssigning ? <Loader2 size={14} className="animate-spin" /> : 'Save Assignments'}
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -161,14 +161,11 @@ const FarmDetails: React.FC = () => {
                             <div className="shed-card-header">
                                 <div className="shed-identity-group">
                                     <div className="shed-icon-large">🛖</div>
-                                    <h3 className="shed-name-title">
-                                        {shed.shed_name || shed.name || `Shed Unit ${idx + 1}`}
-                                    </h3>
-                                    {shed.shed_id && (
-                                        <div className="shed-id-badge-inline">
-                                            {shed.shed_id}
-                                        </div>
-                                    )}
+                                    <div className="flex flex-col">
+                                        <h3 className="shed-name-title">
+                                            {farmName}
+                                        </h3>
+                                    </div>
                                 </div>
 
                                 <div className="shed-supervisor-compact">
@@ -189,6 +186,20 @@ const FarmDetails: React.FC = () => {
                             <div className="card-divider"></div>
 
                             <div className="shed-stats">
+                                <div className="stat-row">
+                                    <span className="stat-label">Shed Name</span>
+                                    <span className="stat-value text-gray-800">
+                                        {shed.shed_name || shed.name || `Shed Unit ${idx + 1}`}
+                                    </span>
+                                </div>
+                                {shed.shed_id && (
+                                    <div className="stat-row">
+                                        <span className="stat-label">Shed ID</span>
+                                        <span className="stat-value text-gray-800">
+                                            {shed.shed_id}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="stat-row">
                                     <span className="stat-label">Capacity</span>
                                     <span className="stat-value text-emerald-600">
@@ -218,82 +229,85 @@ const FarmDetails: React.FC = () => {
                         </div>
                     ))}
                 </div>
-            )}
+            )
+            }
 
 
             {/* Staff Section */}
-            {staff && (
-                <div className="mt-8">
-                    {/* ... staff UI ... */}
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Users size={20} className="text-gray-400" /> Farm Staff
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {staff.supervisors && staff.supervisors.length > 0 && (
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">Supervisors</h3>
-                                <div className="space-y-3">
-                                    {staff.supervisors.map((s: any) => (
-                                        <div key={s.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                                                {(s.name || '?')[0]}
+            {
+                staff && (
+                    <div className="mt-8">
+                        {/* ... staff UI ... */}
+                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <Users size={20} className="text-gray-400" /> Farm Staff
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {staff.supervisors && staff.supervisors.length > 0 && (
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">Supervisors</h3>
+                                    <div className="space-y-3">
+                                        {staff.supervisors.map((s: any) => (
+                                            <div key={s.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                                                    {(s.name || '?')[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-800">{s.name}</p>
+                                                    <p className="text-[10px] text-gray-400">{s.mobile} {s.shed_name ? `| ${s.shed_name}` : ''}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-800">{s.name}</p>
-                                                <p className="text-[10px] text-gray-400">{s.mobile} {s.shed_name ? `| ${s.shed_name}` : ''}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                        {staff.doctors && staff.doctors.length > 0 && (
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider flex items-center gap-1">
-                                    <Stethoscope size={14} /> Doctors
-                                </h3>
-                                <div className="space-y-3">
-                                    {staff.doctors.map((d: any) => (
-                                        <div key={d.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
-                                                {(d.name || '?')[0]}
+                            )}
+                            {staff.doctors && staff.doctors.length > 0 && (
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider flex items-center gap-1">
+                                        <Stethoscope size={14} /> Doctors
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {staff.doctors.map((d: any) => (
+                                            <div key={d.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
+                                                    {(d.name || '?')[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-800">{d.name}</p>
+                                                    <p className="text-[10px] text-gray-400">{d.mobile}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-800">{d.name}</p>
-                                                <p className="text-[10px] text-gray-400">{d.mobile}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                        {staff.assistant_doctors && staff.assistant_doctors.length > 0 && (
-                            <div className="bg-white rounded-xl border border-gray-200 p-5">
-                                <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">Assistant Doctors</h3>
-                                <div className="space-y-3">
-                                    {staff.assistant_doctors.map((a: any) => (
-                                        <div key={a.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs">
-                                                {(a.name || '?')[0]}
+                            )}
+                            {staff.assistant_doctors && staff.assistant_doctors.length > 0 && (
+                                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                                    <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">Assistant Doctors</h3>
+                                    <div className="space-y-3">
+                                        {staff.assistant_doctors.map((a: any) => (
+                                            <div key={a.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs">
+                                                    {(a.name || '?')[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-800">{a.name}</p>
+                                                    <p className="text-[10px] text-gray-400">{a.mobile}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-800">{a.name}</p>
-                                                <p className="text-[10px] text-gray-400">{a.mobile}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                        {(!staff.supervisors?.length && !staff.doctors?.length && !staff.assistant_doctors?.length) && (
-                            <div className="col-span-full text-center py-8 text-gray-400 bg-gray-50 rounded-xl">
-                                <p className="font-medium">No staff assigned to this farm</p>
-                            </div>
-                        )}
+                            )}
+                            {(!staff.supervisors?.length && !staff.doctors?.length && !staff.assistant_doctors?.length) && (
+                                <div className="col-span-full text-center py-8 text-gray-400 bg-gray-50 rounded-xl">
+                                    <p className="font-medium">No staff assigned to this farm</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

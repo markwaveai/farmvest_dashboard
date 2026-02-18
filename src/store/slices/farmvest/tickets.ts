@@ -187,9 +187,9 @@ export const updateTreatment = createAsyncThunk(
 
 export const assignTicket = createAsyncThunk(
     'farmvestTickets/assignTicket',
-    async ({ ticketId, assistantId }: { ticketId: number; assistantId?: number }, { rejectWithValue, dispatch }) => {
+    async ({ ticketId, assistantId, doctorId }: { ticketId: number; assistantId?: number; doctorId?: number }, { rejectWithValue, dispatch }) => {
         try {
-            const response = await farmvestService.assignTicket(ticketId, assistantId);
+            const response = await farmvestService.assignTicket(ticketId, { assistant_id: assistantId, doctor_id: doctorId });
             dispatch(fetchTickets(undefined));
             dispatch(fetchTicketStats(undefined)); // Refresh stats
             return response;

@@ -866,7 +866,7 @@ const BuffaloManagement: React.FC = () => {
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-1">
                 <div>
-                    <h1 className="text-md font-black text-gray-800 flex items-center gap-3">
+                    <h1 className="text-xl font-bold text-gray-800 flex items-center gap-3">
                         <Users className="text-[#113025]" size={25} /> Buffalo Registry
                     </h1>
                     <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">
@@ -1073,25 +1073,24 @@ const BuffaloManagement: React.FC = () => {
                     <table className="registry-table">
                         <thead className="bg-[#f1f5f9] border-b border-gray-200">
                             <tr>
-                                <th className="w-12 py-2 pl-6 text-left text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">S.No</th>
-                                <th className="py-2 text-left text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Tag ID</th>
-                                <th className="py-2 text-left text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Farm</th>
-                                <th className="py-2 !text-center text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Shed</th>
-                                <th className="py-2 !text-center text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Position</th>
-                                <th className="py-2 text-left text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Breed</th>
-                                <th className="py-2 text-left text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Gender</th>
-                                <th className="py-2 !text-center text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Age (M)</th>
-                                <th className="py-2 !text-center text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Location</th>
-                                <th className="py-2 !text-center text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Status</th>
-                                <th className="w-12 py-2 pr-6"></th>
+                                <th className="w-12 py-3 pl-6 text-left text-xs font-bold text-[#94a3b8] uppercase tracking-widest">S.No</th>
+                                <th className="py-3 text-left text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Tag ID</th>
+                                <th className="py-3 text-left text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Farm</th>
+                                <th className="py-3 !text-center text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Shed</th>
+                                <th className="py-3 !text-center text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Position</th>
+                                <th className="py-3 text-left text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Breed</th>
+                                <th className="py-3 text-left text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Gender</th>
+                                <th className="py-3 !text-center text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Age (M)</th>
+                                <th className="py-3 !text-center text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Location</th>
+                                <th className="py-3 !text-center text-xs font-bold text-[#94a3b8] uppercase tracking-widest">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading && buffaloList.length === 0 ? (
-                                <TableSkeleton cols={11} rows={10} />
+                                <TableSkeleton cols={10} rows={10} />
                             ) : error ? (
                                 <tr>
-                                    <td colSpan={11} className="p-20 text-center">
+                                    <td colSpan={10} className="p-20 text-center">
                                         <div className="bg-red-50 mx-auto w-fit p-4 rounded-xl mb-4 border border-red-100">
                                             <AlertTriangle className="text-red-500" size={32} />
                                         </div>
@@ -1106,7 +1105,7 @@ const BuffaloManagement: React.FC = () => {
                                 </tr>
                             ) : filteredBuffaloes.length === 0 ? (
                                 <tr>
-                                    <td colSpan={11} className="py-20 text-center">
+                                    <td colSpan={10} className="py-20 text-center">
                                         <div className="bg-gray-50 mx-auto w-fit p-4 rounded-xl mb-4 border border-gray-100">
                                             <Tag className="text-gray-300" size={32} />
                                         </div>
@@ -1185,9 +1184,6 @@ const BuffaloManagement: React.FC = () => {
                                                 <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-bold ${statusColor}`}>
                                                     {statusText}
                                                 </span>
-                                            </td>
-                                            <td className="py-2 pr-6 text-right">
-                                                <Info size={16} className="text-gray-300 group-hover:text-[#113025] transition-colors" />
                                             </td>
                                         </tr>
                                     );

@@ -21,8 +21,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         last_name: '',
         email: '',
         mobile: '',
-        role: 'FARM_MANAGER',
-        location: 'KURNOOL',
+        role: '',
+        location: '',
         farm_id: '',
         shed_id: '',
         senior_doctor_id: '',
@@ -36,17 +36,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
     const [touched, setTouched] = useState<Record<string, boolean>>({});
 
     const validateEmail = (email: string) => {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Enforce @gmail.com domain
+        const regex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
         if (!email) return 'Email is required';
-        if (!regex.test(email)) return 'Please enter a valid email address';
+        if (!regex.test(email)) return 'Please enter a valid @gmail.com address';
         return '';
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name } = e.target;
+        const { name, value } = e.target;
         setTouched(prev => ({ ...prev, [name]: true }));
         if (name === 'email') {
-            setEmailError(validateEmail(formData.email));
+            setEmailError(validateEmail(value));
         }
     };
     const handleClose = () => {
@@ -286,7 +287,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
         // Basic fields
         const phoneRegex = /^[6-9]\d{9}$/;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!first_name || !last_name || !email || !emailRegex.test(email) || !mobile || !phoneRegex.test(mobile)) {
+        if (!first_name || !last_name || !email || !emailRegex.test(email) || !mobile || !phoneRegex.test(mobile) || !role) {
             return false;
         }
 
@@ -357,8 +358,13 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                     errorMessage = errorPayload.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
                 } else if (typeof errorPayload.detail === 'string') {
                     errorMessage = errorPayload.detail;
+                } else if (typeof errorPayload.detail === 'object') {
+                    // Handle key-value pair errors (e.g. { "email": "Email already exists" })
+                    errorMessage = Object.entries(errorPayload.detail)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 } else {
-                    errorMessage = JSON.stringify(errorPayload.detail);
+                    errorMessage = String(errorPayload.detail);
                 }
             } else if (typeof errorPayload === 'string') {
                 errorMessage = errorPayload;
@@ -472,13 +478,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                             )}
                         </div>
 
+
                         <div className="form-group">
                             <label><MapPin size={14} /> Location {formData.role === 'ADMIN' && '(Optional)'}</label>
                             <select
                                 name="location"
                                 value={formData.location}
                                 onChange={handleInputChange}
-                                className="form-select"
+                                onBlur={handleBlur}
+                                className={`form-select ${touched.location && !formData.location && formData.role !== 'ADMIN' ? 'border-red-500' : ''}`}
                             >
                                 <option value="" disabled>Select Location</option>
                                 {locations.length > 0 ? (
@@ -492,11 +500,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                     </>
                                 )}
                             </select>
+                            {touched.location && !formData.location && formData.role !== 'ADMIN' && (
+                                <span className="text-[10px] text-red-500 mt-1 font-bold">Location is required</span>
+                            )}
                         </div>
 
                         <div className="form-group">
                             <label><Landmark size={14} /> Select Farm {formData.role === 'ADMIN' ? '(Optional)' : '*'}</label>
-                            <div className="relative">
+                            <div className="relative" onBlur={() => formData.role !== 'ADMIN' && setTouched(prev => ({ ...prev, farm_id: true }))}>
                                 <CustomDropdown
                                     placeholder={farmsLoading ? 'Loading farms...' : 'Choose a farm...'}
                                     value={formData.farm_id}
@@ -504,9 +515,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         value: farm.farm_id || farm.id,
                                         label: farm.farm_name
                                     }))}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, farm_id: val }))}
+                                    onChange={(val) => {
+                                        setFormData(prev => ({ ...prev, farm_id: val }));
+                                        setTouched(prev => ({ ...prev, farm_id: true }));
+                                    }}
                                     disabled={farmsLoading}
+                                    className={`${touched.farm_id && !formData.farm_id && formData.role !== 'ADMIN' ? 'border-red-500' : ''}`}
                                 />
+                                {touched.farm_id && !formData.farm_id && formData.role !== 'ADMIN' && (
+                                    <span className="text-[10px] text-red-500 mt-1 font-bold block">Farm is required</span>
+                                )}
                                 {formData.farm_id && (
                                     <div className="mt-2 text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center animate-fadeIn">
                                         <span className="uppercase tracking-wider">Generated Farm ID:</span>
@@ -528,13 +546,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 name="role"
                                 value={formData.role}
                                 onChange={handleInputChange}
-                                className="form-select"
+                                onBlur={handleBlur}
+                                className={`form-select ${touched.role && !formData.role ? 'border-red-500' : ''}`}
                             >
+                                <option value="" disabled>Select Role</option>
                                 <option value="FARM_MANAGER">FARM_MANAGER</option>
                                 <option value="SUPERVISOR">SUPERVISOR</option>
                                 <option value="DOCTOR">DOCTOR</option>
                                 <option value="ASSISTANT_DOCTOR">ASSISTANT_DOCTOR</option>
                             </select>
+                            {touched.role && !formData.role && (
+                                <span className="text-[10px] text-red-500 mt-1 font-bold">Role is required</span>
+                            )}
                         </div>
 
                         {/* Conditional Shed ID for Supervisor and Assistant Doctor */}
@@ -546,8 +569,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         name="shed_id"
                                         value={formData.shed_id}
                                         onChange={handleInputChange}
+                                        onBlur={handleBlur}
                                         required={formData.role === 'SUPERVISOR'}
-                                        className="form-select"
+                                        className={`form-select ${touched.shed_id && !formData.shed_id && formData.role === 'SUPERVISOR' ? 'border-red-500' : ''}`}
                                         disabled={shedsLoading || !formData.farm_id}
                                     >
                                         <option value="">{shedsLoading ? 'Loading sheds...' : 'Choose a shed...'}</option>
@@ -557,6 +581,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                             </option>
                                         ))}
                                     </select>
+                                    {touched.shed_id && !formData.shed_id && formData.role === 'SUPERVISOR' && (
+                                        <span className="text-[10px] text-red-500 mt-1 font-bold">Shed is required for Supervisor</span>
+                                    )}
                                     {shedsLoading && (
                                         <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
                                             <Loader2 size={16} className="animate-spin text-blue-500" />
@@ -575,8 +602,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         name="senior_doctor_id"
                                         value={formData.senior_doctor_id}
                                         onChange={handleInputChange}
+                                        onBlur={handleBlur}
                                         required
-                                        className="form-select"
+                                        className={`form-select ${touched.senior_doctor_id && !formData.senior_doctor_id ? 'border-red-500' : ''}`}
                                         disabled={doctorsLoading || !formData.farm_id}
                                     >
                                         <option value="">{doctorsLoading ? 'Loading doctors...' : 'Choose a doctor...'}</option>
@@ -586,6 +614,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                             </option>
                                         ))}
                                     </select>
+                                    {touched.senior_doctor_id && !formData.senior_doctor_id && (
+                                        <span className="text-[10px] text-red-500 mt-1 font-bold">Senior Doctor is required</span>
+                                    )}
                                     {doctorsLoading && (
                                         <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
                                             <Loader2 size={16} className="animate-spin text-blue-500" />

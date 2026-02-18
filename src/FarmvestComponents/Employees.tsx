@@ -33,12 +33,33 @@ const Employees: React.FC = () => {
         deleteLoading,
         roleCounts,
         statusCounts,
+        allEmployees,
     } = useAppSelector((state: RootState) => state.farmvestEmployees);
 
     useEffect(() => {
         // Fetch stats separately
         dispatch(fetchRoleCounts());
     }, [dispatch]);
+
+    // Calculate dynamic status counts based on selected role
+    const currentStatusCounts = useMemo(() => {
+        if (!selectedRole) {
+            return statusCounts;
+        }
+
+        const filtered = allEmployees.filter((emp: any) => {
+            // Check role arrays or simple role string
+            if (emp.roles && Array.isArray(emp.roles)) {
+                return emp.roles.includes(selectedRole);
+            }
+            return emp.role === selectedRole || emp.role_name === selectedRole;
+        });
+
+        const active = filtered.filter((e: any) => Number(e.active_status !== undefined ? e.active_status : e.is_active)).length;
+        const inactive = filtered.length - active;
+
+        return { active, inactive };
+    }, [selectedRole, statusCounts, allEmployees]);
 
 
     const handleAddEmployee = useCallback(() => {
@@ -99,8 +120,8 @@ const Employees: React.FC = () => {
         dispatch(fetchEmployees({
             page: currentPage,
             size: itemsPerPage,
-            role: selectedRole || undefined,
-            active_status: selectedStatus ? Number(selectedStatus) : undefined,
+            role: selectedRole !== '' ? selectedRole : undefined,
+            active_status: selectedStatus !== '' ? Number(selectedStatus) : undefined,
             search: debouncedSearchTerm,
             // Based on previous analysis, we might need to rely on list filtering or specific search endpoint.
             // But fetchEmployees usually handles list. For now, we will assume standard list fetch.
@@ -194,7 +215,7 @@ const Employees: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-9 2xl:pl-12 4xl:pl-24 5xl:pl-36 pr-8 py-2 2xl:py-3 4xl:py-8 5xl:py-14 w-full border border-gray-200 rounded-md 4xl:rounded-2xl text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                className="pl-9 2xl:pl-12 4xl:pl-24 5xl:pl-36 pr-8 py-2 2xl:py-3 4xl:py-8 5xl:py-14 w-full border border-gray-200 rounded-md 4xl:rounded-2xl text-sm 2xl:text-base 4xl:text-4xl 5xl:text-6xl focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -260,7 +281,7 @@ const Employees: React.FC = () => {
                                 <span className="flex items-center whitespace-nowrap">
                                     {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
                                     <span className="ml-1 4xl:ml-4 text-gray-500 font-normal">
-                                        ({selectedStatus === '' ? statusCounts.active + statusCounts.inactive : (selectedStatus === '1' ? statusCounts.active : statusCounts.inactive)})
+                                        ({selectedStatus === '' ? currentStatusCounts.active + currentStatusCounts.inactive : (selectedStatus === '1' ? currentStatusCounts.active : currentStatusCounts.inactive)})
                                     </span>
                                 </span>
                                 <ChevronDown size={14} className={`ml-2 2xl:w-5 2xl:h-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
@@ -269,9 +290,9 @@ const Employees: React.FC = () => {
                             {isStatusDropdownOpen && (
                                 <div className="absolute top-full left-0 md:left-auto md:right-0 -mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     {[
-                                        { value: '', label: 'All Status', count: statusCounts.active + statusCounts.inactive },
-                                        { value: '1', label: 'Active', count: statusCounts.active },
-                                        { value: '0', label: 'Inactive', count: statusCounts.inactive }
+                                        { value: '', label: 'All Status', count: currentStatusCounts.active + currentStatusCounts.inactive },
+                                        { value: '1', label: 'Active', count: currentStatusCounts.active },
+                                        { value: '0', label: 'Inactive', count: currentStatusCounts.inactive }
                                     ].map((option) => (
                                         <button
                                             key={option.value}
@@ -308,7 +329,7 @@ const Employees: React.FC = () => {
             <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-x-auto">
                     <table className="employees-table min-w-full divide-y divide-gray-100 relative">
-                        <thead className="bg-gray-50 border-b border-gray-200 text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl uppercase font-bold tracking-wider text-gray-700 sticky top-0 z-10 shadow-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl uppercase font-bold tracking-wider text-gray-500 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">S.No</th>
                                 <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-left cursor-pointer bg-gray-50">
