@@ -227,7 +227,7 @@ const Farms: React.FC = () => {
                             {adminRole?.toUpperCase() === 'SUPER ADMIN' && (
                                 <button
                                     onClick={() => setIsAddLocationModalOpen(true)}
-                                    className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
+                                    className="add-btn-responsive bg-[#f59e0b] hover:bg-[#d97706] text-white rounded-lg font-bold flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
                                 >
                                     <span className="text-sm">+</span> Loc
                                 </button>
@@ -235,7 +235,7 @@ const Farms: React.FC = () => {
 
                             <button
                                 onClick={() => setIsAddFarmModalOpen(true)}
-                                className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
+                                className="add-btn-responsive bg-[#f59e0b] hover:bg-[#d97706] text-white rounded-lg font-bold flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
                             >
                                 <span className="text-sm">+</span> Farm
                             </button>
@@ -266,7 +266,7 @@ const Farms: React.FC = () => {
                 <div className="bg-white border border-gray-100 rounded-2xl shadow-premium flex flex-col flex-1 min-h-0 overflow-hidden">
                     <div className="overflow-auto flex-1 min-h-0 hide-scrollbar">
                         <table className="farms-table w-full text-sm text-left border-collapse relative">
-                            <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold uppercase tracking-wider text-gray-500 sticky top-0 z-10 shadow-sm">
+                            <thead className="bg-[#f8fafc] border-b border-gray-200 text-xs font-bold uppercase tracking-wider text-gray-500 sticky top-0 z-10">
                                 <tr>
                                     <th className="px-4 py-2 text-center">S.no</th>
                                     <th className="px-4 py-2 text-center">

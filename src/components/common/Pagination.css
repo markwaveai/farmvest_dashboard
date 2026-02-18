@@ -97,3 +97,38 @@
         font-size: 0.75rem;
     }
 }
+
+@media (min-width: 1536px) {
+    .pagination-container {
+        gap: 32px;
+        margin-top: 32px;
+        padding-bottom: 24px;
+        justify-content: center;
+        /* Center pagination on 4K for better visibility */
+    }
+
+    .pagination-btn {
+        padding: 24px 56px;
+        gap: 20px;
+        border-radius: 20px;
+        font-size: 32px;
+        border-width: 2px;
+    }
+
+    .pagination-btn svg {
+        width: 44px;
+        height: 44px;
+    }
+
+    .pagination-numbers {
+        gap: 20px;
+    }
+
+    .pagination-number {
+        min-width: 96px;
+        height: 96px;
+        border-radius: 20px;
+        font-size: 32px;
+        border-width: 2px;
+    }
+}

@@ -416,6 +416,12 @@ export const farmvestService = {
         }
     },
 
+    // AI Entry Integration
+    submitAIEntry: async (payload: { ai_generate_date: string; device_id: string; is_ai_generated: boolean; semen_straw_type: string }) => {
+        const response = await farmvestApi.post(API_ENDPOINTS.aiEntry(), payload);
+        return response.data;
+    },
+
     // ============ TICKETS ============
 
     createTicket: async (ticketType: string, payload: any) => {

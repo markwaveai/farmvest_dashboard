@@ -703,7 +703,6 @@ const UnallocatedAnimals: React.FC = () => {
                         style={{
                             backgroundColor: pendingAllocations.size > 0 ? '#f59e0b' : '#9CA3AF',
                             color: 'white',
-                            padding: '6px 8px',
                             borderRadius: '8px',
                             border: 'none',
                             fontWeight: 700,
@@ -711,8 +710,7 @@ const UnallocatedAnimals: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '2px',
-                            fontSize: '9px'
+                            gap: '2px'
                         }}
                     >
                         {isSaving ? <Loader2 className="animate-spin" size={12} /> : null}

@@ -18,20 +18,28 @@ export const fetchTickets = createAsyncThunk(
 
             let tickets: FarmvestTicket[] = [];
             let counts: any = null;
-            let pagination = null;
+            let pagination: any = null;
 
-            if (Array.isArray(response)) {
-                tickets = response;
-            } else if (response && Array.isArray(response.data)) {
-                tickets = response.data;
-            } else if (response && Array.isArray(response.health_tickets)) {
-                // If health_tickets is the array, counts might be at root
-                tickets = response.health_tickets;
-            } else if (response && Array.isArray(response.healthTickets)) {
-                tickets = response.healthTickets;
-            } else if (response && response.data && Array.isArray(response.data.tickets)) {
-                tickets = response.data.tickets;
-            }
+            // Robust ticket list extraction
+            const findTickets = (obj: any): FarmvestTicket[] => {
+                if (Array.isArray(obj)) return obj;
+                if (!obj || typeof obj !== 'object') return [];
+                const priorityKeys = ['tickets', 'health_tickets', 'healthTickets', 'items', 'list', 'data', 'results', 'payload', 'records'];
+                for (const key of priorityKeys) {
+                    if (Array.isArray(obj[key])) return obj[key];
+                }
+                // Recursive search for first array
+                for (const key in obj) {
+                    if (Array.isArray(obj[key])) return obj[key];
+                    if (obj[key] && typeof obj[key] === 'object') {
+                        const nested = findTickets(obj[key]);
+                        if (nested.length > 0) return nested;
+                    }
+                }
+                return [];
+            };
+
+            tickets = findTickets(response);
 
             // Robust count extraction
             counts = response.counts || response.data?.counts;
@@ -68,6 +76,26 @@ export const fetchTickets = createAsyncThunk(
             }
 
             pagination = response.pagination || response.data?.pagination;
+
+            // Normalize pagination
+            if (pagination || (counts && counts.total)) {
+                if (!pagination) pagination = {};
+                const totalItems = Number(pagination.total_items || pagination.totalItems || pagination.total_count || pagination.count || counts?.total || tickets.length || 0);
+                let totalPages = Number(pagination.total_pages || pagination.totalPages || pagination.total_page || pagination.totalPage || 0);
+                const currentPage = Number(pagination.current_page || pagination.currentPage || pagination.page || params?.page || 1);
+                const itemsPerPage = Number(pagination.items_per_page || pagination.itemsPerPage || pagination.size || params?.size || 15);
+
+                if (totalPages === 0 && totalItems > 0) {
+                    totalPages = Math.ceil(totalItems / itemsPerPage);
+                }
+
+                pagination = {
+                    total_items: totalItems,
+                    total_pages: totalPages,
+                    current_page: currentPage,
+                    items_per_page: itemsPerPage
+                };
+            }
 
             return {
                 tickets,

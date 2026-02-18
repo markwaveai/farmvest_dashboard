@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './UserTabs.css';
 import axios from 'axios';
 import { API_ENDPOINTS, API_CONFIG } from '../../config/api';
-import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package, Trash2, AlertCircle, Calendar, Milk, Bell } from 'lucide-react';
+import { Users, TreePine, LogOut, UserCheck, Menu, X, Mail, PawPrint, LayoutGrid, Briefcase, Package, Trash2, AlertCircle, Calendar, Milk, ChevronDown, Bell } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -46,6 +46,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   // Local State
   const [displayAdminName, setDisplayAdminName] = useState(adminName);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isTicketsSubmenuOpen, setIsTicketsSubmenuOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     mobile: '',
@@ -79,6 +80,13 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
   else if (currentPath.includes('/privacy-policy')) activeTab = 'privacy';
   else if (currentPath.includes('/support')) activeTab = 'support';
   else if (currentPath.includes('/farmvest/account-deletion')) activeTab = 'account-deletion';
+
+  // Auto-open submenu if tickets is active
+  useEffect(() => {
+    if (activeTab === 'farmvest-tickets') {
+      setIsTicketsSubmenuOpen(true);
+    }
+  }, [activeTab]);
 
 
 
@@ -145,7 +153,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-investors' && 'FarmVest Investors'}
                   {activeTab === 'farmvest-inventory' && 'Farm Inventory'}
                   {activeTab === 'farmvest-buffalo' && 'Buffalo Management'}
-                  {activeTab === 'farmvest-tickets' && 'Ticket Management'}
+                  {activeTab === 'farmvest-tickets' && (location.search.includes('view=AI_ENTRY') ? 'AI Entry' : 'Ticket Management')}
                   {activeTab === 'farmvest-leave' && 'Leave Requests'}
                   {activeTab === 'farmvest-alerts' && 'Alerts Management'}
                   {activeTab === 'farmvest-milk' && 'Milk Production'}
@@ -163,7 +171,7 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
                   {activeTab === 'farmvest-investors' && 'View all registered investors'}
                   {activeTab === 'farmvest-inventory' && 'Monitor resources and supplies'}
                   {activeTab === 'farmvest-buffalo' && 'Individual asset tracking and logs'}
-                  {activeTab === 'farmvest-tickets' && 'Manage health, transfer, and vaccination tickets'}
+                  {activeTab === 'farmvest-tickets' && (location.search.includes('view=AI_ENTRY') ? 'Register new artificial insemination entries' : 'Manage health, transfer, and vaccination tickets')}
                   {activeTab === 'farmvest-leave' && 'Review and manage employee leave requests'}
                   {activeTab === 'farmvest-alerts' && 'Critical system and farm monitoring alerts'}
                   {activeTab === 'farmvest-milk' && 'Track daily milk production records'}
@@ -276,15 +284,43 @@ const UserTabs: React.FC<UserTabsProps> = ({ adminMobile, adminName, adminRole, 
               </button>
             </li>
             <li style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ display: 'block', padding: '4px 16px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)' }}>Operations</span>
+              <span className="nav-section-label">Operations</span>
             </li>
             <li>
-              <button className={`nav-item ${activeTab === 'farmvest-tickets' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/tickets'); }}>
+              <button
+                className={`nav-item ${activeTab === 'farmvest-tickets' ? 'active-main' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsTicketsSubmenuOpen(!isTicketsSubmenuOpen);
+                  if (activeTab !== 'farmvest-tickets') navigate('/farmvest/tickets');
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <AlertCircle size={18} />
                   <span className="nav-text">Tickets</span>
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${isTicketsSubmenuOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
+              {isTicketsSubmenuOpen && (
+                <ul className="sidebar-submenu">
+                  <li className="submenu-item-container">
+                    <button
+                      className={`submenu-item ${activeTab === 'farmvest-tickets' && !location.search.includes('view=AI_ENTRY') ? 'active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); navigate('/farmvest/tickets'); }}
+                    >
+                      <span className="submenu-text">Ticket List</span>
+                    </button>
+                  </li>
+                  <li className="submenu-item-container">
+                    <button
+                      className={`submenu-item ${location.search.includes('view=AI_ENTRY') ? 'active' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); navigate('/farmvest/tickets?view=AI_ENTRY'); }}
+                    >
+                      <span className="submenu-text">AI Entry</span>
+                    </button>
+                  </li>
+                </ul>
+              )}
             </li>
             <li>
               <button className={`nav-item ${activeTab === 'farmvest-milk' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); navigate('/farmvest/milk-production'); }}>

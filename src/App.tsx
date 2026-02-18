@@ -165,8 +165,8 @@ function App() {
     const defaultPath = '/farmvest/dashboard';
 
     // Navigate to origin or default
-    const from = (location.state as any)?.from?.pathname;
-    const targetPath = from && from !== '/login' ? from : defaultPath;
+    const from = (location.state as any)?.from;
+    const targetPath = from && from.pathname !== '/login' ? (from.pathname + (from.search || '')) : defaultPath;
 
     navigate(targetPath, { replace: true });
   }, [dispatch, location.state, navigate]);
@@ -366,6 +366,16 @@ function App() {
 
 const ProtectedRoute = ({ children, session, isAdmin, handleLogout }: { children: React.ReactNode, session: Session | null, isAdmin: boolean, handleLogout: () => void }) => {
   const location = useLocation();
+  const isPublicAIEntry = location.pathname === '/farmvest/tickets' && location.search.includes('view=AI_ENTRY');
+
+  // Allow public access to AI Entry form
+  if (!session && isPublicAIEntry) {
+    return (
+      <div style={{ height: '100vh', background: '#f8fafc', overflow: 'auto' }}>
+        {children}
+      </div>
+    );
+  }
 
   if (!session) {
     return <Navigate to="/login" replace state={{ from: location }} />;

@@ -1,31 +1,132 @@
 .tickets-container {
-    padding: 0;
+    padding: 8px 16px;
+    background: #f8fafc;
+    height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Refined background ONLY for list view */
+.tickets-container.list-view-bg {
+    background: #fff8f1;
+}
+
+/* Dynamic View Card */
+.tickets-view-card {
+    width: 100%;
     background: transparent;
-    height: calc(100vh - 90px);
-    /* Adjust based on actual header height */
+    /* Main view doesn't have a direct card background in image, elements do */
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Prevent main page scroll */
+}
+
+.tickets-view-card.list-view {
+    max-width: 1400px;
+    height: 100%;
+    /* Fill container */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.tickets-view-card.ai-view {
+    max-width: 600px;
+    margin-top: 20px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px -5px rgba(17, 48, 37, 0.08);
+}
+
+/* Shared Card Elements */
+/* Ticket List Specific Header */
+.tickets-card-header {
+    margin-bottom: 8px;
+    width: 100%;
+    padding: 0 12px;
+}
+
+.tickets-card-header h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+}
+
+.tickets-card-header p {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* Restore AI Entry Original Header Styles */
+.ai-card-header {
+    background-color: #113025;
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 16px 16px 0 0;
+}
+
+.ai-card-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.ai-entry-back-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.ai-entry-back-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.tickets-card-content {
+    padding: 4px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .tickets-stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .ticket-stat-box {
     background: white;
     border-radius: 12px;
-    padding: 12px;
-    border: 1px solid #eef2f6;
+    padding: 12px 16px;
+    border: 1px solid #f1f5f9;
     display: flex;
     flex-direction: column;
     gap: 4px;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.04);
 }
 
 .ticket-stat-box:hover {
@@ -39,16 +140,16 @@
 }
 
 .stat-label {
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     color: #94a3b8;
 }
 
 .stat-value {
-    font-size: 24px;
-    font-weight: 900;
+    font-size: 20px;
+    font-weight: 800;
     line-height: 1;
     color: #1e293b;
 }
@@ -59,11 +160,49 @@
     gap: 0.5rem;
     align-items: center;
     margin-bottom: 8px;
-    padding: 8px 12px;
+    padding: 8px;
     background: white;
-    border-radius: var(--card-radius, 14px);
-    border: 1px solid var(--card-border, #e2e8f0);
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
+    border-radius: 14px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.tickets-search-input {
+    width: 100%;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 14px 8px 36px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #1e293b;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.tickets-search-input:focus {
+    border-color: #cbd5e1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(241, 245, 249, 0.5);
+}
+
+.tickets-select-filter {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 110px;
+}
+
+.tickets-select-filter:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
 }
 
 /* Custom Farm Dropdown Sizing */
@@ -77,17 +216,24 @@
 }
 
 .tickets-table-container {
-    background: white;
-    border-radius: var(--card-radius, 14px);
-    border: 1px solid var(--card-border, #e2e8f0);
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
     display: flex;
     flex-direction: column;
     flex: 1;
-    /* Take up remaining space */
     min-height: 0;
-    /* Critical for flex scrolling */
+    /* Important for nested flex scroll */
+}
+
+.tickets-pagination-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+    padding-bottom: 0px;
+    width: 100%;
+    flex-shrink: 0;
 }
 
 .tickets-table {
@@ -97,23 +243,23 @@
 }
 
 .tickets-table th {
-    background: #f8fafc;
-    padding: 10px 12px;
+    background: white;
+    padding: 12px;
     text-align: left;
-    font-weight: 700;
-    font-size: 0.6875rem;
+    font-weight: 800;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.075em;
     color: #64748b;
-    border-bottom: 1px solid var(--card-border, #e2e8f0);
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .tickets-table td {
-    padding: 10px 12px;
+    padding: 12px;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
     font-size: 0.8125rem;
-    color: var(--text-primary, #0f172a);
+    color: #0f172a;
 }
 
 .tickets-table tbody tr {
@@ -273,10 +419,9 @@
 .table-scroll-wrapper {
     overflow-y: auto;
     flex: 1;
-    /* Grow to fill container */
-    overflow-x: hidden;
-    /* Adjust as needed */
-    border-radius: var(--card-radius, 14px) var(--card-radius, 14px) 0 0;
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px 12px 0 0;
     position: relative;
 }
 
@@ -313,4 +458,113 @@
 
 .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}
+
+
+/* 4K Resolution Scaling */
+@media (min-width: 1533px) {
+    .tickets-container {
+        padding: 48px;
+    }
+
+    .tickets-view-card.list-view {
+        max-width: 3200px;
+        height: 100%;
+        min-height: 0;
+        border-radius: 48px;
+        overflow: visible;
+        /* Helpful for absolute tooltips in 4K */
+    }
+
+    .tickets-view-card.ai-view {
+        max-width: 1200px;
+        border-radius: 32px;
+    }
+
+    .ai-card-header {
+        padding: 40px 64px;
+        gap: 24px;
+    }
+
+    .ai-card-header h2 {
+        font-size: 2.5rem;
+    }
+
+    .ai-entry-back-btn {
+        width: 64px;
+        height: 64px;
+    }
+
+    .ai-entry-back-btn svg {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .tickets-card-content {
+        padding: 64px;
+        padding-bottom: 80px;
+        /* Extra space for 4K */
+    }
+
+    .tickets-stats-grid {
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .ticket-stat-box {
+        padding: 24px;
+        border-radius: 16px;
+    }
+
+    .stat-label {
+        font-size: 1.1rem;
+    }
+
+    .stat-value {
+        font-size: 2.75rem;
+    }
+
+    .tickets-filter-bar {
+        padding: 32px;
+        gap: 24px;
+        border-radius: 24px;
+        margin-bottom: 32px;
+    }
+
+    .tickets-filter-bar input,
+    .tickets-filter-bar select {
+        padding: 16px 20px;
+        font-size: 1.25rem;
+        border-radius: 12px;
+    }
+
+    /* Table 4K Scaling */
+    .tickets-table {
+        font-size: 1.5rem;
+    }
+
+    .tickets-table th {
+        padding: 24px;
+        font-size: 1.25rem;
+    }
+
+    .tickets-table td {
+        padding: 24px;
+        font-size: 1.5rem;
+    }
+
+    .tickets-farm-dropdown .custom-dropdown-trigger {
+        font-size: 1.5rem !important;
+        padding: 16px 24px !important;
+    }
+
+    .tickets-farm-dropdown .custom-dropdown-item {
+        font-size: 1.5rem !important;
+        padding: 16px 24px !important;
+    }
+
+    .tickets-pagination-wrapper {
+        margin-top: 48px;
+        padding-bottom: 48px;
+    }
 }

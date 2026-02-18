@@ -92,6 +92,7 @@ export const API_ENDPOINTS = {
   getTotalAnimals: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/animal/get_total_animals`,
   getAnimalByPosition: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/animal/get-position`,
   getCalves: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/animal/get_calves`,
+  aiEntry: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/animal/ai_entry`,
 
   // Employees
   createEmployee: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/employee/create_employee`,
