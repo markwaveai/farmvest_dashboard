@@ -9,9 +9,10 @@ interface CustomDropdownProps {
     placeholder: string;
     disabled?: boolean;
     className?: string;
+    hideIcon?: boolean;
 }
 
-const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChange, placeholder, disabled, className }) => {
+const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChange, placeholder, disabled, className, hideIcon }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -35,14 +36,16 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChang
                 onClick={() => !disabled && setIsOpen(!isOpen)}
             >
                 <span>{selectedOption ? selectedOption.label : placeholder}</span>
-                <ChevronDown
-                    size={20}
-                    color="#9CA3AF"
-                    style={{
-                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s ease-in-out'
-                    }}
-                />
+                {!hideIcon && (
+                    <ChevronDown
+                        size={20}
+                        color="#9CA3AF"
+                        style={{
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease-in-out'
+                        }}
+                    />
+                )}
             </div>
             {isOpen && !disabled && (
                 <div className="custom-dropdown-menu">

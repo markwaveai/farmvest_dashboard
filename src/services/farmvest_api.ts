@@ -53,7 +53,7 @@ export const farmvestService = {
     staticLogin: async (mobile_number: string, otp: string) => {
         try {
             // This call will usage the API Key via the interceptor (since no token exists yet)
-            const response = await farmvestApi.post('/api/auth/static_login', {
+            const response = await farmvestApi.post(API_ENDPOINTS.staticLogin(), {
                 mobile_number,
                 otp
             });
@@ -73,7 +73,7 @@ export const farmvestService = {
             // Based on other methods, typically 'search' or 'query'. Let's try 'search'.
             if (params?.search) query += `&search=${encodeURIComponent(params.search)}`;
 
-            const url = `/api/employee/get_all_employees${query}`;
+            const url = `${API_ENDPOINTS.getAllEmployees()}${query}`;
             const response = await farmvestApi.get(url);
             return response.data;
         } catch (error) {
@@ -99,7 +99,7 @@ export const farmvestService = {
     },
     getFarms: async (location: string) => {
         try {
-            const response = await farmvestApi.get(`/api/farm/get_all_farms?location=${location}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getAllFarms()}?location=${location}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -107,7 +107,7 @@ export const farmvestService = {
     },
     getLocations: async () => {
         try {
-            const response = await farmvestApi.get('/api/farm/locations');
+            const response = await farmvestApi.get(API_ENDPOINTS.getFarmLocations());
             return response.data;
         } catch (error) {
             throw error;
@@ -115,7 +115,7 @@ export const farmvestService = {
     },
     getAllFarms: async (params?: { location?: string, sort_by?: number, page?: number, size?: number, search?: string }) => {
         try {
-            let url = '/api/farm/get_all_farms';
+            let url = API_ENDPOINTS.getAllFarms();
             if (params) {
                 const query = new URLSearchParams();
                 if (params.location) query.append('location', params.location);
@@ -133,7 +133,7 @@ export const farmvestService = {
     },
     searchEmployee: async (query: string) => {
         try {
-            const response = await farmvestApi.get(`/api/employee/search_employee?search_query=${query}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.searchEmployee()}?search_query=${query}`);
             return response.data;
         } catch (error) {
             // Return empty list or null instead of throwing to avoid breaking UI flow if just searching name
@@ -142,7 +142,7 @@ export const farmvestService = {
     },
     createEmployee: async (employeeData: any) => {
         try {
-            const response = await farmvestApi.post('/api/employee/create_employee', employeeData);
+            const response = await farmvestApi.post(API_ENDPOINTS.createEmployee(), employeeData);
             return response.data;
         } catch (error) {
             throw error;
@@ -151,7 +151,7 @@ export const farmvestService = {
     getEmployeeDetailsById: async (id: string) => {
         try {
             // Updated parameter name to 'user_id' as per Swagger documentation
-            const response = await farmvestApi.get(`/api/employee/get_employee_details_by_id?user_id=${id}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getEmployeeDetailsById()}?user_id=${id}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -159,7 +159,7 @@ export const farmvestService = {
     },
     deleteEmployee: async (id: number) => {
         try {
-            const response = await farmvestApi.delete(`/api/admin/delete_employee/${id}`);
+            const response = await farmvestApi.delete(API_ENDPOINTS.deleteEmployee(id));
             return response.data;
         } catch (error) {
             throw error;
@@ -167,7 +167,7 @@ export const farmvestService = {
     },
     getAvailableSheds: async (farm_id: number) => {
         try {
-            const response = await farmvestApi.get(`/api/shed/list?farm_id=${farm_id}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.listSheds()}?farm_id=${farm_id}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -175,7 +175,7 @@ export const farmvestService = {
     },
     getShedsByFarm: async (farmId: number) => {
         try {
-            const url = `/api/shed/list?farm_id=${farmId}`;
+            const url = `${API_ENDPOINTS.listSheds()}?farm_id=${farmId}`;
             const response = await farmvestApi.get(url);
             return response.data;
         } catch (error) {
@@ -184,7 +184,7 @@ export const farmvestService = {
     },
     getShedList: async (farmId: number) => {
         try {
-            const response = await farmvestApi.get(`/api/shed/list?farm_id=${farmId}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.listSheds()}?farm_id=${farmId}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -192,7 +192,7 @@ export const farmvestService = {
     },
     getShedPositions: async (shedId: number) => {
         try {
-            const response = await farmvestApi.get(`/api/shed/available_positions?shed_id=${shedId}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getAvailablePositionsInShed()}?shed_id=${shedId}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -200,7 +200,7 @@ export const farmvestService = {
     },
     getAnimalPositions: async (shedId: number) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/get-position?shed_id=${shedId}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getAnimalByPosition()}?shed_id=${shedId}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -209,7 +209,7 @@ export const farmvestService = {
     getAnimalPositionDetails: async (params: { parkingId: string; farmId?: number; shedId?: number; rowNumber?: string }) => {
         try {
             const { parkingId, farmId, shedId, rowNumber } = params;
-            let url = `/api/animal/get-position?parking_id=${parkingId}`;
+            let url = `${API_ENDPOINTS.getAnimalByPosition()}?parking_id=${parkingId}`;
             if (farmId) url += `&farm_id=${farmId}`;
             if (shedId) url += `&shed_id=${shedId}`;
             if (rowNumber) url += `&row_number=${rowNumber}`;
@@ -222,7 +222,7 @@ export const farmvestService = {
     },
     getTotalAnimals: async (farmId?: number, shedId?: number, page: number = 1, size: number = 15) => {
         try {
-            let url = '/api/animal/get_total_animals';
+            let url = API_ENDPOINTS.getTotalAnimals();
             const params = new URLSearchParams();
             if (farmId) params.append('farm_id', farmId.toString());
             if (shedId) params.append('shed_id', shedId.toString());
@@ -239,7 +239,7 @@ export const farmvestService = {
     },
     getShedAllocation: async (shedId: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/shed_allocation?shed_id=${shedId}`);
+            const response = await farmvestApi.get(API_ENDPOINTS.allocateAnimal(shedId));
             return response.data;
         } catch (error) {
             throw error;
@@ -247,7 +247,7 @@ export const farmvestService = {
     },
     getUnallocatedAnimals: async (farmId: number) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/unallocated_animals?farm_id=${farmId}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getUnallocatedAnimals()}?farm_id=${farmId}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -255,11 +255,11 @@ export const farmvestService = {
     },
     // Create Farm
     createFarm: (farmData: { location: string; shed_count: number; is_test: boolean }) => {
-        return farmvestApi.post('/api/farm/farm', farmData);
+        return farmvestApi.post(API_ENDPOINTS.createFarm(), farmData);
     },
     updateFarm: async (farmId: number, farmData: { farm_name?: string; location?: string; shed_count?: number; is_test?: boolean }) => {
         try {
-            const response = await farmvestApi.put(`/api/farm/update/${farmId}`, farmData);
+            const response = await farmvestApi.put(API_ENDPOINTS.updateFarm(farmId), farmData);
             return response.data;
         } catch (error) {
             throw error;
@@ -267,7 +267,7 @@ export const farmvestService = {
     },
     deleteFarm: async (farmId: number) => {
         try {
-            const response = await farmvestApi.delete(`/api/farm/delete/${farmId}`);
+            const response = await farmvestApi.delete(API_ENDPOINTS.deleteFarm(farmId));
             return response.data;
         } catch (error) {
             throw error;
@@ -275,7 +275,7 @@ export const farmvestService = {
     },
     createShed: async (shedData: { farm_id: number; shed_id: string; shed_name: string; capacity: number; cctv_url?: string }) => {
         try {
-            const response = await farmvestApi.post('/api/shed/create_shed', shedData);
+            const response = await farmvestApi.post(API_ENDPOINTS.createShed(), shedData);
             return response.data;
         } catch (error) {
             throw error;
@@ -283,7 +283,7 @@ export const farmvestService = {
     },
     deactivateUser: async (mobile: string) => {
         try {
-            const response = await farmvestApi.put(`/api/users/activate_deactivate_user/${mobile}?is_active=false`);
+            const response = await farmvestApi.put(`${API_ENDPOINTS.activateDeactivateUser(mobile)}?is_active=false`);
             return response.data;
         } catch (error) {
             throw error;
@@ -291,7 +291,7 @@ export const farmvestService = {
     },
     activateUser: async (mobile: string) => {
         try {
-            const response = await farmvestApi.put(`/api/users/activate_deactivate_user/${mobile}?is_active=true`);
+            const response = await farmvestApi.put(`${API_ENDPOINTS.activateDeactivateUser(mobile)}?is_active=true`);
             return response.data;
         } catch (error) {
             throw error;
@@ -350,7 +350,7 @@ export const farmvestService = {
     allocateAnimal: async (shedId: string, allocations: { rfid_tag_number: string; row_number: string; parking_id: string }[]) => {
         try {
             // Reverting to path parameter as per Swagger docs (404 was likely due to 'Animal Not Found' not 'Endpoint Not Found')
-            const url = `/api/animal/shed_allocation/${shedId}`;
+            const url = API_ENDPOINTS.allocateAnimal(shedId);
             const payload = { allocations };
             const response = await farmvestApi.post(url, payload);
             return response.data;
@@ -363,7 +363,7 @@ export const farmvestService = {
     },
     searchAnimal: async (queryStr: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/search_animal?query_str=${queryStr}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.searchAnimal()}?query_str=${queryStr}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -382,7 +382,7 @@ export const farmvestService = {
 
     getAnimalsByInvestor: async (investorId: number) => {
         try {
-            const response = await farmvestApi.get(`/api/investors/animals?investor_id=${investorId}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getInvestorAnimals()}?investor_id=${investorId}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -392,7 +392,7 @@ export const farmvestService = {
     // getAnimalsByInvestor was duplicated here by mistake. Removing this block.
     getCalves: async (animalId: string) => {
         try {
-            const response = await farmvestApi.get(`/api/animal/get_calves?animal_id=${animalId}`);
+            const response = await farmvestApi.get(`${API_ENDPOINTS.getCalves()}?animal_id=${animalId}`);
             return response.data;
         } catch (error: any) {
             return [];
@@ -402,7 +402,7 @@ export const farmvestService = {
     // ============ TICKETS ============
 
     createTicket: async (ticketType: string, payload: any) => {
-        const response = await farmvestApi.post(`/api/ticket/?ticket_type=${ticketType}`, payload);
+        const response = await farmvestApi.post(`${API_ENDPOINTS.createTicket()}?ticket_type=${ticketType}`, payload);
         return response.data;
     },
 
@@ -419,30 +419,41 @@ export const farmvestService = {
         if (params?.ticket_type) query.append('ticket_type', params.ticket_type);
         if (params?.status_filter) query.append('status_filter', params.status_filter);
         if (params?.transfer_direction) query.append('transfer_direction', params.transfer_direction);
-        if (params?.farm_id) query.append('farm_id', params.farm_id.toString());
-        if (params?.shed_id) query.append('shed_id', params.shed_id.toString());
+        if (params?.farm_id !== undefined && params?.farm_id !== null) {
+            query.append('farm_id', params.farm_id.toString());
+            query.append('farmId', params.farm_id.toString()); // Backup for potential camelCase expectation
+        }
+        if (params?.shed_id !== undefined && params?.shed_id !== null) {
+            query.append('shed_id', params.shed_id.toString());
+            query.append('shedId', params.shed_id.toString()); // Backup for potential camelCase expectation
+        }
         query.append('page', (params?.page || 1).toString());
         query.append('size', (params?.size || 15).toString());
-        const response = await farmvestApi.get(`/api/ticket/get_health_tickets?${query.toString()}`);
+        const response = await farmvestApi.get(`${API_ENDPOINTS.getHealthTickets()}?${query.toString()}`);
         return response.data;
     },
 
     assignTicket: async (ticketId: number, assistantId?: number) => {
         const payload: any = { ticket_id: ticketId };
         if (assistantId) payload.assistant_id = assistantId;
-        const response = await farmvestApi.post('/api/doctor/assign_tickets', payload);
+        const response = await farmvestApi.post(API_ENDPOINTS.assignTickets(), payload);
         return response.data;
     },
 
     getDoctorAssistants: async () => {
-        const response = await farmvestApi.get('/api/doctor/get_my_assistants');
+        const response = await farmvestApi.get(API_ENDPOINTS.getMyAssistants());
+        return response.data;
+    },
+
+    updateTreatmentDetails: async (payload: { ticket_id: number; disease?: string[]; description?: string }) => {
+        const response = await farmvestApi.post(API_ENDPOINTS.updateTreatmentDetails(), payload);
         return response.data;
     },
 
     // ============ MILK ============
 
     createMilkEntry: async (payload: any) => {
-        const response = await farmvestApi.post('/api/milk/create_milk_entry', payload);
+        const response = await farmvestApi.post(API_ENDPOINTS.createMilkEntry(), payload);
         return response.data;
     },
 
@@ -452,7 +463,7 @@ export const farmvestService = {
         query.append('size', (params?.size || 15).toString());
         if (params?.farm_id) query.append('farm_id', params.farm_id.toString());
         if (params?.shed_id) query.append('shed_id', params.shed_id.toString());
-        const response = await farmvestApi.get(`/api/milk/milk_entries?${query.toString()}`);
+        const response = await farmvestApi.get(`${API_ENDPOINTS.getAllMilkEntries()}?${query.toString()}`);
         return response.data;
     },
 
@@ -464,14 +475,14 @@ export const farmvestService = {
         query.append('size', (params.size || 15).toString());
         if (params.farm_id) query.append('farm_id', params.farm_id.toString());
         if (params.shed_id) query.append('shed_id', params.shed_id.toString());
-        const response = await farmvestApi.get(`/api/milk/get_milk_report?${query.toString()}`);
+        const response = await farmvestApi.get(`${API_ENDPOINTS.getMilkReport()}?${query.toString()}`);
         return response.data;
     },
 
     // ============ LEAVE REQUESTS ============
 
     createLeaveRequest: async (payload: any) => {
-        const response = await farmvestApi.post('/api/leave_requests/create_leave_request', payload);
+        const response = await farmvestApi.post(API_ENDPOINTS.createLeaveRequest(), payload);
         return response.data;
     },
 
@@ -480,41 +491,41 @@ export const farmvestService = {
         if (params?.status_filter) query.append('status_filter', params.status_filter);
         query.append('page', (params?.page || 1).toString());
         query.append('size', (params?.size || 15).toString());
-        const response = await farmvestApi.get(`/api/leave_requests/leave-requests?${query.toString()}`);
+        const response = await farmvestApi.get(`${API_ENDPOINTS.getLeaveRequests()}?${query.toString()}`);
         return response.data;
     },
 
     updateLeaveStatus: async (leaveId: number, payload: { status: string; rejection_reason?: string }) => {
-        const response = await farmvestApi.put(`/api/leave_requests/update_leave_status/${leaveId}`, payload);
+        const response = await farmvestApi.put(API_ENDPOINTS.updateLeaveStatus(leaveId), payload);
         return response.data;
     },
 
     cancelLeaveRequest: async (leaveId: number) => {
-        const response = await farmvestApi.put(`/api/leave_requests/leave-requests/${leaveId}`);
+        const response = await farmvestApi.put(API_ENDPOINTS.cancelLeaveRequest(leaveId));
         return response.data;
     },
 
     // ============ FARM DETAILS ============
 
     getFarmDetails: async (farmId: number) => {
-        const response = await farmvestApi.get(`/api/farm/farm/details?farm_id=${farmId}`);
+        const response = await farmvestApi.get(`${API_ENDPOINTS.getFarmDetails()}?farm_id=${farmId}`);
         return response.data;
     },
 
     getFarmStaff: async (farmId: number) => {
-        const response = await farmvestApi.get(`/api/farm/staff?farm_id=${farmId}`);
+        const response = await farmvestApi.get(`${API_ENDPOINTS.getFarmStaff()}?farm_id=${farmId}`);
         return response.data;
     },
 
     // ============ EMPLOYEE UPDATE ============
 
     updateEmployee: async (payload: { user_id: number; role: string; farm_id: number; shed_id?: number }) => {
-        const response = await farmvestApi.put('/api/employee/update_employee', payload);
+        const response = await farmvestApi.put(API_ENDPOINTS.updateEmployee(), payload);
         return response.data;
     },
 
     updateUserDetails: async (payload: { name?: string; email?: string; address?: string; profile?: string }) => {
-        const response = await farmvestApi.put('/api/users/update_user_details/', payload);
+        const response = await farmvestApi.put(API_ENDPOINTS.updateFarmVestUserDetails(), payload);
         return response.data;
     },
 

@@ -29,6 +29,11 @@ const Inventory: React.FC = () => {
         dailyConsumption: 1420
     });
 
+    const [healthTickets] = useState([
+        { id: 1, case_id: 'HLT-001', animal_display_id: 'BUF-102', status: 'PENDING', priority: 'HIGH', created_at: new Date().toISOString() },
+        { id: 2, case_id: 'HLT-002', animal_display_id: 'BUF-105', status: 'IN_PROGRESS', priority: 'MEDIUM', created_at: new Date().toISOString() }
+    ]);
+
     // Fetch initial data for real parts of the UI
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -217,7 +222,7 @@ const Inventory: React.FC = () => {
                                     <Tractor size={14} />
                                 </div>
                                 <div>
-                                    <div className="font-bold text-gray-900 text-sm">210 kg</div>
+                                    <div className="font-bold text-gray-900 text-sm">320 kg</div>
                                     <div className="text-xs text-gray-500 font-medium">Current feed stock</div>
                                 </div>
                             </div>

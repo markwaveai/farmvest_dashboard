@@ -41,6 +41,7 @@ export interface FarmvestApiResponse<T> {
 
 export interface FarmvestFarm {
     id: number;
+    farm_id?: number; // Some endpoints use farm_id
     farm_name: string;
     location: string;
     total_buffaloes_count: number;
@@ -81,6 +82,12 @@ export interface FarmvestTicket {
     transfer_direction?: TransferDirection;
     source_shed_id?: number;
     destination_shed_id?: number;
+    farm_id?: number;
+    shed_id?: number;
+    farm_name?: string;
+    shed_name?: string;
+    farm?: { id: number; farm_name: string };
+    shed?: { id: number; shed_name: string };
     row_number?: string;
     created_by: number;
     assigned_staff_name?: string;
@@ -96,6 +103,13 @@ export interface FarmvestTicket {
 export interface TicketStats {
     health_tickets: { total: number; pending: number; in_progress: number; completed: number };
     vaccination_tickets: { total: number; pending: number; in_progress: number; completed: number };
+    transfer_tickets: { total: number; pending: number; in_progress: number; completed: number };
+}
+
+export interface UpdateTreatmentDetailsRequest {
+    ticket_id: number;
+    disease?: string[];
+    description?: string;
 }
 
 export interface TicketCreatePayload {

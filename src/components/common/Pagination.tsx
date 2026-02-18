@@ -12,34 +12,14 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
     if (totalPages <= 1) return null;
 
     const pages = [];
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    // Bucket logic: Show 3 pages at a time (1-3, 4-6, etc.)
+    const bucketSize = 3;
+    const currentBucket = Math.ceil(currentPage / bucketSize);
+    const startPage = (currentBucket - 1) * bucketSize + 1;
+    const endPage = Math.min(startPage + bucketSize - 1, totalPages);
 
-    // For mobile, we show fewer pages to prevent overflow
-    if (isMobile) {
-        if (totalPages <= 5) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (currentPage <= 3) {
-                pages.push(1, 2, 3, '...', totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-            } else {
-                pages.push(1, '...', currentPage, '...', totalPages);
-            }
-        }
-    } else {
-        // Desktop logic (Existing)
-        if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (currentPage <= 4) {
-                pages.push(1, 2, 3, 4, 5, '...', totalPages);
-            } else if (currentPage >= totalPages - 3) {
-                pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-            } else {
-                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-            }
-        }
+    for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
     }
 
     return (
@@ -57,9 +37,8 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
                 {pages.map((page, index) => (
                     <button
                         key={index}
-                        className={`pagination-number ${page === currentPage ? 'active' : ''} ${page === '...' ? 'dots' : ''}`}
-                        onClick={() => typeof page === 'number' && onPageChange(page)}
-                        disabled={page === '...'}
+                        className={`pagination-number ${page === currentPage ? 'active' : ''}`}
+                        onClick={() => onPageChange(page)}
                     >
                         {page}
                     </button>

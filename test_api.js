@@ -1,31 +1,50 @@
-const axios = require('axios');
+// const https = require('https');
 
-const url1 = 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app/api/farm/locations';
-const url2 = 'https://farmvest-live-apis-jn6cma3vvq-el.a.run.app//api/farm/locations'; // Double slash
-const apiKey = 'bWFya3dhdmUtZmFybXZlc3QtdGVzdHRpbmctYXBpa2V5';
+// const apiKey = 'bWFya3dhdmUtZmFybXZlc3QtdGVzdHRpbmctYXBpa2V5';
+// const baseUrl = 'https://farmvest-stagging-services-612299373064.asia-south1.run.app';
 
-async function test(url) {
-    try {
-        console.log(`Testing ${url}...`);
-        const response = await axios.get(url, {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        console.log(`Status: ${response.status}`);
-        console.log(`Data:`, JSON.stringify(response.data, null, 2));
-    } catch (error) {
-        console.error(`Error testing ${url}:`, error.message);
-        if (error.response) {
-            console.error(`Response Data:`, error.response.data);
-        }
-    }
-}
+// function request(path) {
+//     return new Promise((resolve, reject) => {
+//         const options = {
+//             hostname: 'farmvest-stagging-services-612299373064.asia-south1.run.app',
+//             path: path,
+//             method: 'GET',
+//             headers: {
+//                 'Authorization': apiKey,
+//                 'Content-Type': 'application/json'
+//             }
+//         };
 
-async function run() {
-    await test(url1);
-    await test(url2);
-}
+//         const req = https.request(options, (res) => {
+//             let data = '';
+//             res.on('data', (chunk) => data += chunk);
+//             res.on('end', () => {
+//                 try {
+//                     const parsed = JSON.parse(data);
+//                     resolve({ status: res.statusCode, data: parsed });
+//                 } catch (e) {
+//                     resolve({ status: res.statusCode, data: data });
+//                 }
+//             });
+//         });
 
-run();
+//         req.on('error', (e) => reject(e));
+//         req.end();
+//     });
+// }
+
+// async function run() {
+//     console.log("Testing get_total_animals...");
+//     try {
+//         const res1 = await request('/api/animal/get_total_animals?page=1&size=5');
+//         console.log("Status:", res1.status);
+//     } catch (e) { console.error(e); }
+
+//     console.log("\nTesting get_all_animals...");
+//     try {
+//         const res2 = await request('/api/animal/get_all_animals?page=1&size=5');
+//         console.log("Status:", res2.status);
+//     } catch (e) { console.error(e); }
+// }
+
+// run();

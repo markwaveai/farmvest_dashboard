@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { RootState } from '../store';
 import { createTicket } from '../store/slices/farmvest/tickets';
@@ -8,9 +8,14 @@ import { X, Search, Loader2 } from 'lucide-react';
 import './Tickets.css';
 
 const COMMON_DISEASES: BuffaloDiseaseEnum[] = [
-    'MASTITIS', 'FOOT_AND_MOUTH_DISEASE', 'FEVER', 'DIARRHEA',
-    'BLOAT', 'LAMENESS', 'MILK_FEVER', 'RESPIRATORY_INFECTION',
-    'ANESTRUS', 'FOOT_ROT', 'HEAT_STRESS', 'MINERAL_DEFICIENCY',
+    'ANESTRUS', 'REPEAT_BREEDING_SYNDROME', 'METRITIS', 'ENDOMETRITIS', 'RETAINED_PLACENTA', 'OVARIAN_CYSTS', 'ABORTION',
+    'MASTITIS', 'CLINICAL_MASTITIS', 'SUBCLINICAL_MASTITIS', 'TEAT_INJURY', 'UDDER_EDEMA',
+    'MILK_FEVER', 'KETOSIS', 'ACIDOSIS', 'MINERAL_DEFICIENCY', 'ANEMIA',
+    'FOOT_AND_MOUTH_DISEASE', 'HEMORRHAGIC_SEPTICEMIA', 'BLACK_QUARTER', 'BRUCELLOSIS', 'TUBERCULOSIS', 'JOHNES_DISEASE',
+    'INTERNAL_PARASITES', 'EXTERNAL_PARASITES', 'TRYPANOSOMIASIS',
+    'BLOAT', 'INDIGESTION', 'DIARRHEA', 'RUMEN_IMPACTION',
+    'FOOT_ROT', 'LAMINITIS', 'OVERGROWN_HOOVES', 'LAMENESS',
+    'FEVER', 'RESPIRATORY_INFECTION', 'HEAT_STRESS'
 ];
 
 interface Props {
@@ -26,13 +31,27 @@ const CreateTicketModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const [animalQuery, setAnimalQuery] = useState('');
     const [animalResults, setAnimalResults] = useState<any[]>([]);
     const [selectedAnimalId, setSelectedAnimalId] = useState('');
+    const [selectedAnimalFarmId, setSelectedAnimalFarmId] = useState<number | null>(null);
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<TicketPriority>('MEDIUM');
     const [diseases, setDiseases] = useState<BuffaloDiseaseEnum[]>([]);
     const [transferDirection, setTransferDirection] = useState<'IN' | 'OUT'>('IN');
+    const [sourceShedId, setSourceShedId] = useState<string>('');
+    const [destinationShedId, setDestinationShedId] = useState<string>('');
+    const [sheds, setSheds] = useState<any[]>([]);
     const [imageUrl, setImageUrl] = useState('');
     const [searchLoading, setSearchLoading] = useState(false);
     const [submitError, setSubmitError] = useState('');
+
+    useEffect(() => {
+        if (selectedAnimalFarmId) {
+            farmvestService.getShedList(selectedAnimalFarmId).then(res => {
+                setSheds(Array.isArray(res) ? res : (res?.data || []));
+            }).catch(() => setSheds([]));
+        } else {
+            setSheds([]);
+        }
+    }, [selectedAnimalFarmId]);
 
     if (!isOpen) return null;
 
@@ -68,6 +87,8 @@ const CreateTicketModal: React.FC<Props> = ({ isOpen, onClose }) => {
         }
         if (ticketType === 'TRANSFER') {
             payload.transfer_direction = transferDirection;
+            if (sourceShedId) payload.source_shed_id = parseInt(sourceShedId);
+            if (destinationShedId) payload.destination_shed_id = parseInt(destinationShedId);
         }
         if (imageUrl.trim()) {
             payload.image_url = imageUrl.trim();
@@ -90,6 +111,8 @@ const CreateTicketModal: React.FC<Props> = ({ isOpen, onClose }) => {
         setPriority('MEDIUM');
         setDiseases([]);
         setTransferDirection('IN');
+        setSourceShedId('');
+        setDestinationShedId('');
         setImageUrl('');
         setSubmitError('');
         onClose();
@@ -139,6 +162,7 @@ const CreateTicketModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b border-gray-50"
                                         onClick={() => {
                                             setSelectedAnimalId(a.rfid_tag || a.rfid_tag_number || a.animal_id || a.id?.toString() || '');
+                                            setSelectedAnimalFarmId(a.farm_id || a.farm?.id || null);
                                             setAnimalQuery(a.rfid_tag || a.rfid_tag_number || a.animal_id || '');
                                             setAnimalResults([]);
                                         }}
@@ -206,16 +230,40 @@ const CreateTicketModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                 {(['IN', 'OUT'] as const).map(dir => (
                                     <button
                                         key={dir}
-                                        className={`flex-1 py-2 rounded-lg border-2 font-bold text-sm transition-all ${
-                                            transferDirection === dir
-                                                ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                                : 'border-gray-200 text-gray-500'
-                                        }`}
+                                        className={`flex-1 py-2 rounded-lg border-2 font-bold text-sm transition-all ${transferDirection === dir
+                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                            : 'border-gray-200 text-gray-500'
+                                            }`}
                                         onClick={() => setTransferDirection(dir)}
                                     >
                                         Transfer {dir}
                                     </button>
                                 ))}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Source Shed</label>
+                                    <select
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-amber-400"
+                                        value={sourceShedId}
+                                        onChange={(e) => setSourceShedId(e.target.value)}
+                                    >
+                                        <option value="">Select Source</option>
+                                        {sheds.map(s => <option key={s.id || s.shed_id} value={s.id || s.shed_id}>{s.shed_name || s.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Destination Shed</label>
+                                    <select
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-amber-400"
+                                        value={destinationShedId}
+                                        onChange={(e) => setDestinationShedId(e.target.value)}
+                                    >
+                                        <option value="">Select Destination</option>
+                                        {sheds.map(s => <option key={s.id || s.shed_id} value={s.id || s.shed_id}>{s.shed_name || s.name}</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </>
                     )}

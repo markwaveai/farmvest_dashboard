@@ -144,4 +144,6 @@ export const API_ENDPOINTS = {
   // Doctor
   getMyAssistants: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/doctor/get_my_assistants`,
   assignTickets: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/doctor/assign_tickets`,
+  updateTreatmentDetails: () => `${API_CONFIG.getFarmVestBaseUrl()}/api/doctor/update_treatment_details`,
+  deleteEmployee: (id: number | string) => `${API_CONFIG.getFarmVestBaseUrl()}/api/admin/delete_employee/${id}`,
 };

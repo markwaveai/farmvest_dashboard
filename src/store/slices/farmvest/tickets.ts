@@ -7,19 +7,152 @@ export const fetchTickets = createAsyncThunk(
     async (params: {
         ticket_type?: string;
         status_filter?: string;
+        transfer_direction?: string;
         farm_id?: number;
+        shed_id?: number;
         page?: number;
         size?: number;
     } | undefined, { rejectWithValue }) => {
         try {
             const response = await farmvestService.getTickets(params);
+
+            let tickets: FarmvestTicket[] = [];
+            let counts: any = null;
+            let pagination = null;
+
+            if (Array.isArray(response)) {
+                tickets = response;
+            } else if (response && Array.isArray(response.data)) {
+                tickets = response.data;
+            } else if (response && Array.isArray(response.health_tickets)) {
+                // If health_tickets is the array, counts might be at root
+                tickets = response.health_tickets;
+            } else if (response && Array.isArray(response.healthTickets)) {
+                tickets = response.healthTickets;
+            } else if (response && response.data && Array.isArray(response.data.tickets)) {
+                tickets = response.data.tickets;
+            }
+
+            // Robust count extraction
+            counts = response.counts || response.data?.counts;
+
+            // Fallback: Check for root-level status counts if counts object is missing or incomplete
+            if (response) {
+                if (!counts) counts = {};
+
+                // Map root-level keys if they exist and counts doesn't have them
+                const mapping = {
+                    total: ['total', 'total_items', 'total_count', 'count', 'total_tickets'],
+                    pending: ['pending', 'pending_count', 'pending_tickets'],
+                    in_progress: ['in_progress', 'in_progress_count', 'in_progress_tickets', 'inprogress'],
+                    completed: ['completed', 'completed_count', 'completed_tickets', 'resolved', 'resolved_count']
+                };
+
+                Object.entries(mapping).forEach(([target, sources]) => {
+                    if (counts[target] === undefined || counts[target] === 0) {
+                        for (const source of sources) {
+                            if (response[source] !== undefined) {
+                                counts[target] = Number(response[source]);
+                                break;
+                            }
+                            if (response.data?.[source] !== undefined) {
+                                counts[target] = Number(response.data[source]);
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                // Clean up if we didn't find anything
+                if (Object.keys(counts).length === 0) counts = null;
+            }
+
+            pagination = response.pagination || response.data?.pagination;
+
             return {
-                tickets: response.data || [],
-                counts: response.counts || null,
-                pagination: response.pagination || null,
+                tickets,
+                counts,
+                pagination,
             };
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to fetch tickets');
+        }
+    }
+);
+
+export const fetchTicketStats = createAsyncThunk(
+    'farmvestTickets/fetchTicketStats',
+    async (params: {
+        ticket_type?: string;
+        transfer_direction?: string;
+        farm_id?: number;
+        shed_id?: number;
+    } | undefined, { rejectWithValue }) => {
+        try {
+            // Fetch a larger batch of tickets to calculate stats locally if server doesn't provide them
+            const response = await farmvestService.getTickets({ ...params, page: 1, size: 500 });
+
+            let counts: any = response.counts || response.data?.counts;
+
+            // If no counts object, try root extraction first
+            if (!counts && response && !Array.isArray(response)) {
+                counts = {};
+                const mapping = {
+                    total: ['total', 'total_count', 'count', 'total_tickets'],
+                    pending: ['pending', 'pending_count', 'pending_tickets'],
+                    in_progress: ['in_progress', 'in_progress_count', 'in_progress_tickets', 'inprogress'],
+                    completed: ['completed', 'completed_count', 'completed_tickets', 'resolved', 'resolved_count']
+                };
+
+                Object.entries(mapping).forEach(([target, sources]) => {
+                    for (const source of sources) {
+                        if (response[source] !== undefined) {
+                            counts[target] = Number(response[source]);
+                            break;
+                        }
+                    }
+                });
+            }
+
+            // If still no counts OR counts are all 0 but we have tickets, calculate locally from the fetched list
+            // Ultra-robust ticket list extraction
+            const tickets = Array.isArray(response) ? response : (
+                response.data?.tickets ||
+                response.data?.list ||
+                response.data?.items ||
+                response.data ||
+                response.health_tickets ||
+                response.healthTickets ||
+                response.tickets ||
+                response.list ||
+                response.items ||
+                []
+            );
+
+            const hasData = Array.isArray(tickets) && tickets.length > 0;
+
+            if (hasData && (!counts || (Number(counts.total || 0) === 0))) {
+                counts = {
+                    total: tickets.length,
+                    pending: tickets.filter((t: any) => {
+                        const s = String(t.status || '').toUpperCase();
+                        return s === 'PENDING' || s === '1';
+                    }).length,
+                    in_progress: tickets.filter((t: any) => {
+                        const s = String(t.status || '').toUpperCase();
+                        return s === 'IN_PROGRESS' || s === 'INPROGRESS' || s.includes('PROGRESS') || s === '2';
+                    }).length,
+                    completed: tickets.filter((t: any) => {
+                        const s = String(t.status || '').toUpperCase();
+                        return ['RESOLVED', 'COMPLETED', 'APPROVED', 'SUCCESS', '3'].includes(s);
+                    }).length
+                };
+            }
+
+
+            return counts || null;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to fetch ticket stats');
         }
     }
 );
@@ -30,9 +163,24 @@ export const createTicket = createAsyncThunk(
         try {
             const response = await farmvestService.createTicket(ticketType, payload);
             dispatch(fetchTickets(undefined));
+            dispatch(fetchTicketStats(undefined)); // Refresh stats
             return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to create ticket');
+        }
+    }
+);
+
+export const updateTreatment = createAsyncThunk(
+    'farmvestTickets/updateTreatment',
+    async (payload: { ticket_id: number; disease?: string[]; description?: string }, { rejectWithValue, dispatch }) => {
+        try {
+            const response = await farmvestService.updateTreatmentDetails(payload);
+            dispatch(fetchTickets(undefined));
+            dispatch(fetchTicketStats(undefined)); // Refresh stats
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to update treatment details');
         }
     }
 );
@@ -43,6 +191,7 @@ export const assignTicket = createAsyncThunk(
         try {
             const response = await farmvestService.assignTicket(ticketId, assistantId);
             dispatch(fetchTickets(undefined));
+            dispatch(fetchTicketStats(undefined)); // Refresh stats
             return response;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.detail || error.message || 'Failed to assign ticket');
@@ -53,16 +202,18 @@ export const assignTicket = createAsyncThunk(
 interface TicketsState {
     tickets: FarmvestTicket[];
     counts: TicketStats | null;
+    stats: TicketStats | null; // New persistent stats
     loading: boolean;
     createLoading: boolean;
     error: string | null;
     successMessage: string | null;
-    pagination: { current_page: number; total_pages: number; total_items: number } | null;
+    pagination: { current_page: number; total_pages: number; total_items: number; items_per_page?: number } | null;
 }
 
 const initialState: TicketsState = {
     tickets: [],
     counts: null,
+    stats: null,
     loading: false,
     createLoading: false,
     error: null,
@@ -90,10 +241,19 @@ const ticketsSlice = createSlice({
                 state.tickets = action.payload.tickets;
                 state.counts = action.payload.counts;
                 state.pagination = action.payload.pagination;
+                // If this was a fetch WITHOUT status filter, usage it for stats too
+                if (!state.stats && action.payload.counts) {
+                    state.stats = action.payload.counts;
+                }
             })
             .addCase(fetchTickets.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
+            })
+            .addCase(fetchTicketStats.fulfilled, (state, action) => {
+                if (action.payload) {
+                    state.stats = action.payload;
+                }
             })
             .addCase(createTicket.pending, (state) => {
                 state.createLoading = true;
@@ -107,6 +267,16 @@ const ticketsSlice = createSlice({
             .addCase(createTicket.rejected, (state, action) => {
                 state.createLoading = false;
                 state.error = typeof action.payload === 'string' ? action.payload : JSON.stringify(action.payload);
+            })
+            .addCase(updateTreatment.pending, (state) => {
+                state.error = null;
+                state.successMessage = null;
+            })
+            .addCase(updateTreatment.fulfilled, (state, action) => {
+                state.successMessage = action.payload?.message || 'Treatment details updated successfully';
+            })
+            .addCase(updateTreatment.rejected, (state, action) => {
+                state.error = action.payload as string;
             })
             .addCase(assignTicket.pending, (state) => {
                 state.error = null;

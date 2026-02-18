@@ -6,44 +6,53 @@
 
 .custom-dropdown-trigger {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    background: white;
+    padding: 0 4px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 700;
     color: #374151;
-    transition: border-color 0.2s;
+    /* text-gray-700 to match Tickets tab */
+    transition: color 0.2s;
     user-select: none;
+    height: 100%;
+}
+
+.custom-dropdown-trigger span {
+    font-weight: 700;
+    /* Ensure text is bold */
 }
 
 .custom-dropdown-trigger:hover {
-    border-color: #D1D5DB;
+    color: #1f2937;
+    /* text-gray-800 */
 }
 
 .custom-dropdown-trigger.disabled {
-    background-color: #F3F4F6;
-    color: #9CA3AF;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
 .custom-dropdown-menu {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 8px);
     left: 0;
     right: 0;
-    margin-top: 4px;
     background: white;
     border: 1px solid #E5E7EB;
     border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    max-height: 300px;
+    max-height: 180px;
     overflow-y: auto;
     z-index: 50;
     padding: 4px;
+    min-width: 140px;
+    /* Ensure visual width for content */
 }
 
 /* Custom Scrollbar */
@@ -61,20 +70,25 @@
 }
 
 .custom-dropdown-item {
-    padding: 10px 16px;
+    padding: 8px 12px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
     color: #374151;
     border-radius: 8px;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    margin-bottom: 2px;
 }
 
 .custom-dropdown-item:hover {
-    background-color: #F3F4F6;
+    background-color: #EFF6FF;
+    /* blue-50 */
+    color: #1E40AF;
+    /* blue-800 */
 }
 
 .custom-dropdown-item.selected {
-    background-color: #ECFDF5;
-    color: #15803D;
-    font-weight: 500;
+    background-color: #2563EB;
+    /* blue-600 */
+    color: white;
 }
