@@ -120,6 +120,8 @@ const AnimalOnboarding: React.FC = () => {
     const [showCPFEmployeeDropdown, setShowCPFEmployeeDropdown] = useState(false);
     const [searchingEmployees, setSearchingEmployees] = useState(false);
     const [allEmployees, setAllEmployees] = useState<any[]>([]);
+    const [admins, setAdmins] = useState<any[]>([]);
+    const [selectedAdminId, setSelectedAdminId] = useState<string>('');
 
     // Close dropdown on click outside
     useEffect(() => {
@@ -357,6 +359,43 @@ const AnimalOnboarding: React.FC = () => {
                         empList = empData.users || empData.employees;
                     }
                     setAllEmployees(empList);
+
+                    // Fetch Admins
+                    try {
+                        const adminData = await farmvestService.getAdminsList();
+                        console.log("Admin list data:", adminData);
+                        let adminList = [];
+                        if (adminData && Array.isArray(adminData.admins)) {
+                            adminList = adminData.admins;
+                        } else if (adminData && adminData.data && Array.isArray(adminData.data.admins)) {
+                            adminList = adminData.data.admins;
+                        } else if (adminData && Array.isArray(adminData.users)) {
+                            adminList = adminData.users;
+                        } else if (adminData && adminData.data && Array.isArray(adminData.data.users)) {
+                            adminList = adminData.data.users;
+                        } else if (adminData && Array.isArray(adminData.data)) {
+                            adminList = adminData.data;
+                        } else if (Array.isArray(adminData)) {
+                            adminList = adminData;
+                        }
+
+                        console.log("Extracted admin list:", adminList);
+
+                        if (adminList.length > 0) {
+                            setAdmins(adminList);
+                            // Auto-select first admin
+                            const firstAdmin = adminList[0];
+                            const firstId = String(firstAdmin.id || firstAdmin.user_id || firstAdmin.mobile || '');
+                            console.log("Auto-selecting first admin ID:", firstId);
+                            if (firstId) {
+                                setSelectedAdminId(firstId);
+                            }
+                        } else {
+                            console.warn("Admin list is empty after extraction");
+                        }
+                    } catch (e) {
+                        console.error("Error fetching admin list:", e);
+                    }
                 } catch (e) {
                     console.error("Error fetching all employees:", e);
                 }
@@ -601,6 +640,49 @@ const AnimalOnboarding: React.FC = () => {
         ));
     };
 
+    const handleOrderSelect = async (order: Order) => {
+        setSelectedOrder(order);
+
+        // Fetch admins specifically when clicking on order (onboarding start)
+        try {
+            const adminData = await farmvestService.getAdminsList();
+            console.log("Admin list data on select:", adminData);
+            let adminList = [];
+            if (adminData && Array.isArray(adminData.admins)) {
+                adminList = adminData.admins;
+            } else if (adminData && adminData.data && Array.isArray(adminData.data.admins)) {
+                adminList = adminData.data.admins;
+            } else if (adminData && Array.isArray(adminData.users)) {
+                adminList = adminData.users;
+            } else if (adminData && adminData.data && Array.isArray(adminData.data.users)) {
+                adminList = adminData.data.users;
+            } else if (adminData && Array.isArray(adminData.data)) {
+                adminList = adminData.data;
+            } else if (Array.isArray(adminData)) {
+                adminList = adminData;
+            }
+
+            console.log("Extracted admin list on select:", adminList);
+
+            if (adminList.length > 0) {
+                setAdmins(adminList);
+                // Auto-select first admin if none selected
+                if (!selectedAdminId) {
+                    const firstAdmin = adminList[0];
+                    const firstId = String(firstAdmin.id || firstAdmin.user_id || firstAdmin.mobile || '');
+                    console.log("Auto-selecting first admin ID on select:", firstId);
+                    if (firstId) {
+                        setSelectedAdminId(firstId);
+                    }
+                }
+            } else {
+                console.warn("Admin list is empty after extraction on select");
+            }
+        } catch (e) {
+            console.error("Error fetching admin list on order select:", e);
+        }
+    };
+
     const handleAutofill = () => {
         setAnimals(prev => {
             const buffaloes = prev.filter(a => a.type === 'Buffalo');
@@ -784,6 +866,56 @@ const AnimalOnboarding: React.FC = () => {
             };
 
             await farmvestService.onboardAnimal(payload);
+
+            // Update Order Status
+            try {
+                // Determine farm location name if possible, or use ID
+                const farmName = farms.find(f => String(f.farm_id) === String(selectedFarmId))?.farm_name || `Farm ID: ${selectedFarmId}`;
+
+                // Collect all animal UIDs
+                const allAnimalUids = animals.map(a => a.uid);
+
+                // Fetch freshest admin list right before updating status as requested
+                let adminMobileForHeader = selectedAdminId;
+                try {
+                    const adminData = await farmvestService.getAdminsList();
+                    console.log("Admin list data on confirm:", adminData);
+                    let adminList = [];
+                    if (adminData && Array.isArray(adminData.admins)) {
+                        adminList = adminData.admins;
+                    } else if (adminData && adminData.data && Array.isArray(adminData.data.admins)) {
+                        adminList = adminData.data.admins;
+                    } else if (adminData && Array.isArray(adminData.users)) {
+                        adminList = adminData.users;
+                    } else if (adminData && adminData.data && Array.isArray(adminData.data.users)) {
+                        adminList = adminData.data.users;
+                    } else if (adminData && Array.isArray(adminData.data)) {
+                        adminList = adminData.data;
+                    } else if (Array.isArray(adminData)) {
+                        adminList = adminData;
+                    }
+
+                    if (adminList.length > 0) {
+                        const firstAdmin = adminList[0];
+                        adminMobileForHeader = String(firstAdmin.mobile || firstAdmin.mobile_number || firstAdmin.phone_number || firstAdmin.id || '');
+                        console.log("Using first admin mobile for header:", adminMobileForHeader);
+                    }
+                } catch (adminFetchError) {
+                    console.error("Failed to fetch admin list on confirm, falling back to cached ID:", adminFetchError);
+                }
+
+                await farmvestService.updateOrderStatus({
+                    orderId: selectedOrder.id,
+                    status: 'DELIVERED',
+                    buffaloId: allAnimalUids[0] || "",
+                    buffaloIds: allAnimalUids.length > 0 ? [allAnimalUids[0]] : [],
+                    description: `Onboarding completed for ${user.name} at ${farmName}`,
+                    location: farmName
+                }, adminMobileForHeader);
+            } catch (orderUpdateError) {
+                console.error("Failed to update order status:", orderUpdateError);
+            }
+
             setToastVisible(true);
             setTimeout(() => {
                 navigate('/farmvest/unallocated-animals');
@@ -902,7 +1034,7 @@ const AnimalOnboarding: React.FC = () => {
                                 </div>
                                 <div className="orders-list">
                                     {orders.map((order, index) => (
-                                        <div key={order.id || index} className="order-card" onClick={() => setSelectedOrder(order)}>
+                                        <div key={order.id || index} className="order-card" onClick={() => handleOrderSelect(order)}>
                                             <div className="order-card-icon">
                                                 <Receipt size={24} color="#2E7D32" strokeWidth={1.5} />
                                             </div>

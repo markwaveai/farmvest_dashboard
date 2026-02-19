@@ -54,6 +54,7 @@ export const API_CONFIG = {
 export const API_ENDPOINTS = {
   // AnimalKart Endpoints
   getUsers: () => `${API_CONFIG.getBaseUrl()}/users/customers`,
+  getAdminsList: () => `${API_CONFIG.getBaseUrl()}/users/admins/list`,
   getReferrals: () => `${API_CONFIG.getBaseUrl()}/users/referrals`,
   createUser: () => `${API_CONFIG.getBaseUrl()}/users/referral-signup`,
   getUserDetails: (mobile: string) => `${API_CONFIG.getBaseUrl()}/users/${mobile}`,

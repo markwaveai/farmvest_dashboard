@@ -149,6 +149,61 @@ export const farmvestService = {
             return [];
         }
     },
+    getAdminsList: async (adminMobileOverride?: string) => {
+        // Get admin mobile from session for header fallback
+        const sessionStr = localStorage.getItem('ak_dashboard_session');
+        let sessionAdminMobile = '';
+        if (sessionStr) {
+            try {
+                const session = JSON.parse(sessionStr);
+                sessionAdminMobile = session.mobile || '';
+            } catch (e) { }
+        }
+
+        const adminMobile = adminMobileOverride || sessionAdminMobile;
+
+        // Use plain axios but explicitly add X-Admin-Mobile and X-Requested-With
+        const response = await axios.get(API_ENDPOINTS.getAdminsList(), {
+            headers: {
+                'X-Admin-Mobile': adminMobile,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        return response.data;
+    },
+    updateOrderStatus: async (payload: {
+        orderId: string;
+        status: string;
+        buffaloId: string;
+        buffaloIds: string[];
+        description: string;
+        location: string;
+    }, adminMobileOverride?: string) => {
+        // Get admin mobile from session for header fallback
+        const sessionStr = localStorage.getItem('ak_dashboard_session');
+        let sessionAdminMobile = '';
+        if (sessionStr) {
+            try {
+                const session = JSON.parse(sessionStr);
+                sessionAdminMobile = session.mobile || '';
+            } catch (e) { }
+        }
+
+        const adminMobile = adminMobileOverride || sessionAdminMobile;
+
+        console.log("Updating order status. FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
+        console.log("Using X-Admin-Mobile header:", adminMobile);
+
+        // Explicitly include X-Admin-Mobile and X-Requested-With
+        const response = await axios.post(API_ENDPOINTS.updateOrderStatus(), payload, {
+            headers: {
+                'X-Admin-Mobile': adminMobile,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    },
     createEmployee: async (employeeData: any) => {
         try {
             const response = await farmvestApi.post(API_ENDPOINTS.createEmployee(), employeeData);
