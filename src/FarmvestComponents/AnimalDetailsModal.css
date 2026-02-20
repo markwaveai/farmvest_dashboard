@@ -158,6 +158,8 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    align-items: flex-start;
+    text-align: left;
 }
 
 /* Scroll Reveal Animation */
@@ -172,18 +174,22 @@
     transform: translateY(0);
 }
 
-.detail-label {
+.animal-details-content .detail-label {
     font-size: 0.75rem;
     color: #6b7280;
     font-weight: 500;
     text-transform: uppercase;
+    text-align: left;
+    width: 100%;
 }
 
-.detail-value {
+.animal-details-content .detail-value {
     font-size: 0.9rem;
     color: #111827;
     font-weight: 500;
     word-break: break-word;
+    text-align: left;
+    width: 100%;
 }
 
 @keyframes fadeIn {

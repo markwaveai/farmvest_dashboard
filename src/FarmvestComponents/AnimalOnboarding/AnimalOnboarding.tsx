@@ -6,8 +6,19 @@ import SuccessToast from '../../components/common/SuccessToast/ToastNotification
 import { Receipt, ChevronRight, Loader2, User, Trash2, Camera, QrCode, Tag, Cake, Pencil, Wand2, Smartphone, X, CheckCircle, FileText, Check } from 'lucide-react';
 import CustomDropdown from '../../components/common/CustomDropdown';
 
+const BuffaloIcon = ({ size = 24 }: { size?: number }) => (
+    <div style={{
+        width: size,
+        height: size,
+        backgroundImage: 'url(/buffalo_green_icon.png)',
+        backgroundSize: '100% 100%',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+    }} />
+);
+
 const CalfIcon = ({ size = 24 }: { size?: number }) => (
-    <img src="/buffalo_green_icon.png" alt="Calf" style={{ width: size, height: size, objectFit: 'contain' }} />
+    <img src="/calf.png" alt="Calf" style={{ width: size, height: size, objectFit: 'contain' }} />
 );
 
 interface UserProfile {
@@ -33,6 +44,8 @@ interface Order {
     paymentStatus: string;
     paymentType: string;
     buffaloIds: string[];
+    inTransitBuffaloCount?: number;
+    inTransitCalfCount?: number;
 }
 
 interface AnimalDetail {
@@ -74,11 +87,16 @@ const AnimalOnboarding: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [searchNotFound, setSearchNotFound] = useState(false);
     const [noOrdersFound, setNoOrdersFound] = useState(false);
+    const [defaultInTransitOrders, setDefaultInTransitOrders] = useState<any[]>([]);
+    const [loadingDefault, setLoadingDefault] = useState(false);
 
     // API Data States
     const [farms, setFarms] = useState<Farm[]>([]);
     const [selectedFarmName, setSelectedFarmName] = useState<string>('');
     const [selectedFarmId, setSelectedFarmId] = useState<number | string>('');
+    const [farmPage, setFarmPage] = useState(1);
+    const [hasMoreFarms, setHasMoreFarms] = useState(true);
+    const [isFetchingMoreFarms, setIsFetchingMoreFarms] = useState(false);
 
     const [animals, setAnimals] = useState<AnimalDetail[]>([]);
     const [toastVisible, setToastVisible] = useState(false);
@@ -101,6 +119,7 @@ const AnimalOnboarding: React.FC = () => {
     const [selectedMember, setSelectedMember] = useState<any | null>(null);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const isMounted = useRef(false);
 
     // CPF Modal State
     const [showCPFModal, setShowCPFModal] = useState(false);
@@ -202,6 +221,12 @@ const AnimalOnboarding: React.FC = () => {
             setShowDropdown(true);
         } else {
             setShowDropdown(false);
+            // Reset search results when input is cleared to show default list
+            setOrders(null);
+            setUser(null);
+            setSearchNotFound(false);
+            setNoOrdersFound(false);
+            setSearchedMobile('');
         }
     };
 
@@ -211,15 +236,14 @@ const AnimalOnboarding: React.FC = () => {
         setShowDropdown(false);
     };
 
-    // Dynamic Search Effect
+    // Dynamic Search Effect (Local Only)
     useEffect(() => {
-        const performSearch = async () => {
+        const performSearch = () => {
             if (!mobile || mobile.trim() === '') {
                 setFilteredMembers([]);
                 return;
             }
 
-            // 1. Local Search
             const lowerVal = mobile.toLowerCase();
             const localMatches = allMembers.filter(member =>
                 (member.displayName?.toLowerCase().includes(lowerVal)) ||
@@ -227,188 +251,127 @@ const AnimalOnboarding: React.FC = () => {
             );
 
             setFilteredMembers(localMatches.slice(0, 10));
-
-            // 2. Remote Search (for In-Transit/New Users not in local list)
-            // Check if we have an exact match locally. If not, and it looks like a valid mobile, try fetching.
-            const exactMatch = localMatches.find(m => m.mobile === mobile);
-
-            if (!exactMatch && /^\d{10}$/.test(mobile)) {
-                try {
-                    const result = await farmvestService.getPaidOrders(mobile);
-
-                    if (result && result.user) {
-                        const u = result.user;
-                        const remoteUser = {
-                            displayName: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown Investor',
-                            mobile: u.mobile || u.mobile_number || u.phone_number || '', // Ensure phone_number is mapped
-                            id: u.id || u.investor_id || 0,
-                            type: 'investor',
-                            ...u
-                        };
-
-                        // Update lists
-                        setAllMembers(prev => {
-                            // Avoid duplicates
-                            if (prev.some(m => m.mobile === remoteUser.mobile)) return prev;
-                            return [...prev, remoteUser];
-                        });
-
-                        // The effect will re-run because allMembers changed, and catch it in Local Search next time.
-                    }
-                } catch (e) {
-                    // Silent catch for remote search
-                }
-            }
         };
 
-        const timeoutId = setTimeout(performSearch, 1000); // 1000ms debounce as requested
+        const timeoutId = setTimeout(performSearch, 300); // Reduced debounce to 300ms
         return () => clearTimeout(timeoutId);
     }, [mobile, allMembers]);
 
     // Fetch initial data on load
     useEffect(() => {
+        isMounted.current = true;
         const fetchInitialData = async () => {
             try {
-                // Fetch Farms with the specified API parameters
-                try {
-                    const farmData = await farmvestService.getAllFarms({
-                        sort_by: 2,
-                        page: 1,
-                        size: 15
-                    });
-
-                    let farmList: Farm[] = [];
-                    if (Array.isArray(farmData)) {
-                        farmList = farmData;
-                    } else if (farmData && Array.isArray(farmData.farms)) {
-                        farmList = farmData.farms;
-                    } else if (farmData && Array.isArray(farmData.data)) {
-                        farmList = farmData.data;
-                    }
-
-                    const normalizedFarms = farmList.map((f: any) => ({
-                        farm_id: f.farm_id || f.id || 0,
-                        farm_name: f.farm_name || f.name || 'Unknown Farm',
-                        location: f.location || ''
-                    }));
-
-                    setFarms(normalizedFarms);
-                } catch (farmError) {
-                    console.error('Error fetching farms:', farmError);
-                }
-
-                // Fetch Investors
-                const allFetchedMembers: any[] = [];
-
-                try {
-                    // 1. Fetch Existing Investors
-                    const investorData = await farmvestService.getAllInvestors({ size: 1000, page: 1 });
-
-                    let investorList: any[] = [];
-                    if (Array.isArray(investorData)) {
-                        investorList = investorData;
-                    } else if (investorData && investorData.data && Array.isArray(investorData.data)) {
-                        investorList = investorData.data;
-                    } else if (investorData && investorData.users && Array.isArray(investorData.users)) {
-                        investorList = investorData.users;
-                    } else if (investorData && investorData.investors && Array.isArray(investorData.investors)) {
-                        investorList = investorData.investors;
-                    }
-
-                    const normalizedInvestors = investorList.map((inv: any) => ({
-                        ...inv,
-                        displayName: inv.full_name || `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || 'Unknown Investor',
-                        mobile: inv.mobile || inv.mobile_number || inv.phone_number || '',
-                        id: inv.id || inv.investor_id || 0,
-                        type: 'investor'
-                    }));
-                    allFetchedMembers.push(...normalizedInvestors);
-
-                    // 2. Fetch In-Transit Orders (Pending Users)
-                    try {
-                        const transitData = await farmvestService.getPaidOrders('');
-                        if (transitData && transitData.user) {
-                            const u = transitData.user;
-                            const normalizedTransitUser = {
-                                displayName: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Unknown Investor',
-                                mobile: u.mobile || u.mobile_number || u.phone_number || '',
-                                id: u.id || u.investor_id || 0,
-                                type: 'investor',
-                                ...u
-                            };
-                            if (!allFetchedMembers.some(member => member.mobile === normalizedTransitUser.mobile)) {
-                                allFetchedMembers.push(normalizedTransitUser);
-                            }
-                        }
-                    } catch (transitError) {
-                        console.error('Error fetching transit users:', transitError);
-                    }
-                } catch (investorError) {
-                    console.error('Error fetching investors:', investorError);
-                }
-
-                // 3. Fetch All Employees specifically for CPF
-                try {
-                    const empData = await farmvestService.getEmployees({ size: 1000, page: 1 });
-                    let empList: any[] = [];
-                    if (Array.isArray(empData)) {
-                        empList = empData;
-                    } else if (empData && Array.isArray(empData.data)) {
-                        empList = empData.data;
-                    } else if (empData && (empData.users || empData.employees)) {
-                        empList = empData.users || empData.employees;
-                    }
-                    setAllEmployees(empList);
-
-                    // Fetch Admins
-                    try {
-                        const adminData = await farmvestService.getAdminsList();
-                        console.log("Admin list data:", adminData);
-                        let adminList = [];
-                        if (adminData && Array.isArray(adminData.admins)) {
-                            adminList = adminData.admins;
-                        } else if (adminData && adminData.data && Array.isArray(adminData.data.admins)) {
-                            adminList = adminData.data.admins;
-                        } else if (adminData && Array.isArray(adminData.users)) {
-                            adminList = adminData.users;
-                        } else if (adminData && adminData.data && Array.isArray(adminData.data.users)) {
-                            adminList = adminData.data.users;
-                        } else if (adminData && Array.isArray(adminData.data)) {
-                            adminList = adminData.data;
-                        } else if (Array.isArray(adminData)) {
-                            adminList = adminData;
-                        }
-
-                        console.log("Extracted admin list:", adminList);
-
-                        if (adminList.length > 0) {
-                            setAdmins(adminList);
-                            // Auto-select first admin
-                            const firstAdmin = adminList[0];
-                            const firstId = String(firstAdmin.id || firstAdmin.user_id || firstAdmin.mobile || '');
-                            console.log("Auto-selecting first admin ID:", firstId);
-                            if (firstId) {
-                                setSelectedAdminId(firstId);
-                            }
-                        } else {
-                            console.warn("Admin list is empty after extraction");
-                        }
-                    } catch (e) {
+                // Parallelize Farm and Admin Fetching
+                const [farmData, adminData] = await Promise.all([
+                    farmvestService.getAllFarms({ sort_by: 2, page: 1, size: 15 }),
+                    farmvestService.getAdminsList().catch(e => {
                         console.error("Error fetching admin list:", e);
-                    }
-                } catch (e) {
-                    console.error("Error fetching all employees:", e);
+                        return { admins: [] };
+                    })
+                ]);
+
+                if (!isMounted.current) return;
+
+                // Process Farms
+                let farmList: Farm[] = [];
+                if (Array.isArray(farmData)) {
+                    farmList = farmData;
+                } else if (farmData && Array.isArray(farmData.farms)) {
+                    farmList = farmData.farms;
+                } else if (farmData && Array.isArray(farmData.data)) {
+                    farmList = farmData.data;
                 }
 
-                setAllMembers(allFetchedMembers);
+                const normalizedFarms = farmList.map((f: any) => ({
+                    farm_id: f.farm_id || f.id || 0,
+                    farm_name: f.farm_name || f.name || 'Unknown Farm',
+                    location: f.location || ''
+                }));
+
+                if (normalizedFarms.length < 15) {
+                    setHasMoreFarms(false);
+                }
+                setFarms(normalizedFarms);
+
+                // Process Admins
+                let adminList = [];
+                if (adminData && Array.isArray(adminData.admins)) {
+                    adminList = adminData.admins;
+                } else if (adminData && adminData.data && Array.isArray(adminData.data.admins)) {
+                    adminList = adminData.data.admins;
+                } else if (adminData && Array.isArray(adminData.users)) {
+                    adminList = adminData.users;
+                } else if (adminData && adminData.data && Array.isArray(adminData.data.users)) {
+                    adminList = adminData.data.users;
+                } else if (adminData && Array.isArray(adminData.data)) {
+                    adminList = adminData.data;
+                } else if (Array.isArray(adminData)) {
+                    adminList = adminData;
+                }
+
+                if (adminList.length > 0) {
+                    setAdmins(adminList);
+                    const firstAdmin = adminList[0];
+                    const firstId = String(firstAdmin.id || firstAdmin.user_id || firstAdmin.mobile || '');
+                    if (firstId) setSelectedAdminId(firstId);
+                }
             } catch (error) {
                 console.error('Error in fetchInitialData:', error);
             }
         };
 
-        // Removed fetchTagCount as we use random generation
-
         fetchInitialData();
+
+        // Fetch Default In-Transit Orders
+        const fetchDefaultOrders = async () => {
+            if (!isMounted.current) return;
+            setLoadingDefault(true);
+            try {
+                const result = await farmvestService.getPaidOrders("");
+                console.log("In-Transit Orders Response:", result);
+
+                if (result) {
+                    let rawItems = [];
+                    if (Array.isArray(result.data)) {
+                        rawItems = result.data;
+                    } else if (Array.isArray(result.orders)) {
+                        rawItems = result.orders;
+                    } else if (Array.isArray(result)) {
+                        rawItems = result;
+                    }
+
+                    const flattened: any[] = [];
+                    rawItems.forEach((item: any) => {
+                        // Case 1: Item is a wrapper { user: ..., orders: [...] }
+                        if (item.orders && Array.isArray(item.orders)) {
+                            item.orders.forEach((ord: any) => {
+                                flattened.push({
+                                    ...ord,
+                                    user: item.user || ord.user // Preserve user info
+                                });
+                            });
+                        }
+                        // Case 2: Item is an order itself
+                        else if (item.id || item.order_id) {
+                            flattened.push(item);
+                        }
+                        // Case 3: Item just has a user but no orders visible? 
+                        // (Unexpected but let's be safe)
+                    });
+
+                    if (flattened.length > 0) {
+                        setDefaultInTransitOrders(flattened);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching default in-transit orders:", error);
+            } finally {
+                if (isMounted.current) setLoadingDefault(false);
+            }
+        };
+        fetchDefaultOrders();
+        return () => { isMounted.current = false; };
     }, []);
 
     // handlePhotoSelect now uploads IMMEDIATELY with limits
@@ -553,18 +516,33 @@ const AnimalOnboarding: React.FC = () => {
             const n = parseFloat(val);
             return isNaN(n) ? 0 : n;
         };
+
+        // Comprehensive Field Mapping to handle backend variations
+        const orderId = o.id || o.orderId || o.order_id || o.Order_ID || 'N/A';
+        const bCount = parseNum(o.buffaloCount || o.buffalo_count || o.buffalo_counts || o.buffaloes_count || o.buffaloCountTotal || 0);
+        const cCount = parseNum(o.calfCount || o.calf_count || o.calf_counts || o.calfs_count || o.calfCountTotal || 0);
+        const tCost = parseNum(o.totalCost || o.total_amount || o.total_cost || o.order_total || 0);
+        const uCost = parseNum(o.unitCost || o.baseUnitCost || o.base_unit_cost || 0);
+        const nUnits = parseNum(o.numUnits || o.num_units || o.quantity || 0);
+
+        // In-Transit specific mappings (per user snippets)
+        const inTransitB = parseNum(o.in_transist_buffaloes_count || o.in_transit_buffaloes_count || o.inTransitBuffaloCount || 0);
+        const inTransitC = parseNum(o.in_transist_calfs_count || o.in_transit_calfs_count || o.inTransitCalfCount || 0);
+
         return {
-            id: o.id || o.order_id || 'N/A',
-            buffaloCount: parseNum(o.buffaloCount || o.buffalo_count || 0),
-            calfCount: parseNum(o.calfCount || o.calf_count || 0),
-            totalCost: parseNum(o.totalCost || o.total_amount || 0),
-            unitCost: parseNum(o.unitCost || o.baseUnitCost || 0),
-            numUnits: parseNum(o.numUnits || o.num_units || 0),
-            placedAt: o.placedAt || o.created_at || new Date().toISOString(),
+            id: orderId,
+            buffaloCount: bCount,
+            calfCount: cCount,
+            totalCost: tCost,
+            unitCost: uCost,
+            numUnits: nUnits,
+            placedAt: o.placedAt || o.created_at || o.order_date || new Date().toISOString(),
             status: o.status || 'pending',
             paymentStatus: o.paymentStatus || 'paid',
             paymentType: o.paymentType || o.payment_type || 'BANK_TRANSFER',
-            buffaloIds: Array.isArray(o.buffaloIds || o.buffalo_ids) ? (o.buffaloIds || o.buffalo_ids) : []
+            buffaloIds: Array.isArray(o.buffaloIds || o.buffalo_ids) ? (o.buffaloIds || o.buffalo_ids) : [],
+            inTransitBuffaloCount: inTransitB,
+            inTransitCalfCount: inTransitC
         };
     };
 
@@ -578,70 +556,83 @@ const AnimalOnboarding: React.FC = () => {
         setNoOrdersFound(false);
         setSearchedMobile(mobile);
 
-        // Pre-resolve from local cache if possible
-        const localMember = allMembers.find(m => m.mobile === mobile);
-        if (localMember) {
-            const cachedUser: UserProfile = {
-                id: String(localMember.id),
-                name: localMember.displayName || 'Investor',
-                mobile: localMember.mobile,
-                email: localMember.email || '',
-                aadhar_number: localMember.aadhar_number || '',
-                aadhar_front_image_url: localMember.aadhar_front_image_url || '',
-                aadhar_back_image_url: localMember.aadhar_back_image_url || '',
-                panCardUrl: localMember.panCardUrl || ''
-            };
-            setUser(cachedUser);
-        }
-
         try {
             const result = await farmvestService.getPaidOrders(mobile);
 
-            if (result && Array.isArray(result.orders) && result.orders.length > 0) {
-                // If API returned a user, prioritize it, otherwise keep the local one
-                if (result.user) {
-                    const u = result.user;
-                    const userData: UserProfile = {
-                        id: String(u.id || u.mobile || localMember?.id || ''),
-                        name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || localMember?.displayName || 'Investor',
-                        mobile: u.mobile || mobile,
-                        email: u.email || localMember?.email || '',
-                        aadhar_number: u.aadhar_number || localMember?.aadhar_number || '',
-                        aadhar_front_image_url: u.aadhar_front_image_url || localMember?.aadhar_front_image_url || '',
-                        aadhar_back_image_url: u.aadhar_back_image_url || localMember?.aadhar_back_image_url || '',
-                        panCardUrl: u.panCardUrl || localMember?.panCardUrl || ''
-                    };
-                    setUser(userData);
+            if (!isMounted.current) return;
+
+            if (result && result.user) {
+                const u = result.user;
+                const userData: UserProfile = {
+                    id: String(u.id || u.mobile || ''),
+                    name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Investor',
+                    mobile: u.mobile || mobile,
+                    email: u.email || '',
+                    aadhar_number: u.aadhar_number || '',
+                    aadhar_front_image_url: u.aadhar_front_image_url || '',
+                    aadhar_back_image_url: u.aadhar_back_image_url || '',
+                    panCardUrl: u.panCardUrl || ''
+                };
+                setUser(userData);
+
+                console.log("Find Response:", result);
+                let rawOrders = [];
+                if (Array.isArray(result.orders)) {
+                    rawOrders = result.orders;
+                } else if (Array.isArray(result.data)) {
+                    rawOrders = result.data;
+                } else if (Array.isArray(result)) {
+                    rawOrders = result;
                 }
 
-                setOrders(result.orders.map(normalizeOrder));
-            } else {
-                // If result.user is null or orders are empty, check if they exist in our local investor cache
-                if (localMember) {
-                    setNoOrdersFound(true);
+                const flattened: any[] = [];
+                rawOrders.forEach((item: any) => {
+                    if (item.orders && Array.isArray(item.orders)) {
+                        item.orders.forEach((ord: any) => {
+                            flattened.push({ ...ord, user: item.user || ord.user || result.user });
+                        });
+                    } else if (item.id || item.order_id) {
+                        flattened.push({ ...item, user: item.user || result.user });
+                    }
+                });
+
+                if (flattened.length > 0) {
+                    setOrders(flattened);
                 } else {
-                    setSearchNotFound(true);
+                    setNoOrdersFound(true);
                 }
-            }
-        } catch (error) {
-            if (localMember) {
-                setNoOrdersFound(true);
             } else {
                 setSearchNotFound(true);
             }
+        } catch (error) {
+            console.error("Error in handleFind:", error);
+            setSearchNotFound(true);
         } finally {
-            setLoading(false);
+            if (isMounted.current) setLoading(false);
         }
     };
 
     const handleAnimalChange = (id: number, field: keyof AnimalDetail, value: any) => {
+        let finalValue = value;
+
+        // Prevent negative values for specific numeric fields
+        if ((field === 'tagNumber' || field === 'age') && typeof value === 'number' && value < 0) {
+            finalValue = 0;
+        } else if ((field === 'tagNumber' || field === 'age') && typeof value === 'string') {
+            const num = parseInt(value);
+            if (!isNaN(num) && num < 0) {
+                finalValue = '0';
+            }
+        }
+
         setAnimals(prev => prev.map(animal =>
-            animal.id === id ? { ...animal, [field]: value } : animal
+            animal.id === id ? { ...animal, [field]: finalValue } : animal
         ));
     };
 
-    const handleOrderSelect = async (order: Order) => {
+    const handleOrderSelect = async (order: Order, userData?: UserProfile) => {
         setSelectedOrder(order);
+        if (userData) setUser(userData);
 
         // Fetch admins specifically when clicking on order (onboarding start)
         try {
@@ -734,6 +725,11 @@ const AnimalOnboarding: React.FC = () => {
             if (!a.rfidTag || !a.earTag || !a.age) return true;
             if (a.type === 'Calf' && !a.parentBuffaloId) return true;
             if (a.type === 'Buffalo' && a.photos.length === 0) return true;
+
+            // New Mandatory Fields
+            if (a.type === 'Buffalo' && !a.tagNumber) return true;
+            if (!a.neckbandId || !a.neckbandId.trim()) return true;
+
             return false;
         });
 
@@ -787,11 +783,7 @@ const AnimalOnboarding: React.FC = () => {
             return `NB-${clean}`;
         };
 
-        const getParentUid = (parentId: number | undefined) => {
-            if (!parentId) return '';
-            const parent = animals.find(a => a.id === parentId);
-            return parent ? parent.uid : '';
-        };
+        // Helper function removed as it is no longer used
 
         setLoading(true);
         try {
@@ -856,7 +848,7 @@ const AnimalOnboarding: React.FC = () => {
                             health_status: "HEALTHY",
                             images: a.photos.length > 0 ? a.photos : [],
                             videos: a.videos.length > 0 ? a.videos : [],
-                            parent_animal_id: getParentUid(a.parentBuffaloId)
+                            parent_animal_id: null
                         };
                     }
                 }),
@@ -918,7 +910,12 @@ const AnimalOnboarding: React.FC = () => {
 
             setToastVisible(true);
             setTimeout(() => {
-                navigate('/farmvest/unallocated-animals');
+                navigate('/farmvest/unallocated-animals', {
+                    state: {
+                        preSelectedFarmId: selectedFarmId,
+                        preSelectedFarmName: selectedFarmName
+                    }
+                });
             }, 1500);
 
             setSelectedOrder(null);
@@ -927,6 +924,47 @@ const AnimalOnboarding: React.FC = () => {
         } catch (error) {
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLoadMoreFarms = async () => {
+        if (isFetchingMoreFarms || !hasMoreFarms) return;
+
+        setIsFetchingMoreFarms(true);
+        try {
+            const nextPage = farmPage + 1;
+            const farmData = await farmvestService.getAllFarms({
+                sort_by: 2,
+                page: nextPage,
+                size: 15
+            });
+
+            let farmList: Farm[] = [];
+            if (Array.isArray(farmData)) {
+                farmList = farmData;
+            } else if (farmData && Array.isArray(farmData.farms)) {
+                farmList = farmData.farms;
+            } else if (farmData && Array.isArray(farmData.data)) {
+                farmList = farmData.data;
+            }
+
+            const normalizedFarms = farmList.map((f: any) => ({
+                farm_id: f.farm_id || f.id || 0,
+                farm_name: f.farm_name || f.name || 'Unknown Farm',
+                location: f.location || ''
+            }));
+
+            if (normalizedFarms.length < 15) {
+                setHasMoreFarms(false);
+            }
+
+            setFarms(prev => [...prev, ...normalizedFarms]);
+            setFarmPage(nextPage);
+        } catch (error) {
+            console.error('Error loading more farms:', error);
+            setHasMoreFarms(false);
+        } finally {
+            setIsFetchingMoreFarms(false);
         }
     };
 
@@ -988,11 +1026,6 @@ const AnimalOnboarding: React.FC = () => {
                                         ))}
                                     </div>
                                 )}
-                                {showDropdown && mobile.length > 0 && filteredMembers.length === 0 && (
-                                    <div className="search-results-dropdown">
-                                        <div className="no-results">No members found</div>
-                                    </div>
-                                )}
                             </div>
                             <button className="find-btn" onClick={handleFind} disabled={loading || !mobile.trim()}>
                                 {loading ? 'Finding...' : 'Find'}
@@ -1027,47 +1060,101 @@ const AnimalOnboarding: React.FC = () => {
                                 <span style={{ opacity: 0.8 }}> no pending in-transit orders for mobile: {searchedMobile}</span>
                             </div>
                         )}
-                        {orders && orders.length > 0 && !searchNotFound && (
+                        {loadingDefault && !orders && !selectedOrder && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '12px', color: '#6B7280' }}>
+                                <Loader2 className="animate-spin" size={32} color="#2E7D32" />
+                                <span style={{ fontSize: '14px', fontWeight: 500 }}>Loading in-transit orders...</span>
+                            </div>
+                        )}
+
+                        {((orders && orders.length > 0) || (defaultInTransitOrders.length > 0 && !orders && !mobile)) && !searchNotFound && (
                             <div className="orders-overlay">
                                 <div className="orders-header">
-                                    <h2>Paid Orders for {user?.name ? `${user.name} (${searchedMobile})` : searchedMobile}</h2>
+                                    <h2>{orders ? `Paid Orders for ${user?.name ? `${user.name} (${searchedMobile})` : searchedMobile}` : 'Recent In-Transit Orders'}</h2>
                                 </div>
                                 <div className="orders-list">
-                                    {orders.map((order, index) => (
-                                        <div key={order.id || index} className="order-card" onClick={() => handleOrderSelect(order)}>
-                                            <div className="order-card-icon">
-                                                <Receipt size={24} color="#2E7D32" strokeWidth={1.5} />
-                                            </div>
-                                            <div className="order-card-content">
-                                                <div className="order-user-info">
-                                                    <h3 className="order-user-name">{user?.name || 'N/A'}</h3>
-                                                    <div className="order-user-mobile-wrapper">
-                                                        <span className="order-user-mobile-icon">📱</span>
-                                                        <span className="order-user-mobile">{user?.mobile || searchedMobile}</span>
+                                    {(orders || defaultInTransitOrders).map((orderRaw, index) => {
+                                        const order = normalizeOrder(orderRaw);
+                                        const userDataFromOrder = orderRaw.user || {};
+                                        const cardUser = (orders && user) ? user : {
+                                            id: String(userDataFromOrder.id || orderRaw.user_id || orderRaw.mobile || ''),
+                                            name: userDataFromOrder.name || orderRaw.user_name || orderRaw.full_name || orderRaw.name || 'Investor',
+                                            mobile: userDataFromOrder.mobile || orderRaw.user_mobile || orderRaw.mobile || '',
+                                            email: userDataFromOrder.email || orderRaw.user_email || orderRaw.email || '',
+                                            aadhar_number: userDataFromOrder.aadhar_number || orderRaw.aadhar_number || '',
+                                            aadhar_front_image_url: userDataFromOrder.aadhar_front_image_url || orderRaw.aadhar_front_image_url || '',
+                                            aadhar_back_image_url: userDataFromOrder.aadhar_back_image_url || orderRaw.aadhar_back_image_url || '',
+                                            panCardUrl: userDataFromOrder.panCardUrl || userDataFromOrder.pan_card_url || orderRaw.pan_card_url || orderRaw.panCardUrl || ''
+                                        };
+
+                                        const targetUser = (orders && user) ? user : cardUser;
+
+                                        return (
+                                            <div key={order.id || index} className="order-card" onClick={() => handleOrderSelect(order, targetUser as UserProfile)}>
+                                                <div className="order-card-header">
+                                                    <div className="order-icon-box" style={{ background: '#E8F5E9' }}>
+                                                        <FileText size={24} color="#059669" />
+                                                    </div>
+                                                    <div className="order-header-info">
+                                                        <h3 className="investor-name">{cardUser?.name || 'N/A'}</h3>
+                                                        <div className="investor-mobile-row">
+                                                            <Smartphone size={14} />
+                                                            <span>{cardUser?.mobile || (orders ? searchedMobile : 'N/A')}</span>
+                                                        </div>
+                                                        <div className="order-id-info" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
+                                                            <span className="id-label" style={{ whiteSpace: 'nowrap' }}>Order ID:</span>
+                                                            <span style={{ wordBreak: 'break-all' }}>{order.id}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="order-card-arrow">
+                                                        <ChevronRight size={20} />
                                                     </div>
                                                 </div>
-                                                <div className="order-id">Order #{order.id}</div>
-                                                <div className="order-stats-divider"></div>
-                                                <div className="order-stats">
-                                                    <div className="stat-item">
-                                                        <span className="stat-label"><span className="stat-icon">🐃</span> Buffalo</span>
-                                                        <span className="stat-value">{order.buffaloCount}</span>
+
+                                                <div className="order-divider"></div>
+
+                                                <div className="animal-stats-grid">
+                                                    <div className="stat-col buffaloes">
+                                                        <div className="stat-col-header">
+                                                            <BuffaloIcon size={24} />
+                                                            <span>Buffaloes</span>
+                                                        </div>
+                                                        <div className="stat-main-value">
+                                                            <span className="stat-count">{order.buffaloCount}</span>
+                                                            <span className="stat-unit">Total</span>
+                                                        </div>
+                                                        <div className="stat-in-transit">
+                                                            <div className="status-dot"></div>
+                                                            <span>{order.inTransitBuffaloCount} In-Transit</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="stat-item">
-                                                        <span className="stat-label"><span className="stat-icon">🐄</span> Calf</span>
-                                                        <span className="stat-value">{order.calfCount}</span>
-                                                    </div>
-                                                    <div className="stat-item total-amount">
-                                                        <span className="stat-label"><span className="stat-icon">💵</span> Total</span>
-                                                        <span className="stat-value">{formatCurrency(order.totalCost)}</span>
+
+                                                    <div className="stat-col calves">
+                                                        <div className="stat-col-header">
+                                                            <CalfIcon size={24} />
+                                                            <span>Calves</span>
+                                                        </div>
+                                                        <div className="stat-main-value">
+                                                            <span className="stat-count">{order.calfCount}</span>
+                                                            <span className="stat-unit">Total</span>
+                                                        </div>
+                                                        <div className="stat-in-transit">
+                                                            <div className="status-dot"></div>
+                                                            <span>{order.inTransitCalfCount} In-Transit</span>
+                                                        </div>
                                                     </div>
                                                 </div>
+
+                                                <div className="investment-value-bar">
+                                                    <div className="inv-label-group">
+                                                        <Receipt size={20} color="#059669" />
+                                                        <span>Investment Value</span>
+                                                    </div>
+                                                    <span className="inv-amount">{formatCurrency(order.totalCost)}</span>
+                                                </div>
                                             </div>
-                                            <div className="order-card-action">
-                                                <ChevronRight size={20} color="#9CA3AF" />
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -1147,6 +1234,9 @@ const AnimalOnboarding: React.FC = () => {
                                     }
                                 }}
                                 placeholder="Select Farm"
+                                onLoadMore={handleLoadMoreFarms}
+                                hasMore={hasMoreFarms}
+                                loading={isFetchingMoreFarms}
                             />
                         </div>
 
@@ -1177,14 +1267,15 @@ const AnimalOnboarding: React.FC = () => {
 
                                     <div className="animal-form-grid">
                                         <div className="form-group">
-                                            <label>Tag Number</label>
+                                            <label>Tag Number <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                             <div className="input-with-icon">
                                                 <Tag size={18} className="input-icon" />
                                                 <input
                                                     type="number"
                                                     value={animal.tagNumber || ''}
                                                     onChange={(e) => handleAnimalChange(animal.id, 'tagNumber', parseInt(e.target.value))}
-                                                    // readOnly removed to allow editing
+                                                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                                    min="0"
                                                     style={{ backgroundColor: 'white' }}
                                                 />
                                             </div>
@@ -1222,11 +1313,13 @@ const AnimalOnboarding: React.FC = () => {
                                                     placeholder="36"
                                                     value={animal.age}
                                                     onChange={(e) => handleAnimalChange(animal.id, 'age', e.target.value)}
+                                                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                                    min="0"
                                                 />
                                             </div>
                                         </div>
                                         <div className="form-group">
-                                            <label>Neckband ID </label>
+                                            <label>Neckband ID <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span></label>
                                             <div className="input-with-icon">
                                                 <Tag size={18} className="input-icon" style={{ rotate: '90deg' }} />
                                                 <input
@@ -1512,7 +1605,12 @@ const AnimalOnboarding: React.FC = () => {
                                             type="number"
                                             placeholder="6"
                                             value={tempCalf.age}
-                                            onChange={(e) => setTempCalf(prev => ({ ...prev, age: e.target.value }))}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                setTempCalf(prev => ({ ...prev, age: isNaN(val) ? '' : (val < 0 ? '0' : val.toString()) }));
+                                            }}
+                                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                            min="0"
                                         />
                                     </div>
                                 </div>

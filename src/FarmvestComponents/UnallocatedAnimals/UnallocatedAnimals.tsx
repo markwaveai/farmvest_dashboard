@@ -53,12 +53,20 @@ const UnallocatedAnimals: React.FC = () => {
     const [farms, setFarms] = useState<Farm[]>([]);
     const [sheds, setSheds] = useState<Shed[]>([]);
     const [selectedFarmId, setSelectedFarmId] = useState<string>(() => {
-        if (navState?.farmId) {
-            localStorage.setItem('fv_selected_farm_id', navState.farmId);
-            return navState.farmId;
+        const state = navState as any;
+        if (state?.preSelectedFarmId) {
+            localStorage.setItem('fv_selected_farm_id', String(state.preSelectedFarmId));
+            return String(state.preSelectedFarmId);
+        }
+        if (state?.farmId) {
+            localStorage.setItem('fv_selected_farm_id', state.farmId);
+            return state.farmId;
         }
         return localStorage.getItem('fv_selected_farm_id') || '';
     });
+    const [farmPage, setFarmPage] = useState(1);
+    const [hasMoreFarms, setHasMoreFarms] = useState(true);
+    const [isFetchingMoreFarms, setIsFetchingMoreFarms] = useState(false);
     const [selectedShedId, setSelectedShedId] = useState<string>(navState?.shedId || '');
     const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
 
@@ -141,7 +149,7 @@ const UnallocatedAnimals: React.FC = () => {
             }
 
             const mapped = animalList.map((a, idx) => {
-                let imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
+                let imgUrl = '';
 
                 // Check all possible image fields
                 if (a.images && Array.isArray(a.images) && a.images.length > 0 && a.images[0]) {
@@ -158,7 +166,7 @@ const UnallocatedAnimals: React.FC = () => {
 
                 // Filter out the specific bad fallback URL from previous onboardings
                 if (imgUrl.includes('payment_receipt.jpg')) {
-                    imgUrl = 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=100&h=100&fit=crop';
+                    imgUrl = '';
                 }
 
                 // Buffalo Specific Image Override
@@ -171,7 +179,7 @@ const UnallocatedAnimals: React.FC = () => {
                 }
 
                 if (String(rawRole).toLowerCase().includes('buffalo')) {
-                    if (imgUrl.includes('unsplash') || imgUrl.includes('placeholder')) {
+                    if (!imgUrl || imgUrl.includes('unsplash') || imgUrl.includes('placeholder')) {
                         imgUrl = '/buffaloe.png';
                     }
                 }
@@ -373,23 +381,51 @@ const UnallocatedAnimals: React.FC = () => {
 
         async function fetchInitialFarms() {
             try {
-                const data = await farmvestService.getAllFarms();
-                if (!isMounted.current) return;
-                const list = Array.isArray(data) ? data : (data.farms || data.data || []);
-                setFarms(list);
+                const loadFarms = async (page: number) => {
+                    if (isFetchingMoreFarms) return;
+                    setIsFetchingMoreFarms(true);
+                    try {
+                        const data = await farmvestService.getAllFarms({
+                            sort_by: 2,
+                            page: page,
+                            size: 15
+                        });
 
-                // Auto-select or Validate Persisted ID from Onboarding Handoff
-                const persistedId = localStorage.getItem('fv_selected_farm_id');
-                if (persistedId) {
-                    const exists = list.some((f: any) => String(f.farm_id || f.id) === persistedId);
-                    if (exists) {
-                        setSelectedFarmId(persistedId);
+                        const list = Array.isArray(data) ? data : (data.farms || data.data || []);
+
+                        if (list.length < 15) {
+                            setHasMoreFarms(false);
+                        }
+
+                        if (page === 1) {
+                            setFarms(list);
+                        } else {
+                            setFarms(prev => [...prev, ...list]);
+                        }
+                        setFarmPage(page);
+
+                        // If it's the first page, handle auto-selection
+                        if (page === 1) {
+                            const persistedId = localStorage.getItem('fv_selected_farm_id');
+                            if (persistedId) {
+                                const exists = list.some((f: any) => String(f.farm_id || f.id) === persistedId);
+                                if (exists) {
+                                    setSelectedFarmId(persistedId);
+                                }
+                                localStorage.removeItem('fv_selected_farm_id');
+                            }
+                        }
+                    } catch (e: any) {
+                        log(`ERROR: Farm load failed: ${e.message}`);
+                        setHasMoreFarms(false);
+                    } finally {
+                        setIsFetchingMoreFarms(false);
                     }
-                    // CONSUME ONCE: Clear it so it doesn't persist on refresh or direct navigation later
-                    localStorage.removeItem('fv_selected_farm_id');
-                }
+                };
+
+                await loadFarms(1);
             } catch (e: any) {
-                log(`FATAL: Farm load failed: ${e.message}`);
+                log(`FATAL: Farm initial fetch failed: ${e.message}`);
                 setHasError(true);
             }
         }
@@ -623,6 +659,34 @@ const UnallocatedAnimals: React.FC = () => {
         }
     };
 
+    const handleLoadMoreFarms = async () => {
+        if (isFetchingMoreFarms || !hasMoreFarms) return;
+
+        setIsFetchingMoreFarms(true);
+        try {
+            const nextPage = farmPage + 1;
+            const farmData = await farmvestService.getAllFarms({
+                sort_by: 2,
+                page: nextPage,
+                size: 15
+            });
+
+            const list = Array.isArray(farmData) ? farmData : (farmData.farms || farmData.data || []);
+
+            if (list.length < 15) {
+                setHasMoreFarms(false);
+            }
+
+            setFarms(prev => [...prev, ...list]);
+            setFarmPage(nextPage);
+        } catch (error) {
+            console.error('Error loading more farms:', error);
+            setHasMoreFarms(false);
+        } finally {
+            setIsFetchingMoreFarms(false);
+        }
+    };
+
     // ---------------------------------------------------------
     // 5. MEMOIZED DATA
     // ---------------------------------------------------------
@@ -733,6 +797,9 @@ const UnallocatedAnimals: React.FC = () => {
                             setSelectedShedId('');
                             lastShedIdRef.current = null;
                         }}
+                        onLoadMore={handleLoadMoreFarms}
+                        hasMore={hasMoreFarms}
+                        loading={isFetchingMoreFarms}
                     />
 
                     <CustomDropdown
@@ -750,8 +817,8 @@ const UnallocatedAnimals: React.FC = () => {
                 {selectedShedId && (() => {
                     const shed = sheds.find((s: any) => String(s.id) === selectedShedId || s.shed_id === selectedShedId) || {} as any;
                     const capacity = shed.capacity || 300;
-                    const allocated = shed.current_buffaloes ?? shed.entry_count ?? 0;
-                    const pendingCount = pendingAllocations.size;
+                    const allocated = gridPositions.filter(p => p.status === 'Occupied' || p.isOccupied).length;
+                    const pendingCount = animals.length;
 
                     return (
                         <div className="ua-stats-card">
@@ -786,6 +853,7 @@ const UnallocatedAnimals: React.FC = () => {
                                     src={animal.image}
                                     alt={animal.id}
                                     className="ua-animal-img"
+                                    style={String(animal.role || '').toLowerCase().includes('buffalo') ? { objectFit: 'contain' } : undefined}
                                     onError={(e) => {
                                         const fallback = 'https://via.placeholder.com/100?text=No+Img';
                                         if (e.currentTarget.src !== fallback) {

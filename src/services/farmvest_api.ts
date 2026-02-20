@@ -376,12 +376,18 @@ export const farmvestService = {
             }
 
             const url = API_ENDPOINTS.getInTransitOrders();
-            const response = await axios.post(url, {
-                mobile: mobile || ""
-            }, {
+            const payload: any = {
+                filter_status: "intransit"
+            };
+
+            if (mobile && mobile.trim() !== "") {
+                payload.mobile = mobile;
+            }
+
+            const response = await farmvestApi.post(url, payload, {
                 headers: {
-                    'x-admin-mobile': adminMobile,
-                    'Content-Type': 'application/json'
+                    'X-Admin-Mobile': adminMobile,
+                    'filter-status': 'intransit'
                 }
             });
 

@@ -10,11 +10,36 @@ interface CustomDropdownProps {
     disabled?: boolean;
     className?: string;
     hideIcon?: boolean;
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    loading?: boolean;
 }
 
-const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChange, placeholder, disabled, className, hideIcon }) => {
+const CustomDropdown: React.FC<CustomDropdownProps> = ({
+    options,
+    value,
+    onChange,
+    placeholder,
+    disabled,
+    className,
+    hideIcon,
+    onLoadMore,
+    hasMore,
+    loading
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Handle scroll for infinite loading
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (!onLoadMore || !hasMore || loading) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        if (scrollHeight - scrollTop <= clientHeight + 10) {
+            onLoadMore();
+        }
+    };
 
     // Close on click outside
     useEffect(() => {
@@ -48,23 +73,35 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({ options, value, onChang
                 )}
             </div>
             {isOpen && !disabled && (
-                <div className="custom-dropdown-menu">
+                <div
+                    className="custom-dropdown-menu"
+                    ref={menuRef}
+                    onScroll={handleScroll}
+                >
                     {options.length > 0 ? (
-                        options.map((opt) => (
-                            <div
-                                key={opt.value}
-                                className={`custom-dropdown-item ${String(opt.value) === String(value) ? 'selected' : ''}`}
-                                onClick={() => {
-                                    onChange(String(opt.value));
-                                    setIsOpen(false);
-                                }}
-                            >
-                                {opt.label}
-                            </div>
-                        ))
+                        <>
+                            {options.map((opt) => (
+                                <div
+                                    key={opt.value}
+                                    className={`custom-dropdown-item ${String(opt.value) === String(value) ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        onChange(String(opt.value));
+                                        setIsOpen(false);
+                                    }}
+                                >
+                                    {opt.label}
+                                </div>
+                            ))}
+                            {loading && (
+                                <div className="custom-dropdown-loading">
+                                    <div className="dropdown-spinner"></div>
+                                    <span>Loading more...</span>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="custom-dropdown-item" style={{ cursor: 'default', color: '#9CA3AF' }}>
-                            No options available
+                            {loading ? 'Loading...' : 'No options available'}
                         </div>
                     )}
                 </div>

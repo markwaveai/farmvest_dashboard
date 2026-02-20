@@ -150,8 +150,13 @@ const AnimalDetailsModal: React.FC<AnimalDetailsModalProps> = ({ isOpen, onClose
                     ) : (
                         <>
                             <div className="animal-image-container scroll-reveal-section">
-                                {animalImage ? (
-                                    <img src={animalImage} alt="Animal" className="animal-detail-img" />
+                                {(animalImage || (!animal.animal_type || String(animal.animal_type).toUpperCase() === 'BUFFALO')) ? (
+                                    <img
+                                        src={animalImage || "/buffalo_green_icon.png"}
+                                        alt="Animal"
+                                        className="animal-detail-img"
+                                        style={{ objectFit: 'contain' }}
+                                    />
                                 ) : (
                                     <div className="no-image-placeholder">
                                         <ImageIcon size={48} />
