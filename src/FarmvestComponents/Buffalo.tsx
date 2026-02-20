@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
     Search,
     ChevronRight,
@@ -55,7 +55,7 @@ const BuffaloManagement: React.FC = () => {
     const [activeFilter, setActiveFilter] = useState<'all' | 'pregnant' | 'sick' | 'high_yield' | 'buffalo' | 'calf'>('all');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [buffaloList, setBuffaloList] = useState<Buffalo[]>([]);
+    const [rawBuffaloData, setRawBuffaloData] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [locations, setLocations] = useState<string[]>([]);
     const [farms, setFarms] = useState<any[]>([]);
@@ -74,6 +74,166 @@ const BuffaloManagement: React.FC = () => {
     const [allFarmsMap, setAllFarmsMap] = useState<Record<string, any>>({});
     const [allShedsMap, setAllShedsMap] = useState<Record<string, any>>({});
 
+    const isInitialMount = useRef(true);
+    const hasInitialFetched = useRef(false);
+
+    // 0. Transform Raw API Data to UI Model (Buffalo Interface)
+    // This is a MEMO, not a state-setter effect, to prevent re-fetching when mapping dependencies change
+    const buffaloList = useMemo(() => {
+        const seenIds = new Set();
+        const mappedData: Buffalo[] = [];
+
+        rawBuffaloData.forEach((a: any, index: number) => {
+            // Extract unique Tag ID with extensive fallbacks
+            let tagId = a.rfid_tag || a.rfid_tag_number || a.rfid_no || a.rfidTag || a.rfid ||
+                a.tag || a.tag_no || a.tagNo || a.tag_id || a.TagId || a.tag_number ||
+                a.animal_tag || a.animal_id || a.id;
+
+            // Auto-detect if still missing
+            if (!tagId || tagId === 'N/A' || tagId === undefined) {
+                const autoKey = Object.keys(a).find(k => {
+                    const lowerK = k.toLowerCase();
+                    return (lowerK.includes('tag') || lowerK.includes('rfid')) &&
+                        a[k] && (typeof a[k] === 'string' || typeof a[k] === 'number');
+                });
+                if (autoKey) tagId = a[autoKey];
+            }
+
+            if ((!tagId || tagId === 'N/A') && a.animal_id) tagId = a.animal_id;
+
+            if ((!tagId || tagId === 'N/A') && searchQuery.trim() !== '') {
+                const q = searchQuery.trim().toLowerCase();
+                const matchingValue = Object.values(a).find(val =>
+                    typeof val === 'string' && val.toLowerCase() === q
+                );
+                if (matchingValue) tagId = String(matchingValue);
+                else tagId = searchQuery.trim();
+            }
+
+            tagId = tagId || 'N/A';
+            const animalId = String(a.animal_id || a.id || (tagId !== 'N/A' ? tagId : `ANIMAL-${index}`));
+
+            if (seenIds.has(animalId)) return;
+            seenIds.add(animalId);
+
+            const months = Number(a.age_months || a.age_in_months || a.animal_age_months || 0);
+            const years = Number(a.age || a.animal_age || 0);
+
+            const safeStr = (val: any) => {
+                if (!val) return null;
+                if (typeof val === 'string') return val;
+                return val.name || val.location_name || val.farm_name || val.shed_name || val.id || '-';
+            };
+
+            const resolveFarmName = (fId: any) => {
+                if (!fId) return null;
+                const f = allFarmsMap[String(fId)];
+                return f ? f.farm_name : null;
+            };
+
+            const resolveLocationName = (fId: any) => {
+                if (!fId) return null;
+                const f = allFarmsMap[String(fId)];
+                return f ? (f.location || f.location_name) : null;
+            };
+
+            let loc = a.location_name || (typeof a.location === 'string' && a.location !== '-' ? a.location : (a.location?.location_name || a.location?.name || a.location?.location));
+            if (loc && /^\d+$/.test(String(loc))) loc = null;
+
+            if (!loc) {
+                loc = a.farm_details?.location || a.farm_details?.location_name || a.location_details?.location || a.location_details?.location_name;
+            }
+
+            if ((!loc || loc === '-' || loc === 'N/A') && (a.farm_id || a.farmId || a.farm)) {
+                const fId = (typeof a.farm === 'object') ? (a.farm.id || a.farm.farm_id) : (a.farm_id || a.farmId || a.farm);
+                const resolvedLoc = resolveLocationName(fId);
+                if (resolvedLoc) loc = resolvedLoc;
+            }
+            if (!loc) loc = '-';
+
+            let farmInfo = a.farm_name || a.FarmName || (typeof a.farm === 'string' ? a.farm : safeStr(a.farm)) ||
+                (a.farm_details && safeStr(a.farm_details.farm_name)) ||
+                (a.Farm && safeStr(a.Farm.farm_name));
+
+            if ((!farmInfo || farmInfo === '-') && (a.farm_id || a.farmId)) {
+                const resolvedFarm = resolveFarmName(a.farm_id || a.farmId);
+                if (resolvedFarm) farmInfo = resolvedFarm;
+            }
+            if (!farmInfo) farmInfo = '-';
+
+            let shedInfo = a.shed_name || a.ShedNo || (typeof a.shed === 'string' ? a.shed : safeStr(a.shed)) ||
+                (a.shed_details && safeStr(a.shed_details.shed_name));
+
+            if (shedsList.length > 0 && (a.shed_id || a.shedId)) {
+                const foundShed = shedsList.find(s => String(s.id || s.shed_id || s.shedId) === String(a.shed_id || a.shedId));
+                if (foundShed) shedInfo = foundShed.shed_name || foundShed.shed_id;
+            }
+
+            if (!shedInfo || shedInfo === '-' || shedInfo === 'N/A') {
+                const sId = a.shed_id || a.shedId;
+                shedInfo = (sId && sId !== 0 && sId !== '0') ? `Shed #${sId}` : '-';
+            }
+
+            const normalizePregnancy = (val: any, isPreg: any) => {
+                const v = String(val || '').toLowerCase();
+                if (isPreg === true || isPreg === 1 || String(isPreg) === '1' || String(isPreg).toLowerCase() === 'true') return 'Pregnant';
+                if (v.includes('preg') || v === '1' || v === 'true' || v === 'yes' || v === 'positive' || v === 'confirmed') return 'Pregnant';
+                return 'Not Pregnant';
+            };
+
+            const normalizeHealth = (val: any) => {
+                const v = String(val || '').toUpperCase();
+                if (['HEALTHY', 'EXCELLENT', 'GOOD', 'NORMAL', 'OK'].includes(v)) return 'Excellent';
+                if (['SICK', 'POOR', 'FAIR', 'CRITICAL', 'INJURED', 'UNDER TREATMENT', 'BAD', 'WEAK'].includes(v)) return 'Poor';
+                return 'Good';
+            };
+
+            const pStatus = normalizePregnancy(a.pregnancy_status || a.pregnancyStatus || a.reproduction_status, a.is_pregnant);
+            const hStatus = normalizeHealth(a.health_status || a.healthStatus || a.health);
+
+            let mYield = Number(a.milk_yield || a.average_yield || a.last_yield || a.yield || a.current_yield || a.total_milk || 0);
+
+            if (mYield === 0 && milkEntries.length > 0) {
+                const entry = milkEntries.find((m: any) =>
+                    String(m.animal_id) === String(animalId) ||
+                    String(m.tag_number || m.tag_no) === String(tagId)
+                );
+                if (entry) mYield = Number(entry.milk_yield || entry.yield || entry.quantity || 0);
+            }
+
+            mappedData.push({
+                animalId,
+                tagNo: tagId,
+                breed: a.breed_name || a.breed || a.breed_id || a.animal_breed || 'Murrah',
+                age: Math.floor(months / 12) || years || 1,
+                age_months: months || (years * 12) || 0,
+                gender: a.gender || a.sex || a.animal_gender || 'Female',
+                location: loc,
+                farm: farmInfo,
+                shed: shedInfo,
+                position: a.position || a.parking_id || a.parking_tag || '-',
+                status: (() => {
+                    const s = String(a.active_status || a.status || a.animal_status || a.animal_active_status || '').toLowerCase();
+                    if (s === 'active' || s === 'true' || s === '1' || s.includes('excel')) return 'Active';
+                    if (s === 'inactive' || s === 'false' || s === '0' || s.includes('sick') || s.includes('poor')) return 'Poor';
+                    return 'Active';
+                })(),
+                type: (() => {
+                    const rawType = String(a.animal_type || a.type || a.role || a.category || '').toUpperCase();
+                    if (rawType.includes('CALF') || a.is_calf === true || a.is_calf === 1 || String(a.is_calf).toLowerCase() === 'true') return 'CALF';
+                    return 'BUFFALO';
+                })(),
+                lactationStage: a.lactation_stage || a.lactation || a.lactationStage || '-',
+                healthStatus: hStatus,
+                pregnancyStatus: pStatus,
+                milkYield: mYield,
+                lastVetVisit: a.last_vet_check || a.last_vet_visit || a.last_visit || '-',
+                associated_calves: a.associated_calves || a.calves || a.calf_list || []
+            });
+        });
+
+        return mappedData;
+    }, [rawBuffaloData, allFarmsMap, milkEntries, shedsList, searchQuery]);
 
     // 1. Base Filtered List: Applies primary filters (Search, Location, Farm, Shed)
     // This list is the source of truth for both the Stats and the Final Filtered View
@@ -176,31 +336,28 @@ const BuffaloManagement: React.FC = () => {
         setCurrentPage(1);
     }, [searchQuery, activeFilter, selectedLocation, selectedFarm, selectedShed]);
 
-    // Live Search Effect
+
+    // Live Search Effect - Handles fetching raw data
     useEffect(() => {
         const fetchBuffalo = async () => {
+            // Protect against redundant initial mounts in StrictMode
+            if (hasInitialFetched.current && isInitialMount.current) return;
+            if (isInitialMount.current) hasInitialFetched.current = true;
+
             setError(null);
             setIsLoading(true);
             try {
                 let response;
                 if (searchQuery.trim() === '') {
-                    // Initial load: Get animals using getTotalAnimals with a large size to ensure list is returned
-                    const farmId = selectedFarm !== 'All' ? farms.find(f => f.farm_name === selectedFarm)?.id : undefined;
+                    const farmId = selectedFarm !== 'All' ? farms.find(f => (f.farm_name || f.name) === selectedFarm)?.id : undefined;
                     const shedId = selectedShed !== 'All' ? shedsList.find(s => (s.shed_name || s.shed_id) === selectedShed)?.id : undefined;
 
-                    // Use a larger size (2000) for full herd visibility on client-side stats
-                    // This ensures counts in summary cards are accurate for the entire selected farm/shed
-                    response = await farmvestService.getTotalAnimals(farmId, shedId, 1, 2000);
+                    response = await farmvestService.getTotalAnimals(farmId, shedId, 1, 15);
                 } else {
-                    // Search mode
                     response = await farmvestService.searchAnimal(searchQuery.trim());
                 }
 
                 if (response) {
-
-
-                    // Normalize dataPart: Handle { data: [...] }, { animals: [...] } or direct array
-                    // Logic mirrored from UnallocatedAnimals.tsx for robustness
                     let rawData: any[] = [];
                     if (Array.isArray(response)) {
                         rawData = response;
@@ -223,198 +380,17 @@ const BuffaloManagement: React.FC = () => {
                     } else if (response.animal_details && (typeof response.animal_details === 'object')) {
                         rawData = [response.animal_details];
                     } else {
-                        // Last resort: find any array property
                         const possibleArray = Object.values(response).find(val => Array.isArray(val));
                         if (possibleArray) rawData = possibleArray as any[];
                     }
 
-
-
-                    const seenIds = new Set();
-                    const mappedData: Buffalo[] = [];
-
-                    rawData.forEach((a: any, index: number) => {
-                        // Extract unique Tag ID with extensive fallbacks
-                        let tagId = a.rfid_tag || a.rfid_tag_number || a.rfid_no || a.rfidTag || a.rfid ||
-                            a.tag || a.tag_no || a.tagNo || a.tag_id || a.TagId || a.tag_number ||
-                            a.animal_tag || a.animal_id || a.id;
-
-                        // Auto-detect if still missing: look for any key containing 'tag' or 'rfid'
-                        if (!tagId || tagId === 'N/A' || tagId === undefined) {
-                            const autoKey = Object.keys(a).find(k => {
-                                const lowerK = k.toLowerCase();
-                                return (lowerK.includes('tag') || lowerK.includes('rfid')) &&
-                                    a[k] && (typeof a[k] === 'string' || typeof a[k] === 'number');
-                            });
-                            if (autoKey) tagId = a[autoKey];
-                        }
-
-                        // Final check: if tagId is still N/A but we have an animal_id field use it.
-                        if ((!tagId || tagId === 'N/A') && a.animal_id) tagId = a.animal_id;
-
-                        // SEARCH MATCH FALLBACK: If searching and tagId is still N/A, 
-                        // check if the searchQuery matches ANY string value in the object.
-                        if ((!tagId || tagId === 'N/A') && searchQuery.trim() !== '') {
-                            const q = searchQuery.trim().toLowerCase();
-                            const matchingValue = Object.values(a).find(val =>
-                                typeof val === 'string' && val.toLowerCase() === q
-                            );
-                            if (matchingValue) tagId = String(matchingValue);
-                            else tagId = searchQuery.trim(); // Hard fallback to query itself
-                        }
-
-                        tagId = tagId || 'N/A';
-
-                        const animalId = String(a.animal_id || a.id || (tagId !== 'N/A' ? tagId : `ANIMAL-${index}`));
-
-                        if (seenIds.has(animalId)) return;
-                        seenIds.add(animalId);
-
-                        const months = Number(a.age_months || a.age_in_months || a.animal_age_months || 0);
-                        const years = Number(a.age || a.animal_age || 0);
-
-                        const safeStr = (val: any) => {
-                            if (!val) return null;
-                            if (typeof val === 'string') return val;
-                            return val.name || val.location_name || val.farm_name || val.shed_name || val.id || '-';
-                        };
-
-                        const resolveFarmName = (fId: any) => {
-                            if (!fId) return null;
-                            const f = allFarmsMap[String(fId)];
-                            return f ? f.farm_name : null;
-                        };
-
-                        const resolveLocationName = (fId: any) => {
-                            if (!fId) return null;
-                            const f = allFarmsMap[String(fId)];
-                            return f ? (f.location || f.location_name) : null;
-                        };
-
-                        let loc = null;
-                        if (a.location_name) loc = a.location_name;
-                        else if (typeof a.location === 'string' && a.location !== '-' && a.location !== '') loc = a.location;
-                        else if (a.location && typeof a.location === 'object') {
-                            loc = a.location.location_name || a.location.name || a.location.location;
-                        }
-
-                        if (loc && /^\d+$/.test(String(loc))) loc = null; // Ignore numeric strings (likely IDs)
-
-                        if (!loc) {
-                            if (a.farm_details && (a.farm_details.location || a.farm_details.location_name)) {
-                                loc = a.farm_details.location || a.farm_details.location_name;
-                            } else if (a.location_details && (a.location_details.location || a.location_details.location_name)) {
-                                loc = a.location_details.location || a.location_details.location_name;
-                            }
-                        }
-
-                        if ((!loc || loc === '-' || loc === 'N/A') && (a.farm_id || a.farmId || a.farm)) {
-                            const fId = (typeof a.farm === 'object') ? (a.farm.id || a.farm.farm_id) : (a.farm_id || a.farmId || a.farm);
-                            const resolvedLoc = resolveLocationName(fId);
-                            if (resolvedLoc) loc = resolvedLoc;
-                        }
-                        if (!loc) loc = '-';
-
-                        let farmInfo = a.farm_name || a.FarmName || (typeof a.farm === 'string' ? a.farm : safeStr(a.farm)) ||
-                            (a.farm_details && safeStr(a.farm_details.farm_name)) ||
-                            (a.Farm && safeStr(a.Farm.farm_name));
-
-                        if ((!farmInfo || farmInfo === '-') && (a.farm_id || a.farmId)) {
-                            const resolvedFarm = resolveFarmName(a.farm_id || a.farmId);
-                            if (resolvedFarm) farmInfo = resolvedFarm;
-                        }
-                        if (!farmInfo) farmInfo = '-';
-
-                        let shedInfo = a.shed_name || a.ShedNo || (typeof a.shed === 'string' ? a.shed : safeStr(a.shed)) ||
-                            (a.shed_details && safeStr(a.shed_details.shed_name));
-
-                        if (shedsList.length > 0 && (a.shed_id || a.shedId)) {
-                            const foundShed = shedsList.find(s => String(s.id || s.shed_id || s.shedId) === String(a.shed_id || a.shedId));
-                            if (foundShed) shedInfo = foundShed.shed_name || foundShed.shed_id;
-                        }
-
-                        // If still no info, handle based on whether an ID exists
-                        if (!shedInfo || shedInfo === '-' || shedInfo === 'N/A') {
-                            const sId = a.shed_id || a.shedId;
-                            if (sId && sId !== 0 && sId !== '0') {
-                                shedInfo = `Shed #${sId}`;
-                            } else {
-                                shedInfo = '-';
-                            }
-                        }
-
-                        const normalizePregnancy = (val: any, isPreg: any) => {
-                            const v = String(val || '').toLowerCase();
-                            if (isPreg === true || isPreg === 1 || String(isPreg) === '1' || String(isPreg).toLowerCase() === 'true') return 'Pregnant';
-                            if (v.includes('preg') || v === '1' || v === 'true' || v === 'yes' || v === 'positive' || v === 'confirmed') return 'Pregnant';
-                            return 'Not Pregnant';
-                        };
-
-                        const normalizeHealth = (val: any) => {
-                            const v = String(val || '').toUpperCase();
-                            if (['HEALTHY', 'EXCELLENT', 'GOOD', 'NORMAL', 'OK'].includes(v)) return 'Excellent';
-                            if (['SICK', 'POOR', 'FAIR', 'CRITICAL', 'INJURED', 'UNDER TREATMENT', 'BAD', 'WEAK'].includes(v)) return 'Poor';
-                            return 'Good';
-                        };
-
-                        const pStatus = normalizePregnancy(a.pregnancy_status || a.pregnancyStatus || a.reproduction_status, a.is_pregnant);
-                        const hStatus = normalizeHealth(a.health_status || a.healthStatus || a.health);
-
-                        let mYield = Number(a.milk_yield || a.average_yield || a.last_yield || a.yield || a.current_yield || a.total_milk || 0);
-
-                        if (mYield === 0 && milkEntries.length > 0) {
-                            const entry = milkEntries.find((m: any) =>
-                                String(m.animal_id) === String(animalId) ||
-                                String(m.tag_number || m.tag_no) === String(tagId)
-                            );
-                            if (entry) mYield = Number(entry.milk_yield || entry.yield || entry.quantity || 0);
-                        }
-
-                        mappedData.push({
-                            animalId,
-                            tagNo: tagId,
-                            breed: a.breed_name || a.breed || a.breed_id || a.animal_breed || 'Murrah',
-                            age: Math.floor(months / 12) || years || 1,
-                            age_months: months || (years * 12) || 0,
-                            gender: a.gender || a.sex || a.animal_gender || 'Female',
-                            location: loc,
-                            farm: farmInfo,
-                            shed: shedInfo,
-                            position: a.position || a.parking_id || a.parking_tag || '-',
-                            status: (() => {
-                                const s = String(a.active_status || a.status || a.animal_status || a.animal_active_status || '').toLowerCase();
-                                if (s === 'active' || s === 'true' || s === '1' || s.includes('excel')) return 'Active';
-                                if (s === 'inactive' || s === 'false' || s === '0' || s.includes('sick') || s.includes('poor')) return 'Poor';
-                                return a.is_active ? 'Active' : 'Active'; // Default to Active if found via search
-                            })(),
-                            type: (() => {
-                                // Robust Type Detection
-                                const rawType = String(a.animal_type || a.type || a.role || a.category || '').toUpperCase();
-                                if (rawType.includes('CALF') || a.is_calf === true || a.is_calf === 1 || String(a.is_calf).toLowerCase() === 'true') return 'CALF';
-
-                                // Auto-detect 'calf' from any other field just in case
-                                const hasCalfBrand = Object.values(a).some(val =>
-                                    typeof val === 'string' && val.toUpperCase().includes('CALF')
-                                );
-                                if (hasCalfBrand) return 'CALF';
-
-                                return 'BUFFALO';
-                            })(),
-                            lactationStage: a.lactation_stage || a.lactation || a.lactationStage || '-',
-                            healthStatus: hStatus,
-                            pregnancyStatus: pStatus,
-                            milkYield: mYield,
-                            lastVetVisit: a.last_vet_check || a.last_vet_visit || a.last_visit || '-',
-                            associated_calves: a.associated_calves || a.calves || a.calf_list || []
-                        });
-                    });
-
-                    setBuffaloList(mappedData);
-                    setTotalCount(response.animals_count || response.count || mappedData.length);
+                    setRawBuffaloData(rawData);
+                    const apiCount = response.animals_count ?? (response.data && !Array.isArray(response.data) ? response.data.animals_count : (response.count ?? rawData.length));
+                    setTotalCount(Number(apiCount));
 
                     // Auto-open if exact match
                     if (searchQuery.trim().length >= 4) {
-                        const exactMatch = mappedData.find((b: Buffalo) =>
+                        const exactMatch = buffaloList.find((b: Buffalo) =>
                             b.tagNo.toLowerCase() === searchQuery.trim().toLowerCase()
                         );
                         if (exactMatch) {
@@ -422,152 +398,60 @@ const BuffaloManagement: React.FC = () => {
                         }
                     }
                 } else {
-                    setBuffaloList([]);
+                    setRawBuffaloData([]);
                     setTotalCount(0);
                 }
             } catch (err: any) {
                 setError(err.message || 'Failed to fetch buffalo data');
             } finally {
                 setIsLoading(false);
+                if (isInitialMount.current) {
+                    setTimeout(() => { isInitialMount.current = false; }, 100);
+                }
             }
         };
 
         const debounce = setTimeout(fetchBuffalo, searchQuery.trim() === '' ? 0 : 500);
         return () => clearTimeout(debounce);
-    }, [searchQuery, selectedFarm, selectedShed, selectedLocation, allFarmsMap, milkEntries]); // Re-run when maps or milk data load
+    }, [searchQuery, selectedFarm, selectedShed, selectedLocation]);
 
-    // Fetch All Farms for Lookup Map
+    // 4. Transform Raw API Data to UI Model (Buffalo Interface)
+    // Combined Metadata Fetch (Farms, Locations, Milk Entries)
     useEffect(() => {
-        const fetchAllFarmsMap = async () => {
+        const fetchInitialMetadata = async () => {
+            // Already handled by component closure or refs if needed, but this only runs once on []
             try {
-                // Fetch all farms without location filter to build map
-                const response = await farmvestService.getAllFarms({ size: 1000 }); // Reasonable limit for lookup
-                let allFarms: any[] = [];
-                if (response) {
-                    if (response.data && Array.isArray(response.data.farms)) {
-                        allFarms = response.data.farms;
-                    } else if (Array.isArray(response.farms)) {
-                        allFarms = response.farms;
-                    } else if (Array.isArray(response.data)) {
-                        allFarms = response.data;
-                    } else if (Array.isArray(response)) {
-                        allFarms = response;
-                    }
+                // Fetch Locations
+                const locResponse = await farmvestService.getLocations();
+                if (locResponse && locResponse.data) {
+                    const lArray = Array.isArray(locResponse.data) ? locResponse.data : Object.values(locResponse.data).filter(v => typeof v === 'string');
+                    setLocations(lArray as string[]);
                 }
 
-                const map: Record<string, any> = {};
-                const uniqueLocations = new Set<string>();
+                // Fetch All Farms (Lookup + Filter list)
+                const farmsResponse = await farmvestService.getAllFarms({ size: 1000 });
+                let allFarms: any[] = [];
+                if (farmsResponse) {
+                    allFarms = Array.isArray(farmsResponse) ? farmsResponse : (farmsResponse.farms || farmsResponse.data?.farms || farmsResponse.data || []);
+                }
+                setFarms(allFarms);
 
+                const map: Record<string, any> = {};
                 allFarms.forEach(f => {
                     const fid = String(f.id || f.farm_id);
                     if (fid) map[fid] = f;
-
-                    // Extract location for fallback
-                    const loc = f.location_name || f.location;
-                    if (loc && typeof loc === 'string') {
-                        uniqueLocations.add(loc);
-                    }
                 });
-
                 setAllFarmsMap(map);
 
-                // Fallback: If locations state is still empty, use farm locations
-                setLocations(prev => {
-                    if (prev.length === 0 && uniqueLocations.size > 0) {
-                        return Array.from(uniqueLocations);
-                    }
-                    return prev;
-                });
+                // Fetch Milk Entries
+                const milkResponse = await farmvestService.getMilkEntries({ page: 1, size: 1000 });
+                setMilkEntries(Array.isArray(milkResponse) ? milkResponse : (milkResponse.data || []));
 
-            } catch (err) {
-                // Silent fail
-            }
+            } catch (err) {}
         };
-        fetchAllFarmsMap();
+        fetchInitialMetadata();
     }, []);
 
-    // Fetch Initial Locations
-    useEffect(() => {
-        const fetchLocations = async () => {
-            try {
-                const response = await farmvestService.getLocations();
-
-                if (response && response.data) {
-                    let locationArray: string[] = [];
-
-                    // Handle if data is an array
-                    if (Array.isArray(response.data)) {
-                        locationArray = response.data;
-                    }
-                    // Handle if data is an object (enum values)
-                    else if (typeof response.data === 'object') {
-                        // Extract values from the object
-                        locationArray = Object.values(response.data).filter(val => typeof val === 'string') as string[];
-                    }
-
-                    if (locationArray.length > 0) {
-                        setLocations(locationArray);
-                    }
-                } else if (Array.isArray(response)) {
-                    setLocations(response);
-                }
-            } catch (err) {
-
-            }
-        };
-        fetchLocations();
-    }, []);
-
-    // Fetch Farms when location changes
-    useEffect(() => {
-        const fetchFarms = async () => {
-            try {
-                let farmResponse;
-                if (selectedLocation === 'All') {
-                    // Fetch all farms to populate the filter dropdown initially
-                    farmResponse = await farmvestService.getAllFarms({ size: 100 });
-                } else {
-                    farmResponse = await farmvestService.getFarms(selectedLocation);
-                }
-
-                if (farmResponse) {
-                    let farmData: any[] = [];
-                    // Robust extraction logic mirrored from other fetchers
-                    if (farmResponse.data && Array.isArray(farmResponse.data.farms)) {
-                        farmData = farmResponse.data.farms;
-                    } else if (Array.isArray(farmResponse.farms)) {
-                        farmData = farmResponse.farms;
-                    } else if (Array.isArray(farmResponse.data)) {
-                        farmData = farmResponse.data;
-                    } else if (Array.isArray(farmResponse)) {
-                        farmData = farmResponse;
-                    }
-                    setFarms(farmData);
-                }
-            } catch (err) {
-                // Silent fail
-            }
-        };
-        fetchFarms();
-    }, [selectedLocation]);
-
-    // Fetch Milk Data for Yield Stats
-    useEffect(() => {
-        const fetchMilkData = async () => {
-            try {
-                // Fetch recent milk entries to calculate yield
-                const response = await farmvestService.getMilkEntries({ page: 1, size: 1000 });
-                if (response && response.data) {
-                    setMilkEntries(response.data);
-                } else if (Array.isArray(response)) {
-                    setMilkEntries(response);
-                }
-            } catch (err) {
-                // Silent fail
-            }
-        };
-        fetchMilkData();
-    }, []);
 
     // Fetch Sheds when farm changes
     useEffect(() => {
@@ -639,9 +523,16 @@ const BuffaloManagement: React.FC = () => {
         pregnant: number;
     } | null>(null);
 
+    // Fetch Global Stats Effect
     useEffect(() => {
         const fetchGlobalStats = async () => {
+            // Protect against double mount in StrictMode
+            const hasFetched = document.body.getAttribute('data-global-stats-fetched');
+            if (hasFetched) return;
+            document.body.setAttribute('data-global-stats-fetched', 'true');
+
             try {
+                // ... rest of logic
                 // FIXED: Request a large page size to calculate accurate global stats
                 const response = await farmvestService.getTotalAnimals(undefined, undefined, 1, 2500);
 

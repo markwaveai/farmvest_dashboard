@@ -9,6 +9,7 @@ import { farmvestService } from '../services/farmvest_api';
 import AddFarmModal from './AddFarmModal';
 import AddLocationDialog from './AddLocationDialog';
 import './Farms.css';
+import { Search, X } from 'lucide-react';
 import CustomDropdown from '../components/common/CustomDropdown';
 
 const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: any) => {
@@ -19,30 +20,30 @@ const FarmRow = memo(({ farm, index, currentPage, itemsPerPage, onFarmClick }: a
     const sNo = (pageNum - 1) * itemsPerPage + index + 1;
 
     return (
-        <tr className="bg-white border-b hover:bg-gray-50 transition-colors duration-150">
-            <td className="px-4 py-2 text-center text-gray-400 font-medium">{sNo}</td>
-            <td className="px-4 py-2 text-center font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => onFarmClick && onFarmClick(farm)}>
+        <tr className="bg-white border-b border-gray-50 hover:bg-gray-50/50 transition-colors duration-150">
+            <td className="px-4 py-3 text-center text-gray-400 font-bold text-xs">{sNo}</td>
+            <td className="px-4 py-3 text-left font-black text-gray-900 text-xs cursor-pointer hover:text-orange-600 transition-colors uppercase tracking-tight" onClick={() => onFarmClick && onFarmClick(farm)}>
                 {farm.farm_name || '-'}
             </td>
-            <td className="px-4 py-2 text-center text-gray-600">
+            <td className="px-4 py-3 text-left text-gray-600 uppercase tracking-widest text-[9px] font-black">
                 {farm.location || '-'}
             </td>
-            <td className="px-4 py-2 text-center">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100 shadow-sm mx-auto">
+            <td className="px-4 py-3 text-center">
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black border border-blue-100 uppercase">
                     {farm.sheds_count !== undefined ? farm.sheds_count : '-'}
                 </span>
             </td>
-            <td className="px-4 py-2 text-center">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100 shadow-sm mx-auto">
+            <td className="px-4 py-3 text-center">
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black border border-emerald-100 uppercase">
                     {typeof farm.total_buffaloes_count === 'number'
                         ? farm.total_buffaloes_count.toLocaleString()
                         : (farm.total_buffaloes_count || '0')}
                 </span>
             </td>
-            <td className="px-4 py-2 text-center text-gray-600">
-                <div className="flex flex-col items-center">
-                    <span className="font-medium text-gray-900">{farm.farm_manager_name || farm.manager_name || (farm.farm_manager?.name) || '-'}</span>
-                    <span className="text-xs text-gray-500 mt-0.5">{farm.mobile_number || farm.manager_mobile || farm.manager_phone || (farm.farm_manager?.mobile) || '-'}</span>
+            <td className="px-4 py-3 text-left">
+                <div className="flex flex-col">
+                    <span className="font-bold text-gray-800 text-xs">{farm.farm_manager_name || farm.manager_name || (farm.farm_manager?.name) || '-'}</span>
+                    <span className="text-[10px] text-gray-400 font-bold mt-0.5">{farm.mobile_number || farm.manager_mobile || farm.manager_phone || (farm.farm_manager?.mobile) || '-'}</span>
                 </div>
             </td>
         </tr>
@@ -58,6 +59,7 @@ const Farms: React.FC = () => {
     const farmsLoading = useAppSelector((state: RootState) => !!state.farmvestFarms?.loading);
     const farmsError = useAppSelector((state: RootState) => state.farmvestFarms?.error);
     const totalCount = useAppSelector((state: RootState) => state.farmvestFarms?.totalCount || 0);
+    const totalAnimalsCount = useAppSelector((state: RootState) => state.farmvestFarms?.totalAnimalsCount || 0);
 
     // Auth Role check
     const adminRole = useAppSelector((state: RootState) => state.auth.adminRole);
@@ -142,9 +144,9 @@ const Farms: React.FC = () => {
 
     // Transform locations for CustomDropdown
     const locationOptions = useMemo(() => {
-        const allOption = { value: 'ALL', label: 'all locations' };
+        const allOption = { value: 'ALL', label: 'ALL LOCATIONS' };
         if (availableLocations.length > 0) {
-            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc.toLowerCase() }))];
+            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc.toUpperCase() }))];
         }
         return [
             allOption,
@@ -179,112 +181,85 @@ const Farms: React.FC = () => {
     const totalPages = useMemo(() => {
         return Math.max(1, Math.ceil(totalCount / itemsPerPage));
     }, [totalCount, itemsPerPage]);
-
     return (
-        <div className="farms-container h-full flex flex-col gap-1 sm:gap-4 overflow-hidden animate-fadeIn">
-            <div className="farms-header p-2 sm:p-3 border-b border-gray-100 bg-white shadow-premium flex flex-col md:flex-row justify-between items-center gap-1.5 sm:gap-4 md:gap-6">
-                <div className="text-center md:text-left w-full md:w-auto">
-                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">FarmVest Management</h2>
-                    <div className="text-[10px] sm:text-sm text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2 mt-0 sm:mt-1">
-                        <span>{location} Operations • {totalCount} Farms Found</span>
-                    </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-center gap-1.5 sm:gap-3 w-full md:w-auto">
-                    {/* Search Input - Full width on mobile, fixed on medium+ */}
-                    <div className="w-full md:w-48 relative group">
-                        <input
-                            type="text"
-                            placeholder="find farm name..."
-                            className="farms-search-input"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
-                            </button>
-                        )}
+        <div className="h-full flex flex-col overflow-hidden animate-fadeIn bg-transparent">
+            {/* Page Header - Matches Employees Tab */}
+            <div className="flex-none bg-white border-b border-gray-100 px-4 py-3 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="mb-3 lg:mb-0">
+                        <h1 className="text-xl font-bold text-[#1a1a1a] tracking-tight">FarmVest Management</h1>
+                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">
+                            {location} Operations • {totalCount} Farms Found
+                        </p>
                     </div>
 
-                    <div className="flex flex-row items-center gap-1 sm:gap-2 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-40 z-20 min-w-0">
-                            <CustomDropdown
-                                options={locationOptions}
-                                value={location}
-                                onChange={handleLocationSelect}
-                                placeholder="all locations"
-                                className="farms-location-filter"
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2">
+                        {/* Search Input */}
+                        <div className="relative w-full sm:w-64 lg:w-72">
+                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Search className="h-3.5 w-3.5 text-gray-300" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Find farm name..."
+                                className="farms-search-input w-full"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
 
-                        <div className="flex flex-row gap-1 sm:gap-2 shrink-0">
-                            {adminRole?.toUpperCase() === 'SUPER ADMIN' && (
-                                <button
-                                    onClick={() => setIsAddLocationModalOpen(true)}
-                                    className="add-btn-responsive bg-[#f59e0b] hover:bg-[#d97706] text-white rounded-lg font-bold flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
-                                >
-                                    <span className="text-sm">+</span> Loc
-                                </button>
-                            )}
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-2 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-48 z-20">
+                                <CustomDropdown
+                                    options={locationOptions}
+                                    value={location}
+                                    onChange={handleLocationSelect}
+                                    placeholder="all locations"
+                                    className="farms-location-filter"
+                                />
+                            </div>
 
                             <button
                                 onClick={() => setIsAddFarmModalOpen(true)}
-                                className="add-btn-responsive bg-[#f59e0b] hover:bg-[#d97706] text-white rounded-lg font-bold flex items-center gap-1 shadow-sm transition-all shadow-orange-100 whitespace-nowrap"
+                                className="add-btn-compact w-full sm:w-auto flex items-center justify-center gap-1.5"
                             >
-                                <span className="text-sm">+</span> Farm
+                                <span className="text-base leading-none">+</span> Farm
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="farms-content flex-1 flex flex-col min-h-0">
+            <div className="farms-container flex-1 min-h-0">
                 {farmsError && (
-                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg flex items-center shadow-md animate-shake">
-                        <div className="p-2 bg-red-100 rounded-lg mr-4">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"></path></svg>
-                        </div>
+                    <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-800 rounded-lg flex items-center shadow-sm">
                         <div className="flex-1">
-                            <p className="font-bold uppercase tracking-tight text-xs">API Configuration Error</p>
-                            <p className="text-sm font-medium">{farmsError}</p>
+                            <p className="text-xs font-bold uppercase tracking-tight">API Error</p>
+                            <p className="text-xs font-medium">{farmsError}</p>
                         </div>
                         <button
-                            className="px-5 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg active:scale-95 ml-4"
+                            className="px-3 py-1.5 bg-red-600 text-white text-[10px] font-bold rounded-md hover:bg-red-700 transition-all uppercase"
                             onClick={() => dispatch(fetchFarms({ location, page: currentPage, size: itemsPerPage }))}
                         >
-                            RE-SYNC API
+                            Sync
                         </button>
                     </div>
                 )}
 
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-premium flex flex-col flex-1 min-h-0 overflow-hidden">
-                    <div className="overflow-auto flex-1 min-h-0 hide-scrollbar">
-                        <table className="farms-table w-full text-sm text-left border-collapse relative">
-                            <thead className="bg-[#f8fafc] border-b border-gray-200 text-xs font-bold uppercase tracking-wider text-gray-500 sticky top-0 z-10">
+                <div className="farms-table-container h-full flex flex-col">
+                    <div className="overflow-auto flex-1 hide-scrollbar">
+                        <table className="farms-table">
+                            <thead className="sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-4 py-2 text-center">S.no</th>
-                                    <th className="px-4 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-2">Farm Name</div>
-                                    </th>
-                                    <th className="px-4 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-2">Location</div>
-                                    </th>
-                                    <th className="px-4 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-2">Sheds</div>
-                                    </th>
-                                    <th className="px-4 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-2">Live Count</div>
-                                    </th>
-                                    <th className="px-4 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-2">Farm Manager</div>
-                                    </th>
+                                    <th className="w-16 text-center">S.No</th>
+                                    <th>FARM NAME</th>
+                                    <th>LOCATION</th>
+                                    <th className="text-center">SHEDS</th>
+                                    <th className="text-center">LIVE COUNT</th>
+                                    <th>FARM MANAGER</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody>
                                 {farmsLoading ? (
                                     <TableSkeleton cols={6} rows={10} />
                                 ) : (farms.length === 0 && !farmsError) ? (
@@ -312,19 +287,18 @@ const Farms: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
-
                 </div>
-
-                {totalPages > 1 && (
-                    <div className="mt-2 sm:mt-4 px-2 sm:px-4 pb-2 sm:pb-4 flex justify-center sm:justify-end">
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
-                    </div>
-                )}
             </div>
+
+            {totalPages > 1 && (
+                <div className="flex-none mt-2 px-4 pb-2 flex justify-end">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
+            )}
 
             <AddFarmModal
                 isOpen={isAddFarmModalOpen}

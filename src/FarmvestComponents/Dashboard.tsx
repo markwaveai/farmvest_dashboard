@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import './Dashboard.css';
 import {
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -31,31 +31,74 @@ const Dashboard: React.FC = () => {
     const [sheds, setSheds] = useState<any[]>([]);
     const [animalCount, setAnimalCount] = useState(0);
     const [allAnimals, setAllAnimals] = useState<any[]>([]);
+    const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
+    const [assetValue, setAssetValue] = useState<number | null>(null);
+    const [totalCalves, setTotalCalves] = useState(0);
+    const [totalAnimals, setTotalAnimals] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     // --- Mock Data Constants (Retained for Charts not yet in API) ---
     const FARMS = ['Farm A'];
     const SHEDS = ['Shed A', 'Shed B', 'Shed C', 'Shed D'];
 
-    // Initial Data Fetch
+    const isInitialMount = useRef(true);
+    const hasInitialFetched = useRef(false);
+
+    // Initial Data Fetch (Farms + Initial Animals)
     useEffect(() => {
         const fetchInitialData = async () => {
+            if (hasInitialFetched.current) return;
+            hasInitialFetched.current = true;
+
             try {
                 setIsLoading(true);
                 const farmsResponse = await farmvestService.getAllFarms();
                 const farmsList = Array.isArray(farmsResponse) ? farmsResponse : (farmsResponse.farms || farmsResponse.data || farmsResponse.data?.farms || []);
                 setFarms(farmsList);
 
-                // Fetch Initial Animals (Total)
-                const statsResponse = await farmvestService.getTotalAnimals(undefined, undefined, 1, 5000);
-                if (statsResponse) {
-                    const animalData = Array.isArray(statsResponse) ? statsResponse : (statsResponse.data || statsResponse.animals || statsResponse.data?.animals || []);
-                    setAnimalCount(statsResponse.animals_count || statsResponse.count || statsResponse.total_count || animalData.length);
-                    setAllAnimals(animalData);
+                // Fetch Investor Summary is our ONLY source for the Dashboard Metrics
+                try {
+                    const summaryResponse = await farmvestService.getInvestorSummary();
+                    if (summaryResponse && summaryResponse.data) {
+                        const sData = summaryResponse.data;
+                        // Extracting fields exactly as shown in user screenshot
+                        const rev = sData.revenue ?? sData.total_revenue ?? 0;
+                        setTotalRevenue(Number(rev));
+
+                        const asset = sData.asset_value ?? 0;
+                        setAssetValue(Number(asset));
+
+                        // Also sync animal counts if available in summary
+                        if (sData.total_buffaloes !== undefined) {
+                            setAnimalCount(Number(sData.total_buffaloes));
+                        }
+                        if (sData.total_calves !== undefined) {
+                            setTotalCalves(Number(sData.total_calves));
+                        }
+                    }
+                } catch (e) {
+                    console.error("Summary API failed:", e);
+                }
+
+                // Integrated get_total_animals API specifically for Herds count as requested
+                try {
+                    const herdsResponse = await farmvestService.getTotalAnimals(undefined, undefined, 1, 15);
+                    if (herdsResponse) {
+                        const bCount = herdsResponse.buffalo_count ?? herdsResponse.buffaloes ?? 0;
+                        const cCount = herdsResponse.calves_count ?? herdsResponse.calves ?? 0;
+                        const tCount = herdsResponse.animals_count ?? herdsResponse.total_animals ?? (Number(bCount) + Number(cCount));
+
+                        setTotalAnimals(Number(tCount));
+                        setAnimalCount(Number(bCount));
+                        setTotalCalves(Number(cCount));
+                    }
+                } catch (e) {
+                    console.error("Herds API failed:", e);
                 }
             } catch (error) {
             } finally {
                 setIsLoading(false);
+                setTimeout(() => { isInitialMount.current = false; }, 100);
             }
         };
         fetchInitialData();
@@ -83,28 +126,41 @@ const Dashboard: React.FC = () => {
         fetchSheds();
     }, [selectedFarm, farms]);
 
-    // Update Animal Count when filters change
+    // Handle Filter Changes
     useEffect(() => {
-        const updateCount = async () => {
+        if (isInitialMount.current) return;
+
+        const updateData = async () => {
             try {
                 const farmObj = farms.find(f => (f.farm_name || f.name) === selectedFarm);
                 const shedObj = sheds.find(s => (s.shed_name || s.shed_id) === selectedShed);
-
                 const farmId = farmObj?.id || farmObj?.farm_id;
                 const shedId = shedObj?.id || shedObj?.shed_id;
 
-                const response = await farmvestService.getTotalAnimals(farmId, shedId, 1, 5000);
+                // Syncing full list for distribution charts, and updating summary cards to reflect selection
+                const response = await farmvestService.getTotalAnimals(farmId, shedId, 1, 100);
                 if (response) {
                     const data = Array.isArray(response) ? response : (response.data || response.animals || response.data?.animals || []);
-                    setAnimalCount(response.animals_count || response.count || response.total_count || data.length);
-                    if (selectedFarm === 'All' && selectedShed === 'All') {
-                        setAllAnimals(data);
+                    setAllAnimals(data);
+
+                    // Sync summary counts with filtered data
+                    const bCount = response.buffalo_count ?? response.buffaloes ?? (Array.isArray(response) ? 0 : null);
+                    const cCount = response.calves_count ?? response.calves ?? (Array.isArray(response) ? 0 : null);
+                    const tCount = response.animals_count ?? response.total_animals ?? (bCount !== null && cCount !== null ? Number(bCount) + Number(cCount) : null);
+
+                    if (bCount !== null) setAnimalCount(Number(bCount));
+                    if (cCount !== null) setTotalCalves(Number(cCount));
+                    if (tCount !== null) setTotalAnimals(Number(tCount));
+
+                    // Fallback if counts are missing but data is present (if response is just an array)
+                    if (Array.isArray(response) && response.length > 0 && bCount === null) {
+                        setAnimalCount(response.length);
+                        setTotalAnimals(response.length);
                     }
                 }
-            } catch (error) {
-            }
+            } catch (error) { }
         };
-        updateCount();
+        updateData();
     }, [selectedFarm, selectedShed]);
 
     // Data strictly according to: 1 Farm = 4 Sheds, 300 Buffalos each.
@@ -133,16 +189,16 @@ const Dashboard: React.FC = () => {
                     };
                 }
                 groups[groupKey].animals += 1;
-                groups[groupKey].revenue += 500;
+                groups[groupKey].revenue = 0; // Removing mock +500 calculation
             });
             return Object.values(groups);
         }
 
         return [
-            { name: 'Shed A', animals: 300, revenue: 150000, color: '#113025' },
-            { name: 'Shed B', animals: 300, revenue: 145000, color: '#E27D60' },
-            { name: 'Shed C', animals: 300, revenue: 160000, color: '#64748b' },
-            { name: 'Shed D', animals: 300, revenue: 155000, color: '#94a3b8' },
+            { name: 'Shed A', animals: 0, revenue: 0, color: '#113025' },
+            { name: 'Shed B', animals: 0, revenue: 0, color: '#E27D60' },
+            { name: 'Shed C', animals: 0, revenue: 0, color: '#64748b' },
+            { name: 'Shed D', animals: 0, revenue: 0, color: '#94a3b8' },
         ];
     }, [allAnimals, selectedFarm]);
 
@@ -154,60 +210,30 @@ const Dashboard: React.FC = () => {
         return allShedData;
     }, [selectedShed, allShedData]);
 
-    // Calculate Totals based on selection
-    const totalRevenue = currentShedData.reduce((acc, curr) => acc + curr.revenue, 0);
-    const totalAnimals = selectedFarm === 'All' && selectedShed === 'All' ? animalCount : currentShedData.reduce((acc, curr) => acc + curr.animals, 0);
-    const activeSheds = selectedShed === 'All' ? (sheds.length || 4) : 1;
-    const totalFarms = farms.length || 1;
+    const totalRevenueDisplay = totalRevenue ?? 0;
+    const totalAnimalsDisplay = animalCount;
+    const activeShedsDisplay = selectedShed === 'All' ? (farms.length > 0 ? sheds.length : 4) : 1;
+    const totalFarmsDisplay = farms.length > 0 ? farms.length : 1;
 
     // --- Mock Data Generators ---
     const getRevenueData = (range: TimeRange, shedFilter: FilterOption) => {
-        // Base multiplier to simulate lower values when single shed is selected
-        const multiplier = shedFilter === 'All' ? 1 : (1 / (sheds.length || 4));
+        const labels = {
+            daily: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            weekly: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            monthly: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            yearly: ['2021', '2022', '2023', '2024', '2025']
+        };
 
-        switch (range) {
-            case 'daily':
-                return Array.from({ length: 7 }, (_, i) => ({
-                    name: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-                    revenue: (Math.floor(Math.random() * 50000) + 10000) * multiplier,
-                    expenses: (Math.floor(Math.random() * 30000) + 5000) * multiplier,
-                    feedCost: (Math.floor(Math.random() * 15000) + 2000) * multiplier,
-                    feedConsumption: (Math.floor(Math.random() * 500) + 100) * multiplier, // in kg
-                }));
-            case 'weekly':
-                return Array.from({ length: 4 }, (_, i) => ({
-                    name: `Week ${i + 1}`,
-                    revenue: (Math.floor(Math.random() * 200000) + 50000) * multiplier,
-                    expenses: (Math.floor(Math.random() * 100000) + 20000) * multiplier,
-                    feedCost: (Math.floor(Math.random() * 50000) + 10000) * multiplier,
-                    feedConsumption: (Math.floor(Math.random() * 2000) + 500) * multiplier,
-                }));
-            case 'monthly':
-                return [
-                    { name: 'Jan', revenue: 400000 * multiplier, expenses: 240000 * multiplier, feedCost: 100000 * multiplier, feedConsumption: 5000 * multiplier },
-                    { name: 'Feb', revenue: 300000 * multiplier, expenses: 139800 * multiplier, feedCost: 60000 * multiplier, feedConsumption: 3500 * multiplier },
-                    { name: 'Mar', revenue: 200000 * multiplier, expenses: 98000 * multiplier, feedCost: 40000 * multiplier, feedConsumption: 2500 * multiplier },
-                    { name: 'Apr', revenue: 278000 * multiplier, expenses: 39080 * multiplier, feedCost: 15000 * multiplier, feedConsumption: 1000 * multiplier },
-                    { name: 'May', revenue: 189000 * multiplier, expenses: 48000 * multiplier, feedCost: 20000 * multiplier, feedConsumption: 1200 * multiplier },
-                    { name: 'Jun', revenue: 239000 * multiplier, expenses: 38000 * multiplier, feedCost: 18000 * multiplier, feedConsumption: 1100 * multiplier },
-                    { name: 'Jul', revenue: 349000 * multiplier, expenses: 43000 * multiplier, feedCost: 20000 * multiplier, feedConsumption: 1250 * multiplier },
-                    { name: 'Aug', revenue: 400000 * multiplier, expenses: 240000 * multiplier, feedCost: 100000 * multiplier, feedConsumption: 5000 * multiplier },
-                    { name: 'Sep', revenue: 300000 * multiplier, expenses: 139800 * multiplier, feedCost: 60000 * multiplier, feedConsumption: 3500 * multiplier },
-                    { name: 'Oct', revenue: 200000 * multiplier, expenses: 98000 * multiplier, feedCost: 40000 * multiplier, feedConsumption: 2500 * multiplier },
-                    { name: 'Nov', revenue: 278000 * multiplier, expenses: 39080 * multiplier, feedCost: 15000 * multiplier, feedConsumption: 1000 * multiplier },
-                    { name: 'Dec', revenue: 189000 * multiplier, expenses: 48000 * multiplier, feedCost: 20000 * multiplier, feedConsumption: 1200 * multiplier },
-                ];
-            case 'yearly':
-                return [
-                    { name: '2021', revenue: 2400000 * multiplier, expenses: 1400000 * multiplier, feedCost: 600000 * multiplier, feedConsumption: 30000 * multiplier },
-                    { name: '2022', revenue: 3000000 * multiplier, expenses: 1800000 * multiplier, feedCost: 800000 * multiplier, feedConsumption: 40000 * multiplier },
-                    { name: '2023', revenue: 4500000 * multiplier, expenses: 2400000 * multiplier, feedCost: 1000000 * multiplier, feedConsumption: 50000 * multiplier },
-                    { name: '2024', revenue: 5200000 * multiplier, expenses: 2800000 * multiplier, feedCost: 1200000 * multiplier, feedConsumption: 60000 * multiplier },
-                    { name: '2025', revenue: 6100000 * multiplier, expenses: 3100000 * multiplier, feedCost: 1400000 * multiplier, feedConsumption: 70000 * multiplier },
-                ];
-            default:
-                return [];
-        }
+        const currentLabels = labels[range] || [];
+
+        // Returning 0s to avoid mock data until Trend API is integrated
+        return currentLabels.map(name => ({
+            name,
+            revenue: 0,
+            expenses: 0,
+            feedCost: 0,
+            feedConsumption: 0
+        }));
     };
 
     const revenueTrendData = useMemo(() => getRevenueData(timeRange, selectedShed), [timeRange, selectedShed, sheds.length]);
@@ -344,24 +370,23 @@ const Dashboard: React.FC = () => {
             <div className="summary-cards-grid">
                 <SummaryCard
                     title="Total Revenue"
-                    value={`₹ ${totalRevenue.toLocaleString()}`}
+                    value={`₹ ${totalRevenueDisplay.toLocaleString()}`}
                     subtitle="Monthly Aggregate"
                     icon={<DollarSign color="white" size={24} />}
                     color={THICK_GREEN}
                     onClick={() => setIsRevenueModalOpen(true)}
                 />
                 <SummaryCard
-                    title="Feed Consumption"
-                    value={`${totalFeedConsumption.toLocaleString()} kg`}
-                    subtitle="Estimated Usage"
+                    title="Asset Value"
+                    value={`₹ ${assetValue !== null ? assetValue.toLocaleString() : '...'}`}
+                    subtitle="Platform Valuation"
                     icon={<Archive color="white" size={24} />}
                     color="#E27D60"
-                    onClick={() => setIsFeedModalOpen(true)}
-                    noShadow={true}
+
                 />
                 <SummaryCard
                     title="Active Sheds"
-                    value={activeSheds.toString()}
+                    value={activeShedsDisplay.toString()}
                     subtitle={selectedShed === 'All' ? "100% Operational" : "Selected Shed"}
                     icon={<Home color="white" size={24} />}
                     color="#64748b"
@@ -370,7 +395,7 @@ const Dashboard: React.FC = () => {
                 <SummaryCard
                     title="Total Animals"
                     value={totalAnimals.toLocaleString()}
-                    subtitle="Live Count"
+                    subtitle={`${animalCount} Buffaloes | ${totalCalves} Calves`}
                     icon={<Users color="white" size={24} />}
                     color="#E27D60"
                     onClick={() => setIsBuffaloModalOpen(true)}
@@ -396,13 +421,13 @@ const Dashboard: React.FC = () => {
                 isOpen={isBuffaloModalOpen}
                 onClose={() => setIsBuffaloModalOpen(false)}
                 shed={selectedShed}
-                totalAnimals={totalAnimals}
+                totalAnimals={totalAnimalsDisplay}
             />
             <ShedDetailsModal
                 isOpen={isShedModalOpen}
                 onClose={() => setIsShedModalOpen(false)}
-                activeSheds={activeSheds}
-                totalAnimals={totalAnimals}
+                activeSheds={activeShedsDisplay}
+                totalAnimals={totalAnimalsDisplay}
             />
 
             {/* Main Charts Area */}
@@ -945,7 +970,7 @@ const ShedDetailsModal: React.FC<{ isOpen: boolean; onClose: () => void; activeS
 
 
 const SummaryCard: React.FC<{ title: string, value: string, subtitle: string, icon: React.ReactNode, color: string, onClick?: () => void, style?: React.CSSProperties, noShadow?: boolean }> = ({ title, value, subtitle, icon, color, onClick, style, noShadow }) => {
-    const isPositive = subtitle.includes('+') || subtitle.includes('Occupancy') || subtitle.includes('New') || subtitle.includes('Live') || subtitle.includes('Monthly');
+    const isPositive = true; // Forcing clean neutral/positive look for summary cards
 
     return (
         <div
@@ -961,7 +986,6 @@ const SummaryCard: React.FC<{ title: string, value: string, subtitle: string, ic
             </div>
             <div className="card-value">{value}</div>
             <div className={`card-subtitle ${!isPositive ? 'negative' : ''}`}>
-                {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                 {subtitle}
             </div>
         </div>

@@ -184,15 +184,17 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
                             />
                         </div>
 
-                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                        <div className="form-group-checkbox" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', marginTop: '15px', justifyContent: 'flex-start' }}>
                             <input
                                 id="isTest"
                                 type="checkbox"
                                 checked={isTest}
                                 onChange={(e) => setIsTest(e.target.checked)}
-                                style={{ width: 'auto', cursor: 'pointer' }}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
                             />
-                            <label htmlFor="isTest" style={{ marginBottom: 0, cursor: 'pointer' }}>Is Test Farm</label>
+                            <label htmlFor="isTest" style={{ marginBottom: 0, cursor: 'pointer', display: 'inline-block', fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
+                                Is Test Farm
+                            </label>
                         </div>
                     </div>
 

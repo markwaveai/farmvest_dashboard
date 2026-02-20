@@ -43,6 +43,7 @@ export const fetchFarms = createAsyncThunk(
 
             let allFarms: FarmvestFarm[] = [];
             let totalCount = 0;
+            let totalAnimalsCount = 0;
 
             // Normalize response data with robust checks
             if (response) {
@@ -84,6 +85,7 @@ export const fetchFarms = createAsyncThunk(
                 };
 
                 totalCount = findTotal(response) || allFarms.length;
+                totalAnimalsCount = response.animals_count || response.total_animals || 0;
             }
 
             // Helper to infer location from farm name prefix if missing
@@ -102,9 +104,11 @@ export const fetchFarms = createAsyncThunk(
             allFarms = allFarms.map((item: any, index: number) => {
                 const farmName = item.farm_name || item.name || item.farmName || `Farm ${index + 1}`;
 
+
                 // Location can be a string or object
                 const locRaw = item.location_name || item.location || item.locationName || item.city || item.address || null;
                 let locationStr = typeof locRaw === 'string' ? locRaw : (locRaw?.name || locRaw?.label || locRaw?.location_name || null);
+
 
                 // If location is missing, try to infer it from the name
                 if (!locationStr || locationStr === '-') {
@@ -146,17 +150,17 @@ export const fetchFarms = createAsyncThunk(
                 });
             }
 
-            // Update total count after all filters
-            totalCount = allFarms.length;
-
             // Handle pagination manually for location/search results
             if (normalizedLocation !== 'ALL' || search) {
+                // When manual filtering is applied, allFarms.length represents the total count for this filtered view
+                totalCount = allFarms.length;
+
                 const startIndex = (page - 1) * size;
                 const endIndex = startIndex + size;
                 allFarms = allFarms.slice(startIndex, endIndex);
             }
 
-            return { farms: allFarms, totalCount, location: normalizedLocation };
+            return { farms: allFarms, totalCount, totalAnimalsCount, location: normalizedLocation };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch farms');
         }
@@ -169,6 +173,7 @@ interface FarmsState {
     error: string | null;
     loadedLocation: string | null;
     totalCount: number;
+    totalAnimalsCount: number;
 }
 
 const initialState: FarmsState = {
@@ -176,7 +181,8 @@ const initialState: FarmsState = {
     loading: false,
     error: null,
     loadedLocation: null,
-    totalCount: 0
+    totalCount: 0,
+    totalAnimalsCount: 0
 };
 
 const farmsSlice = createSlice({
@@ -200,6 +206,7 @@ const farmsSlice = createSlice({
                 state.loading = false;
                 state.farms = action.payload.farms;
                 state.totalCount = action.payload.totalCount;
+                state.totalAnimalsCount = action.payload.totalAnimalsCount || 0;
                 state.loadedLocation = action.payload.location;
             })
             .addCase(fetchFarms.rejected, (state, action) => {

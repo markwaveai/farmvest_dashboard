@@ -3,271 +3,158 @@
     display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
 .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
-
 
 .farms-container {
     display: flex;
     flex-direction: column;
     height: 100%;
     background: transparent;
-}
-
-.farms-header {
-    background-color: white;
-    border-bottom: 1px solid var(--card-border, #e2e8f0);
+    padding: 0.75rem;
+    gap: 0.75rem;
 }
 
 .farms-table-container {
     background: white;
-    border-radius: var(--card-radius, 14px);
-    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
     overflow: hidden;
-    box-shadow: var(--shadow-premium);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .farms-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .farms-table th {
     background: #f8fafc;
-    padding: 8px 12px;
+    padding: 0.6rem 0.75rem;
     text-align: left;
-    font-weight: 700;
-    font-size: 13px;
-    /* Standardized to match filters (13px) */
+    font-weight: 800;
+    font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #64748b;
-    border-bottom: 1px solid var(--card-border, #e2e8f0);
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .farms-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #f8fafc;
+    font-size: 0.75rem;
+    color: #334155;
     vertical-align: middle;
-    font-size: 0.8125rem;
-    color: var(--text-primary, #0f172a);
+}
+
+.farms-table tr:last-child td {
+    border-bottom: none;
 }
 
 .farms-table tr:hover {
     background-color: #f8fafc;
 }
 
-/* Location Filter Custom Styling */
-.farms-location-filter .custom-dropdown-trigger {
-    border: 1.5px solid #e2e8f0 !important;
-    border-radius: 12px !important;
-    padding: 6px 14px !important;
-    height: 36px !important;
-    /* Decreased height */
-    background-color: white !important;
-    transition: all 0.2s ease;
-    font-size: 13px !important;
-    font-weight: 700 !important;
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+
+    .farms-table th:nth-child(6),
+    .farms-table td:nth-child(6) {
+        display: none;
+    }
 }
 
-.farms-location-filter .custom-dropdown-trigger:hover {
-    border-color: #cbd5e1 !important;
-    background-color: #f8fafc !important;
+@media (max-width: 768px) {
+    .farms-container {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .farms-table th,
+    .farms-table td {
+        padding: 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .farms-table th:nth-child(4),
+    .farms-table td:nth-child(4) {
+        display: none;
+    }
 }
 
-.farms-location-filter .custom-dropdown-trigger.no-selection span {
-    color: #64748b !important;
-    font-weight: 700 !important;
+@media (max-width: 640px) {
+
+    .farms-table th:nth-child(3),
+    .farms-table td:nth-child(3) {
+        display: none;
+    }
 }
 
-/* Standardized Search Input */
+/* Animation */
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: slideUpFadeIn 0.4s ease-out forwards;
+}
+
+/* Custom Search Input */
 .farms-search-input {
-    height: 36px !important;
-    /* Decreased height */
-    border: 1.5px solid #e2e8f0 !important;
-    border-radius: 12px !important;
-    padding-left: 48px !important;
-    /* Increased gap from 40px to 48px */
-    padding-right: 36px !important;
-    background-color: white !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    color: #334155 !important;
-    /* Active text color - dark slate */
-    transition: all 0.2s ease !important;
-    width: 100% !important;
-    outline: none !important;
-}
-
-.farms-search-input::placeholder {
-    color: #64748b !important;
-    font-weight: 700 !important;
-    font-size: 13px !important;
+    height: 36px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding-left: 36px;
+    padding-right: 12px;
+    background-color: #f8fafc;
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+    transition: all 0.2s ease;
+    width: 100%;
+    outline: none;
 }
 
 .farms-search-input:focus {
-    border-color: #cbd5e1 !important;
-    /* Subtle gray instead of blue */
-    box-shadow: none !important;
-    /* Removed blue ring/focus ring */
+    border-color: #cbd5e1;
+    background-color: white;
 }
 
-.add-btn-responsive {
-    transition: all 0.2s ease;
-    padding: 8px 40px;
-    /* Increased horizontal padding for width */
-    font-size: 13px;
+/* Custom Dropdown Adjustments */
+.farms-location-filter .custom-dropdown-trigger {
+    height: 36px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background-color: white !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+.add-btn-compact {
     height: 36px;
-    /* Matching filter height */
-    border-radius: 12px;
+    background-color: #f59e0b;
+    color: white;
+    padding: 0 1.5rem;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
 }
 
-@media (min-width: 768px) {
-    .add-btn-responsive {
-        padding: 8px 60px;
-        /* Much wider on desktop */
-        font-size: 15px;
-        height: 36px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .add-btn-responsive {
-        padding: 10px 24px;
-        font-size: 14px;
-    }
-}
-
-@media (min-width: 1536px) {
-    .add-btn-responsive {
-        padding: 24px 60px !important;
-        font-size: 32px !important;
-        border-radius: 20px !important;
-        flex-shrink: 0 !important;
-        white-space: nowrap !important;
-        height: auto !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 16px !important;
-    }
-
-    .add-btn-responsive svg {
-        width: 36px !important;
-        height: 36px !important;
-    }
-
-    /* Scoped 4K Scaling for Farms */
-    .farms-container .farms-header {
-        padding: 60px 80px !important;
-        gap: 60px !important;
-        flex-wrap: wrap !important;
-        height: auto !important;
-    }
-
-    .farms-container .farms-header h2 {
-        font-size: 48px !important;
-        line-height: 1.2 !important;
-        font-weight: 800 !important;
-    }
-
-    .farms-container .farms-header .text-gray-500 {
-        font-size: 32px !important;
-        line-height: 1.4 !important;
-        margin-top: 16px !important;
-    }
-
-    .farms-container .farms-header input {
-        padding-top: 32px !important;
-        padding-bottom: 32px !important;
-        padding-left: 100px !important;
-        font-size: 32px !important;
-        border-radius: 24px !important;
-    }
-
-    /* Search bar and dropdown flexibility */
-    .farms-container .farms-header .md\:w-56 {
-        max-width: 800px !important;
-        width: 100% !important;
-        flex: 1.5 !important;
-        min-width: 400px !important;
-    }
-
-    .farms-container .farms-header .md\:w-48 {
-        max-width: 600px !important;
-        width: 100% !important;
-        flex: 1 !important;
-        min-width: 300px !important;
-    }
-
-    .farms-container .farms-header .custom-dropdown-trigger {
-        font-size: 32px !important;
-        padding: 24px 36px !important;
-        border-radius: 24px !important;
-    }
-
-    .farms-container .farms-header .text-sm {
-        font-size: 32px !important;
-    }
-
-    .farms-container .farms-header svg {
-        width: 48px !important;
-        height: 48px !important;
-    }
-
-    /* Balanced Table Scaling */
-    .farms-container .farms-table th {
-        padding: 44px 48px !important;
-        font-size: 30px !important;
-        font-weight: 800 !important;
-        line-height: 1.3 !important;
-        letter-spacing: 0.05em !important;
-        background: #f8fafc !important;
-        text-transform: uppercase !important;
-        border-bottom: 3px solid #e2e8f0 !important;
-        /* Thick, clear border instead of shadow */
-    }
-
-    .farms-container .farms-table td {
-        padding: 44px 48px !important;
-        font-size: 30px !important;
-        font-weight: 600 !important;
-    }
-
-    .farms-container .farms-table thead {
-        font-size: 44px !important;
-    }
-
-    .farms-container .farms-table tr {
-        border-bottom: 1px solid #e2e8f0 !important;
-        background-color: white !important;
-        /* Force white background to prevent bleeding */
-    }
-
-    /* Scaling Pills/Icons inside table */
-    .farms-container .farms-table .w-8.h-8 {
-        width: 88px !important;
-        height: 88px !important;
-        font-size: 32px !important;
-    }
-
-    .farms-container .farms-table .text-xs {
-        font-size: 22px !important;
-    }
-
-    .farms-container .farms-table .text-sm {
-        font-size: 26px !important;
-    }
-
-    /* Manager name specifically */
-    .farms-container .farms-table .font-medium.text-gray-900 {
-        font-size: 30px !important;
-    }
-
-    .farms-container .farms-table .text-xs.text-gray-500 {
-        font-size: 22px !important;
-        margin-top: 10px !important;
-    }
+.add-btn-compact:hover {
+    background-color: #d97706;
 }

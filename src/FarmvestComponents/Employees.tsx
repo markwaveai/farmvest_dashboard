@@ -196,152 +196,151 @@ const Employees: React.FC = () => {
             )}
 
             {/* Page Header Card - Fixed Height */}
-            <div className="flex-none bg-white border-b border-gray-100 p-3 2xl:p-6 4xl:p-12 5xl:p-20 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 4xl:gap-12 5xl:gap-20">
-                    <div>
-                        <h1 className="text-xl 2xl:text-3xl 4xl:text-6xl 5xl:text-[100px] font-bold text-gray-900 leading-tight">FarmVest Employees</h1>
-                        <p className="text-sm 2xl:text-xl 4xl:text-4xl 5xl:text-6xl text-gray-500 mt-0.5 4xl:mt-4">Manage all employees (Total: {globalTotalCount || totalCount || 0})</p>
+            <div className="flex-none bg-white border-b border-gray-100 px-4 py-3 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="mb-3 lg:mb-0">
+                        <h1 className="text-xl font-bold text-[#1a1a1a] tracking-tight">FarmVest Employees</h1>
+                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">Manage all employees ({globalTotalCount || totalCount || 0} Total)</p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Search - Visual only if API doesn't support search on get_all.
-                             If we want search, implement separate logic. For now, keep visual.
-                             (User request was specifically about pagination on existing APIs)
-                         */}
-                        <div className="relative flex-1 min-w-[160px] 2xl:min-w-[300px] 4xl:min-w-[600px] 5xl:min-w-[900px]">
-                            <div className="absolute inset-y-0 left-0 pl-3 4xl:pl-8 5xl:pl-12 flex items-center pointer-events-none">
-                                <Search className="h-3.5 w-3.5 2xl:h-5 2xl:w-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400" />
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2">
+                        {/* Search Input */}
+                        <div className="relative w-full sm:w-64 lg:w-72">
+                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Search className="h-3.5 w-3.5 text-gray-300" />
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search..."
-                                className="pl-9 2xl:pl-12 4xl:pl-24 5xl:pl-36 pr-8 py-2 2xl:py-3 4xl:py-8 5xl:py-14 w-full border border-gray-200 rounded-md 4xl:rounded-2xl text-sm 2xl:text-base 4xl:text-4xl 5xl:text-6xl focus:outline-none focus:ring-2 focus:ring-[#f59e0b] focus:border-transparent"
+                                placeholder="Search employees..."
+                                className="w-full pl-9 pr-9 py-2 bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-orange-100 focus:border-orange-500 transition-all outline-none text-[13px] font-medium"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute inset-y-0 right-0 pr-3 4xl:pr-8 5xl:pr-12 flex items-center text-gray-400 hover:text-gray-600"
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-300 hover:text-gray-500"
                                 >
-                                    <X size={14} className="2xl:w-5 2xl:h-5 4xl:w-12 4xl:h-12 5xl:w-20 5xl:h-20" />
+                                    <X size={16} />
                                 </button>
                             )}
                         </div>
 
-                        <div
-                            className="relative z-20"
-                            onMouseEnter={() => { setIsDropdownOpen(true); setIsStatusDropdownOpen(false); }}
-                            onMouseLeave={() => setIsDropdownOpen(false)}
-                        >
-                            <button
-                                className={`flex items-center justify-between min-w-[130px] 2xl:min-w-[180px] 4xl:min-w-[350px] 5xl:min-w-[500px] py-2 2xl:py-3 4xl:py-8 5xl:py-14 px-3 2xl:px-5 4xl:px-12 5xl:px-20 rounded-md 4xl:rounded-2xl text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-2 w-full sm:w-auto">
+                            <div
+                                className="relative z-20 w-full sm:w-auto"
+                                onMouseEnter={() => { if (window.innerWidth > 768) setIsDropdownOpen(true); setIsStatusDropdownOpen(false); }}
+                                onMouseLeave={() => { if (window.innerWidth > 768) setIsDropdownOpen(false); }}
                             >
-                                <span className="flex items-center whitespace-nowrap">
-                                    {formatRoleName(selectedRole)}
-                                    <span className="ml-1 4xl:ml-4 text-gray-500 font-normal">
-                                        ({selectedRole === '' ? (globalTotalCount || totalCount) : (roleCounts[selectedRole] || 0)})
+                                <button
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className={`flex items-center justify-between w-full sm:min-w-[140px] py-2 px-3 rounded-lg text-[13px] font-bold transition-all ${(selectedRole !== '' || isDropdownOpen) ? 'bg-orange-50 border border-orange-100 text-orange-700 shadow-sm' : 'bg-white border border-gray-100 text-gray-700 hover:bg-gray-50'}`}
+                                >
+                                    <span className="flex items-center truncate max-w-[100px] sm:max-w-none">
+                                        {formatRoleName(selectedRole)}
+                                        <span className="ml-1.5 text-[10px] text-gray-400 font-bold hidden xs:inline">
+                                            ({selectedRole === '' ? (globalTotalCount || totalCount) : (roleCounts[selectedRole] || 0)})
+                                        </span>
                                     </span>
-                                </span>
-                                <ChevronDown size={14} className={`ml-2 2xl:h-5 2xl:w-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                            </button>
+                                    <ChevronDown size={14} className={`ml-2 text-gray-300 transition-transform duration-200 shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
 
-                            {isDropdownOpen && (
-                                <div className="absolute top-full left-0 md:left-auto md:right-0 -mt-1 w-56 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {roles.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                setSelectedRole(option.value);
-                                                setIsDropdownOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
-                                        >
-                                            <span className="flex items-center">
-                                                {option.label}
-                                                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
-                                                    {option.value === '' ? (globalTotalCount || totalCount) : (roleCounts[option.value] || 0)}
+                                {isDropdownOpen && (
+                                    <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {roles.map((option) => (
+                                            <button
+                                                key={option.value}
+                                                onClick={() => {
+                                                    setSelectedRole(option.value);
+                                                    setIsDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedRole === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
+                                            >
+                                                <span className="flex items-center">
+                                                    {option.label}
+                                                    <span className={`ml-2 px-1 py-0.5 rounded-full text-[9px] font-bold ${selectedRole === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-400'}`}>
+                                                        {option.value === '' ? (globalTotalCount || totalCount) : (roleCounts[option.value] || 0)}
+                                                    </span>
                                                 </span>
-                                            </span>
-                                            {selectedRole === option.value && <Check size={14} />}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                                {selectedRole === option.value && <Check size={12} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
-                        <div
-                            className="relative z-20"
-                            onMouseEnter={() => { setIsStatusDropdownOpen(true); setIsDropdownOpen(false); }}
-                            onMouseLeave={() => setIsStatusDropdownOpen(false)}
-                        >
-                            <button
-                                className={`flex items-center justify-between min-w-[120px] 2xl:min-w-[160px] 4xl:min-w-[300px] 5xl:min-w-[450px] py-2 2xl:py-3 4xl:py-8 5xl:py-14 px-3 2xl:px-5 4xl:px-12 5xl:px-20 rounded-md 4xl:rounded-2xl text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl font-medium focus:outline-none hover:bg-orange-50 hover:border-gray-300 hover:text-orange-700 transition-colors ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-gray-200 text-orange-700' : 'bg-white border border-gray-200 text-gray-700'}`}
+                            <div
+                                className="relative z-20 w-full sm:w-auto"
+                                onMouseEnter={() => { if (window.innerWidth > 768) setIsStatusDropdownOpen(true); setIsDropdownOpen(false); }}
+                                onMouseLeave={() => { if (window.innerWidth > 768) setIsStatusDropdownOpen(false); }}
                             >
-                                <span className="flex items-center whitespace-nowrap">
-                                    {selectedStatus === '' ? 'All Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
-                                    <span className="ml-1 4xl:ml-4 text-gray-500 font-normal">
-                                        ({selectedStatus === '' ? currentStatusCounts.active + currentStatusCounts.inactive : (selectedStatus === '1' ? currentStatusCounts.active : currentStatusCounts.inactive)})
+                                <button
+                                    onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                    className={`flex items-center justify-between w-full sm:min-w-[120px] py-2 px-3 rounded-lg text-[13px] font-bold transition-all ${(selectedStatus !== '' || isStatusDropdownOpen) ? 'bg-orange-50 border border-orange-100 text-orange-700 shadow-sm' : 'bg-white border border-gray-100 text-gray-700 hover:bg-gray-50'}`}
+                                >
+                                    <span className="flex items-center truncate max-w-[80px] sm:max-w-none">
+                                        {selectedStatus === '' ? 'Status' : (selectedStatus === '1' ? 'Active' : 'Inactive')}
+                                        <span className="ml-1.5 text-[10px] text-gray-400 font-bold hidden xs:inline">
+                                            ({selectedStatus === '' ? currentStatusCounts.active + currentStatusCounts.inactive : (selectedStatus === '1' ? currentStatusCounts.active : currentStatusCounts.inactive)})
+                                        </span>
                                     </span>
-                                </span>
-                                <ChevronDown size={14} className={`ml-2 2xl:w-5 2xl:h-5 4xl:h-12 4xl:w-12 5xl:h-20 5xl:w-20 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
-                            </button>
+                                    <ChevronDown size={14} className={`ml-2 text-gray-300 transition-transform duration-200 shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
 
-                            {isStatusDropdownOpen && (
-                                <div className="absolute top-full left-0 md:left-auto md:right-0 -mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {[
-                                        { value: '', label: 'All Status', count: currentStatusCounts.active + currentStatusCounts.inactive },
-                                        { value: '1', label: 'Active', count: currentStatusCounts.active },
-                                        { value: '0', label: 'Inactive', count: currentStatusCounts.inactive }
-                                    ].map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                setSelectedStatus(option.value);
-                                                setIsStatusDropdownOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
-                                        >
-                                            <span className="flex items-center">
-                                                {option.label}
-                                                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${selectedStatus === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-500'}`}>
-                                                    {option.count}
+                                {isStatusDropdownOpen && (
+                                    <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-100 rounded-lg shadow-xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {[
+                                            { value: '', label: 'All Status', count: currentStatusCounts.active + currentStatusCounts.inactive },
+                                            { value: '1', label: 'Active', count: currentStatusCounts.active },
+                                            { value: '0', label: 'Inactive', count: currentStatusCounts.inactive }
+                                        ].map((option) => (
+                                            <button
+                                                key={option.value}
+                                                onClick={() => {
+                                                    setSelectedStatus(option.value);
+                                                    setIsStatusDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-orange-50 hover:text-orange-700 transition-colors ${selectedStatus === option.value ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-gray-700'}`}
+                                            >
+                                                <span className="flex items-center">
+                                                    {option.label}
+                                                    <span className={`ml-2 px-1 py-0.5 rounded-full text-[9px] font-bold ${selectedStatus === option.value ? 'bg-orange-100' : 'bg-gray-100 text-gray-400'}`}>
+                                                        {option.count}
+                                                    </span>
                                                 </span>
-                                            </span>
-                                            {selectedStatus === option.value && <Check size={14} />}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                                                {selectedStatus === option.value && <Check size={12} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <button
                             onClick={handleAddEmployee}
-                            className="bg-[#f59e0b] hover:bg-[#d97706] text-white px-2.5 2xl:px-6 4xl:px-14 5xl:px-24 py-1.5 2xl:py-3 4xl:py-8 5xl:py-14 rounded-md 4xl:rounded-2xl font-bold text-[11px] 2xl:text-base 4xl:text-4xl 5xl:text-6xl flex items-center gap-1 shadow-sm transition-all"
+                            className="w-full sm:w-auto bg-[#f59e0b] hover:bg-[#d97706] text-white px-4 py-2 rounded-lg font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all uppercase tracking-wider h-[38px] sm:h-auto"
                         >
-                            <span className="text-xs 2xl:text-lg 4xl:text-5xl 5xl:text-7xl">+</span> Add Employee
+                            <span className="text-base leading-none">+</span> Add Employee
                         </button>
-                    </div >
-                </div >
+                    </div>
+                </div>
             </div>
 
             {/* Table Content */}
             <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-x-auto">
                     <table className="employees-table min-w-full divide-y divide-gray-100 relative">
-                        <thead className="bg-gray-50 border-b border-gray-200 text-xs 2xl:text-base 4xl:text-4xl 5xl:text-6xl uppercase font-bold tracking-wider text-gray-500 sticky top-0 z-10 shadow-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase font-bold tracking-wider text-[#94a3b8] sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">S.No</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-left cursor-pointer bg-gray-50">
-                                    <span>Name</span>
-                                </th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Email</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Phone</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Joining Date</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">Role</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">Farm</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center bg-gray-50">Shed</th>
-                                <th className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2.5 2xl:py-4 4xl:py-10 5xl:py-16 text-center cursor-pointer bg-gray-50">Status</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">S.No</th>
+                                <th className="px-4 py-3 text-left bg-gray-50">Name</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Email</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Phone</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Joining Date</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Role</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Farm</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Shed</th>
+                                <th className="px-4 py-3 text-center bg-gray-50">Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
@@ -350,49 +349,49 @@ const Employees: React.FC = () => {
                             ) : employees.length > 0 ? (
                                 employees.map((employee: any, index: number) => (
                                     <tr key={employee.id || index} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-500 font-medium">
+                                        <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-center text-gray-400">
                                             {(currentPage - 1) * itemsPerPage + index + 1}
                                         </td>
 
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap">
-                                            <div className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors text-sm 2xl:text-base 4xl:text-4xl 5xl:text-6xl" onClick={() => handleNameClick(employee)}>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <div className="font-semibold text-gray-900 cursor-pointer hover:text-orange-600 transition-colors text-[13px]" onClick={() => handleNameClick(employee)}>
                                                 {`${employee.first_name || ''} ${employee.last_name || ''}`}
                                             </div>
                                         </td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-600">{employee.email || '-'}</td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-600">{employee.phone_number || '-'}</td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-center text-gray-600">
+                                        <td className="px-4 py-3 whitespace-nowrap text-xs text-center text-gray-600 font-medium">{employee.email || '-'}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-xs text-center text-gray-600 font-bold">{employee.phone_number || '-'}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-xs text-center text-gray-600 font-medium">
                                             {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN', {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             }) : '-'}
                                         </td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center text-xs">
-                                            <div className="flex gap-1 justify-center flex-wrap 4xl:gap-3 5xl:gap-6">
+                                        <td className="px-4 py-3 whitespace-nowrap text-center text-xs">
+                                            <div className="flex gap-1 justify-center flex-wrap">
                                                 {(selectedRole && employee.roles?.includes(selectedRole)) ? (
-                                                    <span className="inline-flex items-center px-2 2xl:px-4 4xl:px-10 4xl:py-3 5xl:px-16 5xl:py-6 py-1 2xl:py-2 rounded-full text-[11px] 2xl:text-sm 4xl:text-3xl 5xl:text-5xl font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-50 text-orange-700 border border-orange-100">
                                                         {formatRoleName(selectedRole)}
                                                     </span>
                                                 ) : (
                                                     employee.roles && employee.roles.length > 0 ? (
                                                         employee.roles.map((role: string, roleIdx: number) => (
-                                                            <span key={roleIdx} className="inline-flex items-center px-2 2xl:px-4 4xl:px-10 4xl:py-3 5xl:px-16 5xl:py-6 py-1 2xl:py-2 rounded-full text-[11px] 2xl:text-sm 4xl:text-3xl 5xl:text-5xl font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                            <span key={roleIdx} className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-50 text-orange-700 border border-orange-100">
                                                                 {role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                                             </span>
                                                         ))
                                                     ) : (
-                                                        <span className="text-gray-400 mx-auto 4xl:text-4xl 5xl:text-6xl">-</span>
+                                                        <span className="text-gray-400 mx-auto">-</span>
                                                     )
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-gray-500">
+                                        <td className="px-4 py-3 whitespace-nowrap text-center text-xs text-gray-600 font-bold">
                                             {employee.farm_name || employee.farm?.farm_name || '-'}
                                         </td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center text-xs 2xl:text-sm 4xl:text-3xl 5xl:text-5xl text-gray-500">
+                                        <td className="px-4 py-3 whitespace-nowrap text-center text-xs text-gray-600">
                                             {employee.shed_name || employee.shed?.shed_name || employee.shed_id || (employee.shed ? employee.shed.shed_id : '-') || '-'}
                                         </td>
-                                        <td className="px-3 2xl:px-6 4xl:px-12 5xl:px-20 py-2 2xl:py-4 4xl:py-10 5xl:py-16 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-1.5 2xl:px-3 4xl:px-8 4xl:py-4 5xl:px-12 5xl:py-8 py-0.5 2xl:py-1.5 rounded-full text-[11px] 2xl:text-sm 4xl:text-3xl 5xl:text-5xl font-bold ${employee.active_status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black ${employee.active_status ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
                                                 {employee.active_status ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>

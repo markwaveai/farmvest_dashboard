@@ -97,6 +97,14 @@ export const farmvestService = {
             throw error;
         }
     },
+    getInvestorSummary: async () => {
+        try {
+            const response = await farmvestApi.get(API_ENDPOINTS.getInvestorSummary());
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
     getFarms: async (location: string) => {
         try {
             const response = await farmvestApi.get(`${API_ENDPOINTS.getAllFarms()}?location=${location}`);
