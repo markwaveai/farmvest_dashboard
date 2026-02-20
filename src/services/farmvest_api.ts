@@ -369,7 +369,7 @@ export const farmvestService = {
             throw error;
         }
     },
-    getPaidOrders: async (mobile: string) => {
+    getPaidOrders: async (mobile: string, page: number = 1, size: number = 500) => {
         try {
 
             // Get admin mobile from session
@@ -383,9 +383,17 @@ export const farmvestService = {
                 }
             }
 
-            const url = API_ENDPOINTS.getInTransitOrders();
+            let url = API_ENDPOINTS.getInTransitOrders();
+            // Append query params since some endpoints ignore body for pagination
+            const query = new URLSearchParams();
+            query.append('page', page.toString());
+            query.append('size', size.toString());
+            url += `?${query.toString()}`;
+
             const payload: any = {
-                filter_status: "intransit"
+                filter_status: "intransit",
+                page: page, // Still keep in body just in case
+                size: size
             };
 
             if (mobile && mobile.trim() !== "") {

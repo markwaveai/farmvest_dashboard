@@ -1,5 +1,5 @@
 .animal-onboarding-container {
-    background: linear-gradient(180deg, #dcfce7 0%, #ffffff 40%, #ffffff 100%);
+    background: #ffffff;
     height: 100%;
     display: flex;
     flex-direction: column;

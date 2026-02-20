@@ -323,50 +323,66 @@ const AnimalOnboarding: React.FC = () => {
 
         fetchInitialData();
 
-        // Fetch Default In-Transit Orders
+        // Fetch Default In-Transit Orders with Progressive Loading
         const fetchDefaultOrders = async () => {
             if (!isMounted.current) return;
             setLoadingDefault(true);
+
+            // Helper to process raw results
+            const processResults = (result: any) => {
+                let rawItems = [];
+                if (Array.isArray(result.data)) rawItems = result.data;
+                else if (Array.isArray(result.orders)) rawItems = result.orders;
+                else if (Array.isArray(result)) rawItems = result;
+
+                const flattened: any[] = [];
+                rawItems.forEach((item: any) => {
+                    if (item.orders && Array.isArray(item.orders)) {
+                        item.orders.forEach((ord: any) => {
+                            flattened.push({ ...ord, user: item.user || ord.user });
+                        });
+                    }
+                    else if (item.id || item.order_id) {
+                        flattened.push(item);
+                    }
+                });
+                return flattened;
+            };
+
             try {
-                const result = await farmvestService.getPaidOrders("");
-                console.log("In-Transit Orders Response:", result);
+                // 1. Fast Load: Get first 20 items
+                const firstBatch = await farmvestService.getPaidOrders("", 1, 20);
+                console.log("In-Transit First Batch:", firstBatch);
 
-                if (result) {
-                    let rawItems = [];
-                    if (Array.isArray(result.data)) {
-                        rawItems = result.data;
-                    } else if (Array.isArray(result.orders)) {
-                        rawItems = result.orders;
-                    } else if (Array.isArray(result)) {
-                        rawItems = result;
+                if (firstBatch) {
+                    const flattenedFirst = processResults(firstBatch);
+                    if (flattenedFirst.length > 0) {
+                        if (isMounted.current) {
+                            setDefaultInTransitOrders(flattenedFirst);
+                            setLoadingDefault(false); // Stop spinner immediately
+                        }
+                    } else {
+                        if (isMounted.current) setLoadingDefault(false);
                     }
 
-                    const flattened: any[] = [];
-                    rawItems.forEach((item: any) => {
-                        // Case 1: Item is a wrapper { user: ..., orders: [...] }
-                        if (item.orders && Array.isArray(item.orders)) {
-                            item.orders.forEach((ord: any) => {
-                                flattened.push({
-                                    ...ord,
-                                    user: item.user || ord.user // Preserve user info
-                                });
-                            });
-                        }
-                        // Case 2: Item is an order itself
-                        else if (item.id || item.order_id) {
-                            flattened.push(item);
-                        }
-                        // Case 3: Item just has a user but no orders visible? 
-                        // (Unexpected but let's be safe)
-                    });
-
-                    if (flattened.length > 0) {
-                        setDefaultInTransitOrders(flattened);
+                    // 2. Background Load: Get remaining items (up to 5000)
+                    // Only if we got some results initially, otherwise no point
+                    if (flattenedFirst.length > 0) {
+                        farmvestService.getPaidOrders("", 1, 5000).then(fullResult => {
+                            if (!isMounted.current) return;
+                            const flattenedFull = processResults(fullResult);
+                            if (flattenedFull.length > 0) {
+                                // Update with full list, potentially replacing the initial 20 to ensure consistency
+                                // Use functional update to avoid stale closures if needed, but setState is safe here
+                                setDefaultInTransitOrders(flattenedFull);
+                            }
+                        }).catch(e => console.error("Background fetch failed", e));
                     }
+                } else {
+                    if (isMounted.current) setLoadingDefault(false);
                 }
             } catch (error) {
                 console.error("Error fetching default in-transit orders:", error);
-            } finally {
                 if (isMounted.current) setLoadingDefault(false);
             }
         };
@@ -982,16 +998,33 @@ const AnimalOnboarding: React.FC = () => {
     };
 
     return (
-        <div className="animal-onboarding-container">
-            <div className="onboarding-header">
-                {selectedOrder && (
-                    <button className="back-btn" onClick={handleBack}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M15 18L9 12L15 6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </button>
-                )}
-                <h1>{selectedOrder ? 'Order Details' : 'Admin Animal Onboarding'}</h1>
+        <div className="animal-onboarding-container flex flex-col h-full">
+            {/* Page Header - Employees Style */}
+            <div className="flex-none bg-white border-b border-gray-100 p-3 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        {selectedOrder && (
+                            <button
+                                onClick={handleBack}
+                                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 18L9 12L15 6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </button>
+                        )}
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                                {selectedOrder ? 'Order Details' : 'Admin Animal Onboarding'}
+                            </h1>
+                            {!selectedOrder && (
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    Manage animal onboarding for investors
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="flex-1 overflow-auto p-6 scrollbar-hide">
@@ -2102,7 +2135,7 @@ const AnimalOnboarding: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
