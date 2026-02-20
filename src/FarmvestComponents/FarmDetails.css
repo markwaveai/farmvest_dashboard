@@ -10,7 +10,7 @@
     padding: 16px 24px;
     border-radius: var(--card-radius, 14px);
     box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02));
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -31,7 +31,8 @@
 }
 
 .farm-title-section h1 {
-    font-size: 1.35rem;
+    font-size: 1.1rem;
+    /* Decreased from 1.35rem */
     font-weight: 800;
     color: #1e293b;
     margin: 0;
@@ -108,17 +109,20 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    /* Decreased from 0.8rem */
 }
 
 .info-label {
     font-weight: 600;
     color: #64748b;
+    font-size: 0.75rem;
 }
 
 .info-value {
     color: #1e293b;
     font-weight: 600;
+    font-size: 0.75rem;
 }
 
 .manager-name,
@@ -136,17 +140,35 @@
     color: #1e293b;
 }
 
+.staff-overview-row {
+    margin-top: 4px;
+}
+
+.staff-badge-item {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.staff-badge-item:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.staff-badge-item p {
+    margin: 0;
+}
+
 .sheds-grid-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 12px;
     justify-content: center;
 }
 
 .shed-detail-card {
     background: white;
     border-radius: var(--card-radius, 14px);
-    padding: 20px;
+    padding: 12px;
     border: 1px solid var(--card-border, #e2e8f0);
     transition: all 0.2s ease;
     position: relative;
@@ -176,7 +198,7 @@
 .card-divider {
     height: 1px;
     background-color: #f1f5f9;
-    margin: 12px 0 16px 0;
+    margin: 8px 0 12px 0;
     width: 100%;
 }
 
@@ -188,13 +210,14 @@
 }
 
 .shed-icon-large {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     line-height: 1;
     margin-bottom: 1px;
 }
 
 .shed-name-title {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    /* Decreased from 0.9rem */
     font-weight: 700;
     color: #1e293b;
     margin: 0;
@@ -221,18 +244,20 @@
 
 .supervisor-entry-compact {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    /* Changed from column to row */
+    align-items: baseline;
+    gap: 4px;
 }
 
 .card-info-label-sm {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: #94a3b8;
     font-weight: 500;
 }
 
 .card-info-value-sm {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #334155;
     font-weight: 600;
 }
@@ -257,7 +282,7 @@
 }
 
 .stat-value {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: #0f172a;
 }

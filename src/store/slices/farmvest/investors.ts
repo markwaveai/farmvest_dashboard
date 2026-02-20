@@ -39,6 +39,7 @@ export const fetchInvestors = createAsyncThunk(
                 const isActive = Number(rawStatus) ? 1 : 0;
 
                 return {
+                    ...item,
                     id: item.id || item.investor_id || item.user_id || index,
                     investor_id: item.investor_id || item.id || item.user_id,
                     first_name: item.first_name || item.name?.split(' ')[0] || '',
@@ -87,6 +88,7 @@ export const fetchInvestorStats = createAsyncThunk(
                 else statusCounts.inactive++;
 
                 return {
+                    ...item, // Keep all original fields (including potential counts like buffalo_count)
                     id: item.id || item.investor_id || item.user_id || index,
                     investor_id: item.investor_id || item.id || item.user_id,
                     first_name: item.first_name || item.name?.split(' ')[0] || '',

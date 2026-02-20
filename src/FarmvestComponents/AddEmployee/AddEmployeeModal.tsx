@@ -525,9 +525,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                 {touched.farm_id && !formData.farm_id && formData.role !== 'ADMIN' && (
                                     <span className="text-[10px] text-red-500 mt-1 font-bold block">Farm is required</span>
                                 )}
+
                                 {formData.farm_id && (
                                     <div className="mt-2 text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center animate-fadeIn">
-                                        <span className="uppercase tracking-wider">Generated Farm ID:</span>
+                                        <span className="uppercase tracking-wider">Farm ID:</span>
                                         <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">#{formData.farm_id}</span>
                                     </div>
                                 )}
@@ -623,9 +624,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose }) 
                                         </div>
                                     )}
                                 </div>
+
                                 {formData.doctor_id && (
                                     <div className="mt-2 text-[10px] font-bold text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center animate-fadeIn">
-                                        <span className="uppercase tracking-wider">Generated Doctor ID:</span>
+                                        <span className="uppercase tracking-wider">Doctor ID:</span>
                                         <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-mono">#{formData.doctor_id}</span>
                                     </div>
                                 )}

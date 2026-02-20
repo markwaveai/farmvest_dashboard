@@ -142,16 +142,16 @@ const Farms: React.FC = () => {
 
     // Transform locations for CustomDropdown
     const locationOptions = useMemo(() => {
-        const allOption = { value: 'ALL', label: 'ALL LOCATIONS' };
+        const allOption = { value: 'ALL', label: 'all locations' };
         if (availableLocations.length > 0) {
-            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc.toUpperCase() }))];
+            return [allOption, ...availableLocations.map(loc => ({ value: loc, label: loc.toLowerCase() }))];
         }
         return [
             allOption,
-            { value: 'Adoni', label: 'ADONI' },
-            { value: 'Kurnool', label: 'KURNOOL' },
-            { value: 'Hyderabad', label: 'HYDERABAD' },
-            { value: 'Vijayawada', label: 'VIJAYAWADA' }
+            { value: 'Adoni', label: 'adoni' },
+            { value: 'Kurnool', label: 'kurnool' },
+            { value: 'Hyderabad', label: 'hyderabad' },
+            { value: 'Vijayawada', label: 'vijayawada' }
         ];
     }, [availableLocations]);
 
@@ -192,19 +192,17 @@ const Farms: React.FC = () => {
 
                 <div className="flex flex-col md:flex-row items-center gap-1.5 sm:gap-3 w-full md:w-auto">
                     {/* Search Input - Full width on mobile, fixed on medium+ */}
-                    <div className="w-full md:w-56 relative group">
+                    <div className="w-full md:w-48 relative group">
                         <input
                             type="text"
-                            placeholder="Find farm name..."
-                            className="w-full pl-11 pr-10 py-1 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none shadow-sm text-sm"
+                            placeholder="find farm name..."
+                            className="farms-search-input"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        {!searchTerm && (
-                            <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2 group-focus-within:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        )}
+                        <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                         {searchTerm && (
                             <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-gray-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
@@ -212,14 +210,14 @@ const Farms: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Filter and Buttons in one line on mobile */}
                     <div className="flex flex-row items-center gap-1 sm:gap-2 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-48 z-20 min-w-0">
+                        <div className="relative flex-1 md:w-40 z-20 min-w-0">
                             <CustomDropdown
                                 options={locationOptions}
                                 value={location}
                                 onChange={handleLocationSelect}
-                                placeholder="Select Location"
+                                placeholder="all locations"
+                                className="farms-location-filter"
                             />
                         </div>
 

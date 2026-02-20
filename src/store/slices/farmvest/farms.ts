@@ -31,9 +31,12 @@ export const fetchFarms = createAsyncThunk(
                 apiParams.location_name = location; // Use original casing if provided
             }
 
-            // Pass search param to API
+            // If a search query is provided, we fetch a larger dataset (e.g., size: 10000)
+            // to enable reliable client-side searching if the API search is limited.
             if (search) {
                 apiParams.search = search;
+                apiParams.size = 10000;
+                apiParams.page = 1;
             }
 
             const response = await farmvestService.getAllFarms(apiParams);
@@ -98,11 +101,11 @@ export const fetchFarms = createAsyncThunk(
             // Map and normalize data to ensure UI compatibility
             allFarms = allFarms.map((item: any, index: number) => {
                 const farmName = item.farm_name || item.name || item.farmName || `Farm ${index + 1}`;
-                
+
                 // Location can be a string or object
                 const locRaw = item.location_name || item.location || item.locationName || item.city || item.address || null;
                 let locationStr = typeof locRaw === 'string' ? locRaw : (locRaw?.name || locRaw?.label || locRaw?.location_name || null);
-                
+
                 // If location is missing, try to infer it from the name
                 if (!locationStr || locationStr === '-') {
                     const inferred = inferLocation(farmName);
@@ -122,6 +125,16 @@ export const fetchFarms = createAsyncThunk(
                 };
             });
 
+            // Client-side filtering for Search query if backend results aren't perfect
+            if (search) {
+                const query = search.toLowerCase();
+                allFarms = allFarms.filter(farm =>
+                    (farm.farm_name || '').toLowerCase().includes(query) ||
+                    (farm.location || '').toLowerCase().includes(query) ||
+                    (farm.farm_manager_name || '').toLowerCase().includes(query)
+                );
+            }
+
             // Client-side filtering for Location
             if (normalizedLocation !== 'ALL') {
                 allFarms = allFarms.filter(farm => {
@@ -131,9 +144,13 @@ export const fetchFarms = createAsyncThunk(
                     // Check for exact match or if one is a prefix of other (e.g. VIJAYAWADA vs VIJAYAWADA Operations)
                     return farmLoc === searchLoc || farmLoc.includes(searchLoc) || searchLoc.includes(farmLoc);
                 });
-                totalCount = allFarms.length;
-                
-                // Since we fetched ALL, we need to handle pagination manually here
+            }
+
+            // Update total count after all filters
+            totalCount = allFarms.length;
+
+            // Handle pagination manually for location/search results
+            if (normalizedLocation !== 'ALL' || search) {
                 const startIndex = (page - 1) * size;
                 const endIndex = startIndex + size;
                 allFarms = allFarms.slice(startIndex, endIndex);

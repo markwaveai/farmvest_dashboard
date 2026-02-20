@@ -18,19 +18,20 @@ export function useTableSortAndSearch<T>(
     const filteredData = useMemo(() => {
         let processData = [...data];
 
-        // Search
-        if (searchQuery) {
-            if (searchFn) {
-                processData = processData.filter(item => searchFn(item, searchQuery));
-            } else {
-                // Default generic search
-                const lowerQuery = searchQuery.toLowerCase();
-                processData = processData.filter(item =>
-                    Object.values(item as any).some(val =>
-                        String(val).toLowerCase().includes(lowerQuery)
-                    )
-                );
-            }
+        // Search and Filter logic
+        if (searchFn) {
+            // If a search function is provided, we always call it.
+            // This allows the search function to handle other filtering logic (like status)
+            // even if the search query is empty.
+            processData = processData.filter(item => searchFn(item, searchQuery));
+        } else if (searchQuery) {
+            // Default generic search
+            const lowerQuery = searchQuery.toLowerCase();
+            processData = processData.filter(item =>
+                Object.values(item as any).some(val =>
+                    String(val).toLowerCase().includes(lowerQuery)
+                )
+            );
         }
 
         // Sort

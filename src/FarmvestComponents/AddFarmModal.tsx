@@ -79,7 +79,7 @@ const AddFarmModal: React.FC<AddFarmModalProps> = ({ isOpen, onClose, onSuccess,
 
         try {
             await farmvestService.createFarm({
-                location: location,
+                location_name: location,
                 shed_count: Number(shedCount),
                 is_test: isTest
             });

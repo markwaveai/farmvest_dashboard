@@ -1,0 +1,204 @@
+.status-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.status-modal-content {
+    background: white;
+    width: 440px;
+    max-width: 90vw;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.status-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.status-icon-bg {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-icon-bg.activate {
+    background: #f0fdf4;
+    /* green-50 */
+    color: #16a34a;
+    /* green-600 */
+}
+
+.status-icon-bg.deactivate {
+    background: #fef2f2;
+    /* red-50 */
+    color: #dc2626;
+    /* red-600 */
+}
+
+.close-x-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.close-x-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.status-modal-body h3 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.status-modal-body p {
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 0 16px 0;
+}
+
+.investor-info-display {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.status-note {
+    font-size: 0.85rem !important;
+    font-weight: 500;
+}
+
+.status-note.activate {
+    color: #16a34a !important;
+}
+
+.status-note.deactivate {
+    color: #ef4444 !important;
+}
+
+.status-modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.cancel-btn,
+.confirm-status-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+}
+
+.cancel-btn:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.confirm-status-btn {
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.confirm-status-btn.activate {
+    background: #16a34a;
+}
+
+.confirm-status-btn.activate:hover:not(:disabled) {
+    background: #15803d;
+}
+
+.confirm-status-btn.deactivate {
+    background: #ef4444;
+}
+
+.confirm-status-btn.deactivate:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.confirm-status-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.confirm-status-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Animation */
+.animate-modalScale {
+    animation: modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

@@ -57,7 +57,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     return (
         <div className={`custom-dropdown-container ${className || ''}`} ref={dropdownRef}>
             <div
-                className={`custom-dropdown-trigger ${disabled ? 'disabled' : ''}`}
+                className={`custom-dropdown-trigger ${disabled ? 'disabled' : ''} ${!selectedOption && placeholder.toUpperCase().includes('ALL') ? 'no-selection' : ''} ${value === 'ALL' ? 'no-selection' : ''}`}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
             >
                 <span>{selectedOption ? selectedOption.label : placeholder}</span>

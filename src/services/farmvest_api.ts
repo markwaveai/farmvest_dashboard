@@ -318,7 +318,7 @@ export const farmvestService = {
         }
     },
     // Create Farm
-    createFarm: (farmData: { farm_name?: string; location: string; shed_count: number; is_test: boolean }) => {
+    createFarm: (farmData: { farm_name?: string; location_name: string; shed_count: number; is_test: boolean }) => {
         return farmvestApi.post(API_ENDPOINTS.createFarm(), farmData);
     },
     updateFarm: async (farmId: number, farmData: { farm_name?: string; location_name?: string; shed_count?: number; is_test?: boolean }) => {
@@ -458,9 +458,13 @@ export const farmvestService = {
         }
     },
 
-    getAnimalsByInvestor: async (investorId: number) => {
+    getAnimalsByInvestor: async (investorId: number | string, params?: { page?: number; size?: number }) => {
         try {
-            const response = await farmvestApi.get(`${API_ENDPOINTS.getInvestorAnimals()}?investor_id=${investorId}`);
+            let url = `${API_ENDPOINTS.getInvestorAnimals()}?investor_id=${investorId}`;
+            if (params?.page) url += `&page=${params.page}`;
+            if (params?.size) url += `&size=${params.size}`;
+
+            const response = await farmvestApi.get(url);
             return response.data;
         } catch (error) {
             throw error;
